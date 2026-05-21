@@ -76,36 +76,36 @@
 
 ## Traceability
 
-Traceability is populated during roadmap creation.
+Traceability maps every v1 requirement to exactly one phase.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| FND-01 | TBD | Pending |
-| FND-02 | TBD | Pending |
-| FND-03 | TBD | Pending |
-| ROST-01 | TBD | Pending |
-| ROST-02 | TBD | Pending |
-| ROST-03 | TBD | Pending |
-| ROST-04 | TBD | Pending |
-| STUD-01 | TBD | Pending |
-| STUD-02 | TBD | Pending |
-| STUD-03 | TBD | Pending |
-| PROG-01 | TBD | Pending |
-| PROG-02 | TBD | Pending |
-| PROG-03 | TBD | Pending |
-| NOTE-01 | TBD | Pending |
-| NOTE-02 | TBD | Pending |
-| NOTE-03 | TBD | Pending |
-| NEXT-01 | TBD | Pending |
-| NEXT-02 | TBD | Pending |
-| NEXT-03 | TBD | Pending |
-| NEXT-04 | TBD | Pending |
+| FND-01 | Phase 1 | Pending |
+| FND-02 | Phase 1 | Pending |
+| FND-03 | Phase 1 | Pending |
+| ROST-01 | Phase 2 | Pending |
+| ROST-02 | Phase 4 | Pending |
+| ROST-03 | Phase 3 | Pending |
+| ROST-04 | Phase 3 | Pending |
+| STUD-01 | Phase 2 | Pending |
+| STUD-02 | Phase 2 | Pending |
+| STUD-03 | Phase 3 | Pending |
+| PROG-01 | Phase 3 | Pending |
+| PROG-02 | Phase 3 | Pending |
+| PROG-03 | Phase 4 | Pending |
+| NOTE-01 | Phase 3 | Pending |
+| NOTE-02 | Phase 3 | Pending |
+| NOTE-03 | Phase 2 | Pending |
+| NEXT-01 | Phase 3 | Pending |
+| NEXT-02 | Phase 3 | Pending |
+| NEXT-03 | Phase 3 | Pending |
+| NEXT-04 | Phase 4 | Pending |
 
 **Coverage:**
 - v1 requirements: 20 total
-- Mapped to phases: 0
-- Unmapped: 20
+- Mapped to phases: 20
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-05-22*
-*Last updated: 2026-05-22 after initial definition*
+*Last updated: 2026-05-22 after roadmap creation*
