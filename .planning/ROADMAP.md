@@ -20,7 +20,8 @@ Decimal phases appear between their surrounding integers in numeric order.
 ## Phase Details
 
 ### Phase 1: App Foundation And Data Model
-**Goal**: The project has a runnable full-stack MVP foundation with durable local persistence and realistic drum lesson sample data.
+
+**Goal**: The project has a runnable full-stack MVP foundation with hosted Supabase/Postgres persistence and realistic drum lesson sample data.
 **Mode:** mvp
 **UI hint**: yes
 **Depends on**: Nothing (first phase)
@@ -32,9 +33,17 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 3 plans
 
 Plans:
+**Wave 1**
+
 - [ ] 01-01: Scaffold Next.js, TypeScript, Tailwind, shadcn/ui, and base app layout.
-- [ ] 01-02: Add Prisma schema, SQLite persistence, migrations, and seed script.
-- [ ] 01-03: Add realistic drum student sample data and foundation verification.
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 01-02: Add Supabase/Postgres schema, RLS policies, migrations, and seed script.
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 01-03: Add seed-backed dashboard preview and foundation verification.
 
 ### Phase 2: Student Roster And Detail Read Views
 **Goal**: The instructor can browse students and open a detail page that shows the teaching context needed before a lesson.
