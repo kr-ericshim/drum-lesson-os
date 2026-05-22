@@ -24,6 +24,21 @@ NEXT_PUBLIC_DEMO_INSTRUCTOR_ID=
 
 Phase 1 uses hosted Supabase/Postgres assumptions from the start. The browser bundle only uses the public Supabase URL and anon key.
 
+Apply the schema and seed data with the Supabase CLI:
+
+```bash
+supabase db push
+supabase db execute --file supabase/seed.sql
+```
+
+For a local Supabase stack, reset and seed together:
+
+```bash
+supabase db reset
+```
+
+The seed data uses demo instructor id `11111111-1111-4111-8111-111111111111`. To preview the RLS-protected data in a hosted project, use an authenticated Supabase user with a matching instructor id or update `NEXT_PUBLIC_DEMO_INSTRUCTOR_ID` and the seed rows together.
+
 ## Verification
 
 ```bash

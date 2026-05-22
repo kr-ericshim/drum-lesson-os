@@ -1,0 +1,100 @@
+export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
+
+export type Database = {
+  public: {
+    Tables: {
+      instructors: {
+        Row: {
+          id: string;
+          display_name: string;
+          studio_name: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+      };
+      students: {
+        Row: {
+          id: string;
+          instructor_id: string;
+          name: string;
+          profile_cue: string;
+          current_focus: string;
+          primary_weak_point: string;
+          active: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+      };
+      progress_items: {
+        Row: {
+          id: string;
+          instructor_id: string;
+          student_id: string;
+          category: string;
+          status: string;
+          title: string;
+          current_focus: boolean;
+          observed_on: string;
+          detail: string;
+          created_at: string;
+          updated_at: string;
+        };
+      };
+      student_traits: {
+        Row: {
+          id: string;
+          instructor_id: string;
+          student_id: string;
+          trait_type: string;
+          label: string;
+          detail: string;
+          created_at: string;
+          updated_at: string;
+        };
+      };
+      lesson_notes: {
+        Row: {
+          id: string;
+          instructor_id: string;
+          student_id: string;
+          lesson_date: string;
+          covered_material: string;
+          observations: string;
+          practice_assigned: string;
+          next_step_hint: string;
+          created_at: string;
+          updated_at: string;
+        };
+      };
+      assignments: {
+        Row: {
+          id: string;
+          instructor_id: string;
+          student_id: string;
+          title: string;
+          status: string;
+          due_date: string | null;
+          detail: string;
+          created_at: string;
+          updated_at: string;
+        };
+      };
+      next_lesson_plans: {
+        Row: {
+          id: string;
+          instructor_id: string;
+          student_id: string;
+          planned_for: string | null;
+          priority: string;
+          next_action: string;
+          detail: string;
+          created_at: string;
+          updated_at: string;
+        };
+      };
+    };
+  };
+};
+
+// Regenerate from Supabase later with:
+// npx supabase gen types typescript --project-id <project-id> --schema public > src/types/database.ts
