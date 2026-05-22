@@ -46,3 +46,11 @@ npm run build
 npm run lint
 rg "SERVICE_ROLE|service_role" src .env.example
 ```
+
+For a first-screen smoke check:
+
+```bash
+npm run dev
+```
+
+Inspect http://localhost:3000 at desktop width and at 320px mobile width. Without Supabase env vars, the page should show `Review setup` and the `No students loaded yet` empty state instead of crashing.

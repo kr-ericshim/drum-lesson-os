@@ -1,8 +1,14 @@
 import { SetupStatusPanel } from "@/components/dashboard/setup-status-panel";
+import { StudentRosterPreview } from "@/components/dashboard/student-roster-preview";
 import { getSupabaseSetupStatus } from "@/lib/env";
+import { getStudentDashboardPreview } from "@/lib/supabase/queries";
 
-export default function Home() {
+export default async function Home() {
   const setupStatus = getSupabaseSetupStatus();
+  const previewResult =
+    setupStatus.state === "configured"
+      ? await getStudentDashboardPreview()
+      : { data: [], error: null };
 
   return (
     <main className="min-h-screen bg-background text-foreground">
@@ -18,15 +24,11 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="rounded-lg border border-border bg-card p-6">
-            <p className="quiet-label">Roster preview</p>
-            <h2 className="mt-2 text-[22px] font-semibold leading-[1.2] text-pretty">
-              Student data foundation
-            </h2>
-            <p className="mt-3 text-[15px] leading-[1.55] text-muted-foreground">
-              The seed-backed roster appears here once Supabase environment variables and seed data are in place.
-            </p>
-          </div>
+          <StudentRosterPreview
+            students={previewResult.data}
+            error={previewResult.error}
+            setupMissing={setupStatus.state === "missing"}
+          />
         </section>
 
         <aside className="space-y-4">
