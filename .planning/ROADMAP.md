@@ -12,7 +12,7 @@ Drum Lesson OS v1 builds a focused instructor-side MVP in four vertical phases: 
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: App Foundation And Data Model** - Create the runnable app foundation, persistent database, schema, and sample teaching data.
+- [x] **Phase 1: App Foundation And Data Model** - Create the runnable app foundation, persistent database, schema, and sample teaching data. (completed 2026-05-22)
 - [ ] **Phase 2: Student Roster And Detail Read Views** - Let the instructor browse students and read the full teaching context for one student.
 - [ ] **Phase 3: Teaching Workflow Editing** - Add create/edit flows for students, traits, progress, lesson notes, assignments, and next lesson plans.
 - [ ] **Phase 4: Pre-Lesson Briefing Polish** - Turn the dashboard into a fast scan surface for current focus, weak points, assignment status, and next actions.
@@ -35,15 +35,15 @@ Decimal phases appear between their surrounding integers in numeric order.
 Plans:
 **Wave 1**
 
-- [ ] 01-01: Scaffold Next.js, TypeScript, Tailwind, shadcn/ui, and base app layout.
+- [x] 01-01: Scaffold Next.js, TypeScript, Tailwind, shadcn/ui, and base app layout.
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 01-02: Add Supabase/Postgres schema, RLS policies, migrations, and seed script.
+- [x] 01-02: Add Supabase/Postgres schema, RLS policies, migrations, and seed script.
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 01-03: Add seed-backed dashboard preview and foundation verification.
+- [x] 01-03: Add seed-backed dashboard preview and foundation verification.
 
 ### Phase 2: Student Roster And Detail Read Views
 **Goal**: The instructor can browse students and open a detail page that shows the teaching context needed before a lesson.
@@ -106,7 +106,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. App Foundation And Data Model | 0/3 | Not started | - |
+| 1. App Foundation And Data Model | 3/3 | Complete   | 2026-05-22 |
 | 2. Student Roster And Detail Read Views | 0/3 | Not started | - |
 | 3. Teaching Workflow Editing | 0/3 | Not started | - |
 | 4. Pre-Lesson Briefing Polish | 0/2 | Not started | - |

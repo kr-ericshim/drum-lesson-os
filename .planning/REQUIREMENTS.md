@@ -7,9 +7,9 @@
 
 ### Foundation
 
-- [ ] **FND-01**: Instructor can run the app locally with a persistent database.
-- [ ] **FND-02**: App includes a durable data model for students, progress items, lesson notes, traits, assignments, and next lesson plans.
-- [ ] **FND-03**: App includes realistic sample data that demonstrates multiple students with different progress states and learning traits.
+- [x] **FND-01**: Instructor can run the app locally with a persistent database.
+- [x] **FND-02**: App includes a durable data model for students, progress items, lesson notes, traits, assignments, and next lesson plans.
+- [x] **FND-03**: App includes realistic sample data that demonstrates multiple students with different progress states and learning traits.
 
 ### Student Roster
 
@@ -80,9 +80,9 @@ Traceability maps every v1 requirement to exactly one phase.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| FND-01 | Phase 1 | Pending |
-| FND-02 | Phase 1 | Pending |
-| FND-03 | Phase 1 | Pending |
+| FND-01 | Phase 1 | Complete |
+| FND-02 | Phase 1 | Complete |
+| FND-03 | Phase 1 | Complete |
 | ROST-01 | Phase 2 | Pending |
 | ROST-02 | Phase 4 | Pending |
 | ROST-03 | Phase 3 | Pending |
