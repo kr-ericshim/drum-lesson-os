@@ -13,28 +13,28 @@
 
 ### Student Roster
 
-- [ ] **ROST-01**: Instructor can view all active students in a dashboard list.
+- [x] **ROST-01**: Instructor can view all active students in a dashboard list.
 - [ ] **ROST-02**: Instructor can see each student's current focus, primary weak point, assignment status, and next lesson action from the roster.
 - [ ] **ROST-03**: Instructor can add a new student with basic lesson-relevant profile information.
 - [ ] **ROST-04**: Instructor can edit a student's basic profile information.
 
 ### Student Detail
 
-- [ ] **STUD-01**: Instructor can open a student detail view from the roster.
-- [ ] **STUD-02**: Student detail view shows current progress, recent lesson notes, traits, weak points, assignment status, and next lesson plan together.
+- [x] **STUD-01**: Instructor can open a student detail view from the roster.
+- [x] **STUD-02**: Student detail view shows current progress, recent lesson notes, traits, weak points, assignment status, and next lesson plan together.
 - [ ] **STUD-03**: Instructor can update student traits such as strengths, weak points, practice habits, learning style, and musical preferences.
 
 ### Progress
 
-- [ ] **PROG-01**: Instructor can create progress items using flexible categories such as books, songs, rudiments, genres, techniques, lesson sessions, and assignments.
-- [ ] **PROG-02**: Instructor can update progress item status and notes.
+- [x] **PROG-01**: Instructor can create progress items using flexible categories such as books, songs, rudiments, genres, techniques, lesson sessions, and assignments.
+- [x] **PROG-02**: Instructor can update progress item status and notes.
 - [ ] **PROG-03**: Instructor can identify the student's current focus without reading the full lesson history.
 
 ### Lesson Notes
 
 - [ ] **NOTE-01**: Instructor can add a dated lesson note for a student.
 - [ ] **NOTE-02**: Instructor can record what was covered, what was observed, practice assigned, and next-step hints in a lesson note.
-- [ ] **NOTE-03**: Instructor can review recent notes in reverse chronological order.
+- [x] **NOTE-03**: Instructor can review recent notes in reverse chronological order.
 
 ### Assignments And Next Lesson
 
@@ -83,19 +83,19 @@ Traceability maps every v1 requirement to exactly one phase.
 | FND-01 | Phase 1 | Complete |
 | FND-02 | Phase 1 | Complete |
 | FND-03 | Phase 1 | Complete |
-| ROST-01 | Phase 2 | Pending |
+| ROST-01 | Phase 2 | Complete |
 | ROST-02 | Phase 4 | Pending |
 | ROST-03 | Phase 3 | Pending |
 | ROST-04 | Phase 3 | Pending |
-| STUD-01 | Phase 2 | Pending |
-| STUD-02 | Phase 2 | Pending |
+| STUD-01 | Phase 2 | Complete |
+| STUD-02 | Phase 2 | Complete |
 | STUD-03 | Phase 3 | Pending |
-| PROG-01 | Phase 3 | Pending |
-| PROG-02 | Phase 3 | Pending |
+| PROG-01 | Phase 3 | Complete |
+| PROG-02 | Phase 3 | Complete |
 | PROG-03 | Phase 4 | Pending |
 | NOTE-01 | Phase 3 | Pending |
 | NOTE-02 | Phase 3 | Pending |
-| NOTE-03 | Phase 2 | Pending |
+| NOTE-03 | Phase 2 | Complete |
 | NEXT-01 | Phase 3 | Pending |
 | NEXT-02 | Phase 3 | Pending |
 | NEXT-03 | Phase 3 | Pending |
@@ -108,4 +108,4 @@ Traceability maps every v1 requirement to exactly one phase.
 
 ---
 *Requirements defined: 2026-05-22*
-*Last updated: 2026-05-22 after roadmap creation*
+*Last updated: 2026-05-25 after Phase 3B progress item editing completion*

@@ -59,16 +59,16 @@ No project skills found. Add skills to any of: `.claude/skills/`, `.agents/skill
 <!-- GSD:skills-end -->
 
 <!-- GSD:workflow-start source:GSD defaults -->
-## GSD Workflow Enforcement
+## Standalone Workflow Enforcement
 
-Before using Edit, Write, or other file-changing tools, start work through a GSD command so planning artifacts and execution context stay in sync.
+GSD has been removed from this project. Keep planning artifacts and execution context in sync manually before file-changing work.
 
-Use these entry points:
-- `/gsd-quick` for small fixes, doc updates, and ad-hoc tasks
-- `/gsd-debug` for investigation and bug fixing
-- `/gsd-execute-phase` for planned phase work
+Use these standalone entry points:
+- For small fixes, state the goal, touched files, and verification command.
+- For investigation and bug fixing, write down the observed symptom, root cause, fix, and verification.
+- For planned phase work, read `.planning/ROADMAP.md`, `.planning/STATE.md`, and the target phase folder before editing.
 
-Do not make direct repo edits outside a GSD workflow unless the user explicitly asks to bypass it.
+Do not make broad direct repo edits without a concrete phase/task goal and verification loop.
 <!-- GSD:workflow-end -->
 
 

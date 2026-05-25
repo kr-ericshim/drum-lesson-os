@@ -1,27 +1,19 @@
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import {
+  mapStudentDetail,
+  mapStudentRoster,
+  type StudentDetail,
+  type StudentDetailSourceRow,
+  type StudentRosterItem,
+  type StudentRosterSourceRow,
+} from "@/lib/supabase/read-models";
 
-export type StudentDashboardPreview = {
-  id: string;
-  name: string;
-  profileCue: string;
-  currentFocus: string;
-  weakPoint: string;
-  assignmentStatus: string;
-  nextAction: string;
-};
+export type { StudentDetail, StudentRosterItem } from "@/lib/supabase/read-models";
 
-type StudentPreviewRow = {
-  id: string;
-  name: string;
-  profile_cue: string;
-  current_focus: string;
-  primary_weak_point: string;
-  assignments: { status: string; created_at: string }[];
-  next_lesson_plans: { next_action: string; priority: string; created_at: string }[];
-};
+export type StudentDashboardPreview = StudentRosterItem;
 
-export async function getStudentDashboardPreview(): Promise<{
-  data: StudentDashboardPreview[];
+export async function getStudentRoster(): Promise<{
+  data: StudentRosterItem[];
   error: string | null;
 }> {
   const supabase = await createServerSupabaseClient();
@@ -39,42 +31,65 @@ export async function getStudentDashboardPreview(): Promise<{
         profile_cue,
         current_focus,
         primary_weak_point,
-        assignments(status, created_at),
-        next_lesson_plans(next_action, priority, created_at)
+        assignments(status, created_at, title, due_date, detail),
+        next_lesson_plans(id, next_action, priority, created_at)
       `,
     )
     .eq("active", true)
     .order("name", { ascending: true })
-    .limit(7)
-    .returns<StudentPreviewRow[]>();
+    .returns<StudentRosterSourceRow[]>();
 
   if (error) {
     return { data: [], error: error.message };
   }
 
   return {
-    data: (data ?? []).map((student) => {
-      const assignment = [...student.assignments].sort((a, b) =>
-        b.created_at.localeCompare(a.created_at),
-      )[0];
-      const nextPlan = [...student.next_lesson_plans].sort((a, b) => {
-        if (a.priority !== b.priority) {
-          return a.priority === "high" ? -1 : 1;
-        }
+    data: mapStudentRoster(data ?? []),
+    error: null,
+  };
+}
 
-        return b.created_at.localeCompare(a.created_at);
-      })[0];
+export async function getStudentDashboardPreview() {
+  return getStudentRoster();
+}
 
-      return {
-        id: student.id,
-        name: student.name,
-        profileCue: student.profile_cue,
-        currentFocus: student.current_focus,
-        weakPoint: student.primary_weak_point,
-        assignmentStatus: assignment?.status ?? "not_started",
-        nextAction: nextPlan?.next_action ?? "Set next lesson action",
-      };
-    }),
+export async function getStudentDetail(studentId: string): Promise<{
+  data: StudentDetail | null;
+  error: string | null;
+}> {
+  const supabase = await createServerSupabaseClient();
+
+  if (!supabase) {
+    return { data: null, error: "Supabase environment is not configured." };
+  }
+
+  const { data, error } = await supabase
+    .from("students")
+    .select(
+      `
+        id,
+        name,
+        profile_cue,
+        current_focus,
+        primary_weak_point,
+        progress_items(id, category, status, title, current_focus, observed_on, detail),
+        student_traits(id, trait_type, label, detail),
+        assignments(status, created_at, title, due_date, detail),
+        next_lesson_plans(id, next_action, priority, created_at, planned_for, detail),
+        lesson_notes(id, lesson_date, covered_material, observations, practice_assigned, next_step_hint)
+      `,
+    )
+    .eq("id", studentId)
+    .eq("active", true)
+    .maybeSingle()
+    .returns<StudentDetailSourceRow | null>();
+
+  if (error) {
+    return { data: null, error: error.message };
+  }
+
+  return {
+    data: data ? mapStudentDetail(data) : null,
     error: null,
   };
 }

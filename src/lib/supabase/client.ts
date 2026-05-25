@@ -12,6 +12,6 @@ export function createBrowserSupabaseClient() {
 
   return createClient<Database>(
     status.env.NEXT_PUBLIC_SUPABASE_URL,
-    status.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    status.env.NEXT_PUBLIC_SUPABASE_KEY,
   );
 }

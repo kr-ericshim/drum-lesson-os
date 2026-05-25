@@ -14,8 +14,8 @@ Drum Lesson OS v1 builds a focused instructor-side MVP in four vertical phases: 
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: App Foundation And Data Model** - Create the runnable app foundation, persistent database, schema, and sample teaching data. (completed 2026-05-22)
-- [ ] **Phase 2: Student Roster And Detail Read Views** - Let the instructor browse students and read the full teaching context for one student.
-- [ ] **Phase 3: Teaching Workflow Editing** - Add create/edit flows for students, traits, progress, lesson notes, assignments, and next lesson plans.
+- [x] **Phase 2: Student Roster And Detail Read Views** - Let the instructor browse students and read the full teaching context for one student. (completed 2026-05-25)
+- [ ] **Phase 3: Teaching Workflow Editing** - Add create/edit flows for students, traits, progress, lesson notes, assignments, and next lesson plans. (03A and 03B completed 2026-05-25)
 - [ ] **Phase 4: Pre-Lesson Briefing Polish** - Turn the dashboard into a fast scan surface for current focus, weak points, assignment status, and next actions.
 
 ## Phase Details
@@ -67,15 +67,15 @@ Plans:
 Plans:
 **Wave 1**
 
-- [ ] 02-01: Build roster data loader and dashboard list UI.
+- [x] 02-01: Build roster data loader and dashboard list UI.
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 02-02: Build student detail route and context sections.
+- [x] 02-02: Build student detail route and context sections.
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 02-03: Add recent-note ordering and read-view verification.
+- [x] 02-03: Add recent-note ordering and read-view verification.
 
 ### Phase 3: Teaching Workflow Editing
 
@@ -92,12 +92,13 @@ Plans:
   4. Instructor can add dated lesson notes with covered material, observations, practice assigned, and next-step hints.
   5. Instructor can record assignment status and update the next lesson plan.
 
-**Plans**: 3 plans
+**Plans**: 4 plans
 
 Plans:
 
+- [x] 03A: Add lesson note creation and next lesson plan editing as the first focused editing slice. (completed 2026-05-25)
 - [ ] 03-01: Add student profile and trait editing flows.
-- [ ] 03-02: Add progress item create/update flows.
+- [x] 03B: Add progress item create/update flows. (completed 2026-05-25)
 - [ ] 03-03: Add lesson note, assignment, and next lesson plan editing flows.
 
 ### Phase 4: Pre-Lesson Briefing Polish
@@ -129,6 +130,6 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. App Foundation And Data Model | 3/3 | Complete   | 2026-05-22 |
-| 2. Student Roster And Detail Read Views | 0/3 | Not started | - |
-| 3. Teaching Workflow Editing | 0/3 | Not started | - |
+| 2. Student Roster And Detail Read Views | 3/3 | Complete   | 2026-05-25 |
+| 3. Teaching Workflow Editing | 2/4 | In progress | - |
 | 4. Pre-Lesson Briefing Polish | 0/2 | Not started | - |

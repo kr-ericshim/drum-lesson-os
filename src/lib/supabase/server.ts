@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
+import { createClient } from "@supabase/supabase-js";
 
 import { getSupabaseSetupStatus } from "@/lib/env";
 import type { Database } from "@/types/database";
@@ -15,7 +16,7 @@ export async function createServerSupabaseClient() {
 
   return createServerClient<Database>(
     status.env.NEXT_PUBLIC_SUPABASE_URL,
-    status.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    status.env.NEXT_PUBLIC_SUPABASE_KEY,
     {
       cookies: {
         getAll() {
@@ -32,5 +33,18 @@ export async function createServerSupabaseClient() {
         },
       },
     },
+  );
+}
+
+export function createServerSupabaseAnonClient() {
+  const status = getSupabaseSetupStatus();
+
+  if (status.state !== "configured") {
+    return null;
+  }
+
+  return createClient<Database>(
+    status.env.NEXT_PUBLIC_SUPABASE_URL,
+    status.env.NEXT_PUBLIC_SUPABASE_KEY,
   );
 }

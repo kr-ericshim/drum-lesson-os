@@ -6,12 +6,13 @@
     "dev": "next dev",
     "build": "next build",
     "lint": "eslint .",
-    "test": "echo \"No tests configured yet\""
+    "test": "node --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types --test src/lib/supabase/read-models.test.mts src/lib/students/editing-schemas.test.mts"
   },
   "dependencies": {
     "@radix-ui/react-slot": "latest",
-    "@supabase/ssr": "latest",
-    "@supabase/supabase-js": "latest",
+    "@radix-ui/react-tabs": "^1.1.13",
+    "@supabase/ssr": "^0.10.3",
+    "@supabase/supabase-js": "^2.106.1",
     "class-variance-authority": "latest",
     "clsx": "latest",
     "lucide-react": "latest",

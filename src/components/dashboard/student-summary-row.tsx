@@ -1,10 +1,12 @@
+import Link from "next/link";
 import { ArrowRight, AlertTriangle } from "lucide-react";
 
 import { Badge, type BadgeProps } from "@/components/ui/badge";
-import type { StudentDashboardPreview } from "@/lib/supabase/queries";
+import { Button } from "@/components/ui/button";
+import type { StudentRosterItem } from "@/lib/supabase/queries";
 
 type StudentSummaryRowProps = {
-  student: StudentDashboardPreview;
+  student: StudentRosterItem;
 };
 
 const assignmentVariantByStatus: Record<string, BadgeProps["variant"]> = {
@@ -29,7 +31,7 @@ export function StudentSummaryRow({ student }: StudentSummaryRowProps) {
 
   return (
     <article className="student-row rounded-lg border border-border bg-card p-4 transition-colors hover:border-primary/35 focus-within:border-primary/50">
-      <div className="grid gap-4 lg:grid-cols-[minmax(150px,0.9fr)_minmax(0,1.2fr)_minmax(0,1.2fr)_112px_minmax(0,1.2fr)] lg:items-start">
+      <div className="grid gap-4 xl:grid-cols-[minmax(150px,0.9fr)_minmax(0,1.1fr)_minmax(0,1.1fr)_112px_minmax(0,1.1fr)_132px] xl:items-start">
         <div className="min-w-0">
           <h3 className="truncate text-[16px] font-semibold leading-snug">{student.name}</h3>
           <p className="mt-1 line-clamp-2 text-sm leading-5 text-muted-foreground">
@@ -63,6 +65,14 @@ export function StudentSummaryRow({ student }: StudentSummaryRowProps) {
             Next lesson
           </p>
           <p className="mt-1 line-clamp-2 text-sm leading-5">{student.nextAction}</p>
+        </div>
+
+        <div className="flex xl:justify-end">
+          <Button asChild variant="secondary" className="w-full sm:w-auto">
+            <Link href={`/students/${student.id}`} aria-label={`Open student ${student.name}`}>
+              Open student
+            </Link>
+          </Button>
         </div>
       </div>
     </article>

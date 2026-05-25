@@ -1,13 +1,13 @@
 import { SetupStatusPanel } from "@/components/dashboard/setup-status-panel";
 import { StudentRosterPreview } from "@/components/dashboard/student-roster-preview";
 import { getSupabaseSetupStatus } from "@/lib/env";
-import { getStudentDashboardPreview } from "@/lib/supabase/queries";
+import { getStudentRoster } from "@/lib/supabase/queries";
 
 export default async function Home() {
   const setupStatus = getSupabaseSetupStatus();
-  const previewResult =
+  const rosterResult =
     setupStatus.state === "configured"
-      ? await getStudentDashboardPreview()
+      ? await getStudentRoster()
       : { data: [], error: null };
 
   return (
@@ -25,8 +25,8 @@ export default async function Home() {
           </div>
 
           <StudentRosterPreview
-            students={previewResult.data}
-            error={previewResult.error}
+            students={rosterResult.data}
+            error={rosterResult.error}
             setupMissing={setupStatus.state === "missing"}
           />
         </section>
