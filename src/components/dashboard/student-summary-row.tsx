@@ -41,7 +41,9 @@ export function StudentSummaryRow({ student }: StudentSummaryRowProps) {
 
         <div className="min-w-0">
           <p className="field-label">Current focus</p>
-          <p className="mt-1 line-clamp-2 text-sm leading-5">{student.currentFocus}</p>
+          <p className="mt-1 line-clamp-2 text-sm leading-5">
+            {student.currentFocus?.title ?? "No current focus set"}
+          </p>
         </div>
 
         <div className="min-w-0">

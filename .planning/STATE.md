@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 3B complete; GitHub publish gate pending gh re-authentication
+stopped_at: Phase 3C complete; remaining Phase 3 profile, trait, assignment, and broader editing flows pending
 last_updated: "2026-05-25T23:59:00+09:00"
-last_activity: 2026-05-25 -- Phase 3B progress item editing completed with remote write UAT
+last_activity: 2026-05-25 -- Phase 3C pre-lesson routine source-of-truth and briefing implementation
 progress:
   total_phases: 4
   completed_phases: 2
-  total_plans: 12
-  completed_plans: 8
-  percent: 67
+  total_plans: 13
+  completed_plans: 9
+  percent: 69
 ---
 
 # Project State
@@ -21,22 +21,22 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-22)
 
 **Core value:** An instructor can quickly understand a student's current progress and personal characteristics before or during a lesson.
-**Current focus:** Publish verified project to GitHub after gh authentication is restored
+**Current focus:** Verify Phase 3C pre-lesson routine changes, then continue remaining Phase 3 editing flows.
 
 ## Current Position
 
-Phase: 3 (Teaching Workflow Editing) — 03B COMPLETE
-Plan: 2 of 4
-Status: Phase 3B complete; GitHub public repo publish pending `gh` re-authentication
-Last activity: 2026-05-25 -- Phase 3B progress item editing completed with remote write UAT
+Phase: 3 (Teaching Workflow Editing) — 03C COMPLETE
+Plan: 3 of 5
+Status: Phase 3C complete; remaining Phase 3 editing flows pending
+Last activity: 2026-05-25 -- Phase 3C pre-lesson routine source-of-truth and briefing implementation
 
-Progress: ███████░░░ 67%
+Progress: ███████░░░ 69%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 7
+- Total plans completed: 9
 - Average duration: N/A
 - Total execution time: 0.0 hours
 
@@ -49,7 +49,7 @@ Progress: ███████░░░ 67%
 
 **Recent Trend:**
 
-- Last 5 plans: 02-01, 02-02, 02-03, 03A, 03B
+- Last 5 plans: 02-02, 02-03, 03A, 03B, 03C
 - Trend: N/A
 
 *Updated after each plan completion*
@@ -71,9 +71,10 @@ Recent decisions affecting current work:
 - Phase 3A: Start Phase 3 with lesson note creation and next lesson plan editing before broader profile, trait, progress, or assignment editing.
 - Phase 3A: Use narrow temporary demo write policies for `lesson_notes` and `next_lesson_plans`; do not introduce service-role keys.
 - Phase 3A: Accept temporary public-key demo write risk for scoped demo rows until real instructor authentication replaces the demo policies.
-- Phase 3B: Keep progress item `current_focus` separate from dashboard `students.current_focus`.
-- Phase 3B: Allow at most one highlighted progress item by clearing other progress items only after the saved target insert/update is confirmed.
+- Phase 3C: Treat `progress_items.current_focus` as the only current-focus source of truth and remove the old student-level focus column.
+- Phase 3C: With the unique focus index, progress item saves clear competing focused rows before promoting the requested target.
 - Phase 3B: Use narrow temporary demo write policies for `progress_items`; do not introduce service-role keys.
+- Phase 3C: Add a dashboard Today/Upcoming queue and a student Lesson Brief before continuing the remaining Phase 3 editing flows.
 
 ### Pending Todos
 
@@ -94,5 +95,5 @@ Items acknowledged and carried forward from previous milestone close:
 ## Session Continuity
 
 Last session: 2026-05-25T23:59:00+09:00
-Stopped at: Phase 3B complete; GitHub publish gate pending gh re-authentication
-Resume file: .planning/phases/03b-progress-item-editing/03B-CHECKPOINT.md
+Stopped at: Phase 3C complete; remaining Phase 3 profile, trait, assignment, and broader editing flows pending
+Resume file: .planning/phases/03c-pre-lesson-routine/03C-CHECKPOINT.md

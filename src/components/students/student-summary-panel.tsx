@@ -19,8 +19,6 @@ export function StudentSummaryPanel({ student }: StudentSummaryPanelProps) {
   const weakPointTraits = student.traits.filter((trait) => trait.type === "weak_point");
   const otherTraits = student.traits.filter((trait) => trait.type !== "weak_point");
   const currentProgress = student.progressItems.filter((item) => item.currentFocus);
-  const progressHighlights =
-    currentProgress.length > 0 ? currentProgress : student.progressItems.slice(0, 3);
   const assignmentVariant = assignmentVariantByStatus[student.assignmentStatus] ?? "muted";
   const assignmentLabel =
     assignmentLabelByStatus[student.assignmentStatus] ?? student.assignmentStatus;
@@ -33,9 +31,9 @@ export function StudentSummaryPanel({ student }: StudentSummaryPanelProps) {
           <h2 className="text-[18px] font-semibold leading-tight">Current progress</h2>
         </div>
 
-        {progressHighlights.length > 0 ? (
+        {currentProgress.length > 0 ? (
           <div className="divide-y divide-border">
-            {progressHighlights.map((item) => (
+            {currentProgress.map((item) => (
               <article key={item.id} className="py-3 first:pt-0 last:pb-0">
                 <div className="flex flex-wrap items-center gap-2">
                   <Badge variant={progressVariantByStatus[item.status] ?? "muted"}>
@@ -50,7 +48,9 @@ export function StudentSummaryPanel({ student }: StudentSummaryPanelProps) {
             ))}
           </div>
         ) : (
-          <p className="text-sm leading-6 text-muted-foreground">No progress items yet.</p>
+          <p className="text-sm leading-6 text-muted-foreground">
+            No current focus set. Mark one progress item as current focus in the Progress tab.
+          </p>
         )}
       </section>
 

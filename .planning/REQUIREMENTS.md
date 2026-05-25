@@ -14,7 +14,7 @@
 ### Student Roster
 
 - [x] **ROST-01**: Instructor can view all active students in a dashboard list.
-- [ ] **ROST-02**: Instructor can see each student's current focus, primary weak point, assignment status, and next lesson action from the roster.
+- [x] **ROST-02**: Instructor can see each student's current focus, primary weak point, assignment status, and next lesson action from the roster.
 - [ ] **ROST-03**: Instructor can add a new student with basic lesson-relevant profile information.
 - [ ] **ROST-04**: Instructor can edit a student's basic profile information.
 
@@ -28,7 +28,7 @@
 
 - [x] **PROG-01**: Instructor can create progress items using flexible categories such as books, songs, rudiments, genres, techniques, lesson sessions, and assignments.
 - [x] **PROG-02**: Instructor can update progress item status and notes.
-- [ ] **PROG-03**: Instructor can identify the student's current focus without reading the full lesson history.
+- [x] **PROG-03**: Instructor can identify the student's current focus without reading the full lesson history.
 
 ### Lesson Notes
 
@@ -41,7 +41,7 @@
 - [ ] **NEXT-01**: Instructor can record a student's current assignment or practice task.
 - [ ] **NEXT-02**: Instructor can mark assignment status such as not started, practicing, needs review, or complete.
 - [ ] **NEXT-03**: Instructor can write and update a next lesson plan for each student.
-- [ ] **NEXT-04**: Dashboard and student detail views surface the next lesson action clearly.
+- [x] **NEXT-04**: Dashboard and student detail views surface the next lesson action clearly.
 
 ## v2 Requirements
 
@@ -84,7 +84,7 @@ Traceability maps every v1 requirement to exactly one phase.
 | FND-02 | Phase 1 | Complete |
 | FND-03 | Phase 1 | Complete |
 | ROST-01 | Phase 2 | Complete |
-| ROST-02 | Phase 4 | Pending |
+| ROST-02 | Phase 3C | Complete |
 | ROST-03 | Phase 3 | Pending |
 | ROST-04 | Phase 3 | Pending |
 | STUD-01 | Phase 2 | Complete |
@@ -92,14 +92,14 @@ Traceability maps every v1 requirement to exactly one phase.
 | STUD-03 | Phase 3 | Pending |
 | PROG-01 | Phase 3 | Complete |
 | PROG-02 | Phase 3 | Complete |
-| PROG-03 | Phase 4 | Pending |
+| PROG-03 | Phase 3C | Complete |
 | NOTE-01 | Phase 3 | Pending |
 | NOTE-02 | Phase 3 | Pending |
 | NOTE-03 | Phase 2 | Complete |
 | NEXT-01 | Phase 3 | Pending |
 | NEXT-02 | Phase 3 | Pending |
 | NEXT-03 | Phase 3 | Pending |
-| NEXT-04 | Phase 4 | Pending |
+| NEXT-04 | Phase 3C | Complete |
 
 **Coverage:**
 - v1 requirements: 20 total
@@ -108,4 +108,4 @@ Traceability maps every v1 requirement to exactly one phase.
 
 ---
 *Requirements defined: 2026-05-22*
-*Last updated: 2026-05-25 after Phase 3B progress item editing completion*
+*Last updated: 2026-05-25 after Phase 3C pre-lesson routine completion*

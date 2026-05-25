@@ -3,6 +3,10 @@
 Date: 2026-05-25
 Status: Complete
 
+## Historical Note
+
+This checkpoint records the Phase 3B behavior before Phase 3C unified current focus on progress items. Use `.planning/phases/03c-pre-lesson-routine/03C-CHECKPOINT.md` for the current source-of-truth behavior.
+
 ## Scope
 
 Phase 3B adds progress item create/update flows to the existing student detail `Progress` tab.
@@ -12,7 +16,7 @@ Included:
 - Add a progress item for the current student.
 - Update existing progress item category, status, title, observed date, detail, and current-focus flag.
 - Keep at most one highlighted progress item when a saved item is marked `Current focus`.
-- Keep dashboard `students.current_focus` text separate from `progress_items.current_focus`.
+- Phase 3B still used a split focus display; Phase 3C superseded this.
 
 Out of scope:
 
@@ -43,13 +47,13 @@ Out of scope:
   - `Progress` tab renders `Add progress item`.
   - existing progress rows expose `Edit progress`.
   - current-focus labels render.
-  - dashboard/header `students.current_focus` text remains visible and separate.
+  - dashboard/header focus text remained visible and separate in the pre-03C implementation.
 - Browser write UAT confirmed:
   - added a progress item from `Progress`
   - marked it as `Current focus`
   - confirmed exactly one visible progress item has the current-focus badge
   - edited status, detail, and observed date
-  - confirmed dashboard/header `students.current_focus` text stayed separate from progress item focus
+  - confirmed the pre-03C split focus display
 
 ## Demo Risk
 

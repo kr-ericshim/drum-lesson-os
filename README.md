@@ -39,7 +39,7 @@ supabase db reset
 
 The seed data uses demo instructor id `11111111-1111-4111-8111-111111111111`. If you change the demo instructor, update `NEXT_PUBLIC_DEMO_INSTRUCTOR_ID`, the seed rows, and the demo migration policies together.
 
-For the early MVP demo, `0002_demo_read_policy.sql` temporarily allows anonymous read access only to rows owned by the seeded demo instructor id. Phase 3A adds `0003_demo_lesson_note_next_plan_write_policy.sql`, which temporarily allows anonymous demo writes only for lesson note creation and next lesson plan creation/update under the same seeded instructor id. Phase 3B adds `0004_demo_progress_item_write_policy.sql`, which temporarily allows anonymous demo writes only for progress item creation/update under the same seeded instructor id.
+For the early MVP demo, `0002_demo_read_policy.sql` temporarily allows anonymous read access only to rows owned by the seeded demo instructor id. Phase 3A adds `0003_demo_lesson_note_next_plan_write_policy.sql`, which temporarily allows anonymous demo writes only for lesson note creation and next lesson plan creation/update under the same seeded instructor id. Phase 3B adds `0004_demo_progress_item_write_policy.sql`, which temporarily allows anonymous demo writes only for progress item creation/update under the same seeded instructor id. Phase 3C adds `0005_progress_focus_source_of_truth.sql`, which normalizes duplicate focused progress rows, enforces one focused progress item per student, and removes the old student-level focus column.
 
 These demo policies are not production auth. Anyone with the public Supabase key could call the Supabase REST API directly and mutate the scoped demo rows. Remove or replace these policies when real instructor authentication is added.
 
@@ -88,4 +88,13 @@ With Supabase env, seed data, and migrations through `0004` applied:
 2. In `Progress`, add a progress item, save it, and confirm it appears in the progress list.
 3. Mark the saved item as `Current focus` and confirm only that progress item has the focus badge.
 4. Edit status, detail, and observed date, then confirm the refreshed list reflects the saved values.
-5. Confirm the dashboard/header `Current focus` text remains separate from the progress item focus flag.
+
+## Phase 3C Pre-Lesson Routine Smoke Check
+
+With Supabase env, seed data, and migrations through `0005` applied:
+
+1. Open `/` and confirm `Today and upcoming` appears above the student roster.
+2. Confirm each dated queue row shows date state, student, priority, next lesson action, assignment status, current focus, and an `Open student` action.
+3. Open a student detail page and confirm `Lesson brief` appears between the detail header and tabs.
+4. Confirm the detail header, Lesson Brief, Summary current progress, and Progress tab agree on the same `Current focus` progress item.
+5. Mark a different progress item as `Current focus`, refresh the dashboard and detail page, and confirm the new focus appears everywhere.

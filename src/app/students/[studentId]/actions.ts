@@ -175,6 +175,7 @@ export async function saveProgressItemAction(formData: FormData): Promise<void> 
     failAction(studentCheck.message);
   }
 
+  const updatedAt = new Date().toISOString();
   const progressPayload = {
     category,
     status,
@@ -182,10 +183,43 @@ export async function saveProgressItemAction(formData: FormData): Promise<void> 
     detail,
     observed_on: observedOn,
     current_focus: currentFocus,
-    updated_at: new Date().toISOString(),
+    updated_at: updatedAt,
   };
 
   if (progressItemId) {
+    if (currentFocus) {
+      const { data: existingProgressItem, error: existingProgressItemError } =
+        await studentCheck.supabase
+          .from("progress_items")
+          .select("id")
+          .eq("id", progressItemId)
+          .eq("student_id", studentId)
+          .eq("instructor_id", DEMO_INSTRUCTOR_ID)
+          .maybeSingle();
+
+      if (existingProgressItemError) {
+        failAction(existingProgressItemError.message);
+      }
+
+      if (!existingProgressItem) {
+        failAction("Progress item was not found.");
+      }
+
+      const { error: clearFocusError } = await studentCheck.supabase
+        .from("progress_items")
+        .update({
+          current_focus: false,
+          updated_at: updatedAt,
+        })
+        .eq("student_id", studentId)
+        .eq("instructor_id", DEMO_INSTRUCTOR_ID)
+        .neq("id", progressItemId);
+
+      if (clearFocusError) {
+        failAction(clearFocusError.message);
+      }
+    }
+
     const { data, error } = await studentCheck.supabase
       .from("progress_items")
       .update(progressPayload)
@@ -202,22 +236,6 @@ export async function saveProgressItemAction(formData: FormData): Promise<void> 
     if (!data) {
       failAction("Progress item was not found.");
     }
-
-    if (currentFocus) {
-      const { error } = await studentCheck.supabase
-        .from("progress_items")
-        .update({
-          current_focus: false,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("student_id", studentId)
-        .eq("instructor_id", DEMO_INSTRUCTOR_ID)
-        .neq("id", progressItemId);
-
-      if (error) {
-        failAction(error.message);
-      }
-    }
   } else {
     const { data, error } = await studentCheck.supabase
       .from("progress_items")
@@ -225,6 +243,7 @@ export async function saveProgressItemAction(formData: FormData): Promise<void> 
         instructor_id: DEMO_INSTRUCTOR_ID,
         student_id: studentId,
         ...progressPayload,
+        current_focus: false,
       })
       .select("id")
       .maybeSingle();
@@ -234,18 +253,32 @@ export async function saveProgressItemAction(formData: FormData): Promise<void> 
     }
 
     if (currentFocus && data) {
-      const { error } = await studentCheck.supabase
+      const { error: clearFocusError } = await studentCheck.supabase
         .from("progress_items")
         .update({
           current_focus: false,
-          updated_at: new Date().toISOString(),
+          updated_at: updatedAt,
         })
         .eq("student_id", studentId)
         .eq("instructor_id", DEMO_INSTRUCTOR_ID)
         .neq("id", data.id);
 
-      if (error) {
-        failAction(error.message);
+      if (clearFocusError) {
+        failAction(clearFocusError.message);
+      }
+
+      const { error: setFocusError } = await studentCheck.supabase
+        .from("progress_items")
+        .update({
+          current_focus: true,
+          updated_at: updatedAt,
+        })
+        .eq("id", data.id)
+        .eq("student_id", studentId)
+        .eq("instructor_id", DEMO_INSTRUCTOR_ID);
+
+      if (setFocusError) {
+        failAction(setFocusError.message);
       }
     }
   }

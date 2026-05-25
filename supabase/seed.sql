@@ -5,18 +5,17 @@ on conflict (id) do update set
   studio_name = excluded.studio_name,
   updated_at = now();
 
-insert into public.students (id, instructor_id, name, profile_cue, current_focus, primary_weak_point, active)
+insert into public.students (id, instructor_id, name, profile_cue, primary_weak_point, active)
 values
-  ('21111111-1111-4111-8111-111111111111', '11111111-1111-4111-8111-111111111111', 'Minseo Han', 'Complete beginner, counts aloud well', 'Quarter-note groove with steady kick/snare placement', 'Rushes the last two counts when the fill appears', true),
-  ('22222222-2222-4222-8222-222222222222', '11111111-1111-4111-8111-111111111111', 'Daniel Kim', 'Hobby adult, wants to play band songs', '8-beat groove for 90s rock set list', 'Practice is uneven after work-heavy weeks', true),
-  ('23333333-3333-4333-8333-333333333333', '11111111-1111-4111-8111-111111111111', 'Yuna Choi', 'Practical-music audition prep', 'Ghost-note control inside funk groove', 'Fill entrances get tense above 92 bpm', true),
-  ('24444444-4444-4444-8444-444444444444', '11111111-1111-4111-8111-111111111111', 'Ethan Lee', 'Learns fastest by watching first', 'Paradiddle accents around the kit', 'Needs demonstration before verbal correction lands', true),
-  ('25555555-5555-4555-8555-555555555555', '11111111-1111-4111-8111-111111111111', 'Sora Jung', 'Intermediate student, strong groove feel', 'Two-bar fills with crash landing', 'Weak fills: hands speed up before the downbeat', true),
-  ('26666666-6666-4666-8666-666666666666', '11111111-1111-4111-8111-111111111111', 'Noah Baek', 'Middle school student, loves pop punk', 'Hi-hat openings inside chorus groove', 'Assignment follow-through drops without a small checklist', true)
+  ('21111111-1111-4111-8111-111111111111', '11111111-1111-4111-8111-111111111111', 'Minseo Han', 'Complete beginner, counts aloud well', 'Rushes the last two counts when the fill appears', true),
+  ('22222222-2222-4222-8222-222222222222', '11111111-1111-4111-8111-111111111111', 'Daniel Kim', 'Hobby adult, wants to play band songs', 'Practice is uneven after work-heavy weeks', true),
+  ('23333333-3333-4333-8333-333333333333', '11111111-1111-4111-8111-111111111111', 'Yuna Choi', 'Practical-music audition prep', 'Fill entrances get tense above 92 bpm', true),
+  ('24444444-4444-4444-8444-444444444444', '11111111-1111-4111-8111-111111111111', 'Ethan Lee', 'Learns fastest by watching first', 'Needs demonstration before verbal correction lands', true),
+  ('25555555-5555-4555-8555-555555555555', '11111111-1111-4111-8111-111111111111', 'Sora Jung', 'Intermediate student, strong groove feel', 'Weak fills: hands speed up before the downbeat', true),
+  ('26666666-6666-4666-8666-666666666666', '11111111-1111-4111-8111-111111111111', 'Noah Baek', 'Middle school student, loves pop punk', 'Assignment follow-through drops without a small checklist', true)
 on conflict (id) do update set
   name = excluded.name,
   profile_cue = excluded.profile_cue,
-  current_focus = excluded.current_focus,
   primary_weak_point = excluded.primary_weak_point,
   active = excluded.active,
   updated_at = now();

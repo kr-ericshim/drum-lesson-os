@@ -2,7 +2,7 @@
 
 ## Overview
 
-Drum Lesson OS v1 builds a focused instructor-side MVP in four vertical phases: first the app/data foundation, then readable student views, then editing workflows, then the pre-lesson briefing polish that makes the product useful in real teaching. The roadmap intentionally avoids broader studio CRM features until the progress and student-memory loop is proven.
+Drum Lesson OS v1 builds a focused instructor-side MVP in four vertical phases: first the app/data foundation, then readable student views, then editing workflows, then the pre-lesson briefing polish that makes the product useful in real teaching. A focused Phase 3C slice moved the current-focus source-of-truth and pre-lesson routine ahead of the remaining editing flows. The roadmap intentionally avoids broader studio CRM features until the progress and student-memory loop is proven.
 
 ## Phases
 
@@ -15,7 +15,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: App Foundation And Data Model** - Create the runnable app foundation, persistent database, schema, and sample teaching data. (completed 2026-05-22)
 - [x] **Phase 2: Student Roster And Detail Read Views** - Let the instructor browse students and read the full teaching context for one student. (completed 2026-05-25)
-- [ ] **Phase 3: Teaching Workflow Editing** - Add create/edit flows for students, traits, progress, lesson notes, assignments, and next lesson plans. (03A and 03B completed 2026-05-25)
+- [ ] **Phase 3: Teaching Workflow Editing** - Add create/edit flows for students, traits, progress, lesson notes, assignments, and next lesson plans. (03A, 03B, and 03C completed 2026-05-25)
 - [ ] **Phase 4: Pre-Lesson Briefing Polish** - Turn the dashboard into a fast scan surface for current focus, weak points, assignment status, and next actions.
 
 ## Phase Details
@@ -92,13 +92,14 @@ Plans:
   4. Instructor can add dated lesson notes with covered material, observations, practice assigned, and next-step hints.
   5. Instructor can record assignment status and update the next lesson plan.
 
-**Plans**: 4 plans
+**Plans**: 5 plans
 
 Plans:
 
 - [x] 03A: Add lesson note creation and next lesson plan editing as the first focused editing slice. (completed 2026-05-25)
 - [ ] 03-01: Add student profile and trait editing flows.
 - [x] 03B: Add progress item create/update flows. (completed 2026-05-25)
+- [x] 03C: Unify current focus on progress items and add Lesson Brief plus Today/Upcoming queue. (completed 2026-05-25)
 - [ ] 03-03: Add lesson note, assignment, and next lesson plan editing flows.
 
 ### Phase 4: Pre-Lesson Briefing Polish
@@ -107,19 +108,19 @@ Plans:
 **Mode:** mvp
 **UI hint**: yes
 **Depends on**: Phase 3
-**Requirements**: [ROST-02, PROG-03, NEXT-04]
+**Requirements**: [ROST-02, PROG-03, NEXT-04] (implemented by 03C; Phase 4 remains final polish and verification)
 **Success Criteria** (what must be TRUE):
 
-  1. Instructor can see each student's current focus from the roster without opening full history.
-  2. Roster surfaces primary weak point, assignment status, and next lesson action for each student.
-  3. Student detail and dashboard agree on the next lesson action.
+  1. Instructor can see each student's progress-derived current focus from the roster without opening full history.
+  2. Roster and queue surface primary weak point, assignment status, dated next lesson plans, and next lesson action.
+  3. Student detail, Lesson Brief, dashboard, and Progress tab agree on the current focus and next lesson action.
   4. The main dashboard is scannable on desktop and mobile without text overlap.
 
 **Plans**: 2 plans
 
 Plans:
 
-- [ ] 04-01: Add briefing indicators and current-focus summaries to dashboard and detail views.
+- [ ] 04-01: Polish briefing indicators, responsive density, and scan hierarchy now that 03C added the queue and Lesson Brief.
 - [ ] 04-02: Polish responsive layout, empty states, and verification coverage.
 
 ## Progress
@@ -131,5 +132,5 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4
 |-------|----------------|--------|-----------|
 | 1. App Foundation And Data Model | 3/3 | Complete   | 2026-05-22 |
 | 2. Student Roster And Detail Read Views | 3/3 | Complete   | 2026-05-25 |
-| 3. Teaching Workflow Editing | 2/4 | In progress | - |
+| 3. Teaching Workflow Editing | 3/5 | In progress | - |
 | 4. Pre-Lesson Briefing Polish | 0/2 | Not started | - |

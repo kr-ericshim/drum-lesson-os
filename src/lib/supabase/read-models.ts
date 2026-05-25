@@ -19,20 +19,38 @@ export type StudentRosterSourceRow = {
   id: string;
   name: string;
   profile_cue: string;
-  current_focus: string;
   primary_weak_point: string;
+  progress_items: ProgressItemSourceRow[];
   assignments: AssignmentContextRow[];
   next_lesson_plans: NextPlanContextRow[];
+};
+
+export type ProgressFocusSummary = {
+  id: string;
+  category: string;
+  status: string;
+  title: string;
+  observedOn: string;
+  detail: string;
+};
+
+export type StudentNextPlan = {
+  id: string;
+  nextAction: string;
+  priority: string;
+  plannedFor: string | null;
+  detail: string;
 };
 
 export type StudentRosterItem = {
   id: string;
   name: string;
   profileCue: string;
-  currentFocus: string;
+  currentFocus: ProgressFocusSummary | null;
   weakPoint: string;
   assignmentStatus: string;
   nextAction: string;
+  nextPlan: StudentNextPlan | null;
 };
 
 export type ProgressItemSourceRow = {
@@ -91,14 +109,6 @@ export type StudentAssignment = {
   detail: string;
 };
 
-export type StudentNextPlan = {
-  id: string;
-  nextAction: string;
-  priority: string;
-  plannedFor: string | null;
-  detail: string;
-};
-
 export type StudentLessonNote = {
   id: string;
   lessonDate: string;
@@ -108,12 +118,34 @@ export type StudentLessonNote = {
   nextStepHint: string;
 };
 
+export type LessonBrief = {
+  profileCue: string;
+  currentFocus: ProgressFocusSummary | null;
+  weakPoint: string;
+  nextAction: string;
+  assignmentReviewCue: string;
+  latestObservation: string;
+  firstCheck: string;
+};
+
 export type StudentDetail = StudentRosterItem & {
   progressItems: StudentProgressItem[];
   traits: StudentTrait[];
   assignment: StudentAssignment | null;
   nextPlan: StudentNextPlan | null;
   recentNotes: StudentLessonNote[];
+  lessonBrief: LessonBrief;
+};
+
+export type LessonQueueItem = {
+  studentId: string;
+  studentName: string;
+  currentFocus: ProgressFocusSummary | null;
+  assignmentStatus: string;
+  nextAction: string;
+  priority: string;
+  plannedFor: string;
+  dateState: "overdue" | "today" | "upcoming";
 };
 
 const priorityRank: Record<string, number> = {
@@ -140,19 +172,59 @@ export function pickPriorityNextPlan(nextPlans: NextPlanContextRow[]) {
   })[0];
 }
 
+export function pickCurrentFocusProgressItem(
+  progressItems: ProgressItemSourceRow[],
+): ProgressFocusSummary | null {
+  const focusItem = [...progressItems]
+    .filter((item) => item.current_focus)
+    .sort(
+      (a, b) =>
+        b.observed_on.localeCompare(a.observed_on) ||
+        a.title.localeCompare(b.title) ||
+        a.id.localeCompare(b.id),
+    )[0];
+
+  return focusItem ? mapProgressFocusSummary(focusItem) : null;
+}
+
+function mapProgressFocusSummary(item: ProgressItemSourceRow): ProgressFocusSummary {
+  return {
+    id: item.id,
+    category: item.category,
+    status: item.status,
+    title: item.title,
+    observedOn: item.observed_on,
+    detail: item.detail,
+  };
+}
+
+function mapNextPlan(nextPlan: NextPlanContextRow | undefined): StudentNextPlan | null {
+  return nextPlan
+    ? {
+        id: nextPlan.id,
+        nextAction: nextPlan.next_action,
+        priority: nextPlan.priority,
+        plannedFor: nextPlan.planned_for ?? null,
+        detail: nextPlan.detail ?? "",
+      }
+    : null;
+}
+
 export function mapStudentRoster(students: StudentRosterSourceRow[]): StudentRosterItem[] {
   return students.map((student) => {
     const assignment = pickLatestAssignment(student.assignments);
     const nextPlan = pickPriorityNextPlan(student.next_lesson_plans);
+    const mappedNextPlan = mapNextPlan(nextPlan);
 
     return {
       id: student.id,
       name: student.name,
       profileCue: student.profile_cue,
-      currentFocus: student.current_focus,
+      currentFocus: pickCurrentFocusProgressItem(student.progress_items),
       weakPoint: student.primary_weak_point,
       assignmentStatus: assignment?.status ?? "not_started",
-      nextAction: nextPlan?.next_action ?? "Set next lesson action",
+      nextAction: mappedNextPlan?.nextAction ?? "Set next lesson action",
+      nextPlan: mappedNextPlan,
     };
   });
 }
@@ -161,20 +233,41 @@ export function mapStudentDetail(student: StudentDetailSourceRow): StudentDetail
   const [rosterItem] = mapStudentRoster([student]);
   const assignment = pickLatestAssignment(student.assignments);
   const nextPlan = pickPriorityNextPlan(student.next_lesson_plans);
+  const progressItems = [...student.progress_items]
+    .sort((a, b) => b.observed_on.localeCompare(a.observed_on))
+    .map((item) => ({
+      id: item.id,
+      category: item.category,
+      status: item.status,
+      title: item.title,
+      currentFocus: item.current_focus,
+      observedOn: item.observed_on,
+      detail: item.detail,
+    }));
+  const recentNotes = [...student.lesson_notes]
+    .sort((a, b) => b.lesson_date.localeCompare(a.lesson_date))
+    .slice(0, 3)
+    .map((note) => ({
+      id: note.id,
+      lessonDate: note.lesson_date,
+      coveredMaterial: note.covered_material,
+      observations: note.observations,
+      practiceAssigned: note.practice_assigned,
+      nextStepHint: note.next_step_hint,
+    }));
+  const mappedAssignment = assignment
+    ? {
+        status: assignment.status,
+        title: assignment.title ?? "Current assignment",
+        dueDate: assignment.due_date ?? null,
+        detail: assignment.detail ?? "",
+      }
+    : null;
+  const mappedNextPlan = mapNextPlan(nextPlan);
 
   return {
     ...rosterItem,
-    progressItems: [...student.progress_items]
-      .sort((a, b) => b.observed_on.localeCompare(a.observed_on))
-      .map((item) => ({
-        id: item.id,
-        category: item.category,
-        status: item.status,
-        title: item.title,
-        currentFocus: item.current_focus,
-        observedOn: item.observed_on,
-        detail: item.detail,
-      })),
+    progressItems,
     traits: [...student.student_traits]
       .sort((a, b) => a.trait_type.localeCompare(b.trait_type) || a.label.localeCompare(b.label))
       .map((trait) => ({
@@ -183,33 +276,112 @@ export function mapStudentDetail(student: StudentDetailSourceRow): StudentDetail
         label: trait.label,
         detail: trait.detail,
       })),
-    assignment: assignment
-      ? {
-          status: assignment.status,
-          title: assignment.title ?? "Current assignment",
-          dueDate: assignment.due_date ?? null,
-          detail: assignment.detail ?? "",
-        }
-      : null,
-    nextPlan: nextPlan
-      ? {
-          id: nextPlan.id,
-          nextAction: nextPlan.next_action,
-          priority: nextPlan.priority,
-          plannedFor: nextPlan.planned_for ?? null,
-          detail: nextPlan.detail ?? "",
-        }
-      : null,
-    recentNotes: [...student.lesson_notes]
-      .sort((a, b) => b.lesson_date.localeCompare(a.lesson_date))
-      .slice(0, 3)
-      .map((note) => ({
-        id: note.id,
-        lessonDate: note.lesson_date,
-        coveredMaterial: note.covered_material,
-        observations: note.observations,
-        practiceAssigned: note.practice_assigned,
-        nextStepHint: note.next_step_hint,
-      })),
+    assignment: mappedAssignment,
+    nextPlan: mappedNextPlan,
+    recentNotes,
+    lessonBrief: buildLessonBrief({
+      profileCue: rosterItem.profileCue,
+      currentFocus: rosterItem.currentFocus,
+      weakPoint: rosterItem.weakPoint,
+      assignment: mappedAssignment,
+      nextAction: rosterItem.nextAction,
+      nextPlan: mappedNextPlan,
+      recentNotes,
+    }),
   };
+}
+
+export function buildLessonBrief({
+  profileCue,
+  currentFocus,
+  weakPoint,
+  assignment,
+  nextAction,
+  nextPlan,
+  recentNotes,
+}: {
+  profileCue: string;
+  currentFocus: ProgressFocusSummary | null;
+  weakPoint: string;
+  assignment: StudentAssignment | null;
+  nextAction: string;
+  nextPlan: StudentNextPlan | null;
+  recentNotes: StudentLessonNote[];
+}): LessonBrief {
+  const latestNote = recentNotes[0];
+
+  return {
+    profileCue,
+    currentFocus,
+    weakPoint,
+    nextAction,
+    assignmentReviewCue: buildAssignmentReviewCue(assignment),
+    latestObservation: latestNote?.observations ?? "No recent observation recorded.",
+    firstCheck: nextPlan?.nextAction ?? latestNote?.nextStepHint ?? currentFocus?.title ?? "Set next lesson action",
+  };
+}
+
+function buildAssignmentReviewCue(assignment: StudentAssignment | null) {
+  if (!assignment) {
+    return "No assignment recorded yet.";
+  }
+
+  if (assignment.status === "needs_review") {
+    return `${assignment.title} needs review.`;
+  }
+
+  if (assignment.status === "complete") {
+    return `${assignment.title} is complete.`;
+  }
+
+  if (assignment.status === "paused") {
+    return `${assignment.title} is paused.`;
+  }
+
+  if (assignment.status === "not_started") {
+    return `${assignment.title} has not started.`;
+  }
+
+  return `${assignment.title} is in progress.`;
+}
+
+export function mapLessonQueue(
+  students: StudentRosterItem[],
+  todayDate: string,
+): LessonQueueItem[] {
+  return students
+    .filter((student) => student.nextPlan?.plannedFor)
+    .map((student) => {
+      const plannedFor = student.nextPlan?.plannedFor ?? "";
+
+      return {
+        studentId: student.id,
+        studentName: student.name,
+        currentFocus: student.currentFocus,
+        assignmentStatus: student.assignmentStatus,
+        nextAction: student.nextAction,
+        priority: student.nextPlan?.priority ?? "normal",
+        plannedFor,
+        dateState: getDateState(plannedFor, todayDate),
+      };
+    })
+    .sort(
+      (a, b) =>
+        a.plannedFor.localeCompare(b.plannedFor) ||
+        (priorityRank[a.priority] ?? priorityRank.normal) -
+          (priorityRank[b.priority] ?? priorityRank.normal) ||
+        a.studentName.localeCompare(b.studentName),
+    );
+}
+
+function getDateState(plannedFor: string, todayDate: string): LessonQueueItem["dateState"] {
+  if (plannedFor < todayDate) {
+    return "overdue";
+  }
+
+  if (plannedFor === todayDate) {
+    return "today";
+  }
+
+  return "upcoming";
 }

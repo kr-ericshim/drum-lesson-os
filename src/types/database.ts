@@ -33,7 +33,6 @@ export type Database = {
           instructor_id: string;
           name: string;
           profile_cue: string;
-          current_focus: string;
           primary_weak_point: string;
           active: boolean;
           created_at: string;
@@ -44,7 +43,6 @@ export type Database = {
           instructor_id: string;
           name: string;
           profile_cue: string;
-          current_focus: string;
           primary_weak_point: string;
           active?: boolean;
           created_at?: string;
@@ -55,7 +53,6 @@ export type Database = {
           instructor_id?: string;
           name?: string;
           profile_cue?: string;
-          current_focus?: string;
           primary_weak_point?: string;
           active?: boolean;
           created_at?: string;

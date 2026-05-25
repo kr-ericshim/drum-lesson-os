@@ -29,10 +29,10 @@ export async function getStudentRoster(): Promise<{
         id,
         name,
         profile_cue,
-        current_focus,
         primary_weak_point,
+        progress_items(id, category, status, title, current_focus, observed_on, detail),
         assignments(status, created_at, title, due_date, detail),
-        next_lesson_plans(id, next_action, priority, created_at)
+        next_lesson_plans(id, next_action, priority, created_at, planned_for, detail)
       `,
     )
     .eq("active", true)
@@ -70,7 +70,6 @@ export async function getStudentDetail(studentId: string): Promise<{
         id,
         name,
         profile_cue,
-        current_focus,
         primary_weak_point,
         progress_items(id, category, status, title, current_focus, observed_on, detail),
         student_traits(id, trait_type, label, detail),

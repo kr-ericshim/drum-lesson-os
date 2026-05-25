@@ -1,7 +1,9 @@
+import { LessonQueue } from "@/components/dashboard/lesson-queue";
 import { SetupStatusPanel } from "@/components/dashboard/setup-status-panel";
 import { StudentRosterPreview } from "@/components/dashboard/student-roster-preview";
 import { getSupabaseSetupStatus } from "@/lib/env";
 import { getStudentRoster } from "@/lib/supabase/queries";
+import { mapLessonQueue } from "@/lib/supabase/read-models";
 
 export default async function Home() {
   const setupStatus = getSupabaseSetupStatus();
@@ -9,6 +11,10 @@ export default async function Home() {
     setupStatus.state === "configured"
       ? await getStudentRoster()
       : { data: [], error: null };
+  const lessonQueue =
+    setupStatus.state === "configured"
+      ? mapLessonQueue(rosterResult.data, getTodayDateInputValue())
+      : [];
 
   return (
     <main className="min-h-screen bg-background text-foreground">
@@ -24,6 +30,8 @@ export default async function Home() {
             </p>
           </div>
 
+          <LessonQueue items={lessonQueue} />
+
           <StudentRosterPreview
             students={rosterResult.data}
             error={rosterResult.error}
@@ -37,4 +45,17 @@ export default async function Home() {
       </div>
     </main>
   );
+}
+
+function getTodayDateInputValue() {
+  const parts = new Intl.DateTimeFormat("en", {
+    day: "2-digit",
+    month: "2-digit",
+    timeZone: "Asia/Seoul",
+    year: "numeric",
+  }).formatToParts(new Date());
+
+  const partByType = new Map(parts.map((part) => [part.type, part.value]));
+
+  return `${partByType.get("year")}-${partByType.get("month")}-${partByType.get("day")}`;
 }

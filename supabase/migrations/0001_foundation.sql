@@ -13,7 +13,6 @@ create table if not exists public.students (
   instructor_id uuid not null references public.instructors(id) on delete cascade,
   name text not null,
   profile_cue text not null,
-  current_focus text not null,
   primary_weak_point text not null,
   active boolean not null default true,
   created_at timestamptz not null default now(),

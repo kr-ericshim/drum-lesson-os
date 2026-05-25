@@ -47,7 +47,9 @@ export function StudentDetailHeader({ student }: StudentDetailHeaderProps) {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
           <div>
             <p className="field-label">Current focus</p>
-            <p className="mt-1 text-sm leading-5">{student.currentFocus}</p>
+            <p className="mt-1 text-sm leading-5">
+              {student.currentFocus?.title ?? "No current focus set"}
+            </p>
           </div>
           <div>
             <p className="field-label flex items-center gap-1.5">
