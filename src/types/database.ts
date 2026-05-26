@@ -71,6 +71,7 @@ export type Database = {
           current_focus: boolean;
           observed_on: string;
           detail: string;
+          tempo_note: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -84,6 +85,7 @@ export type Database = {
           current_focus?: boolean;
           observed_on?: string;
           detail: string;
+          tempo_note?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -97,6 +99,7 @@ export type Database = {
           current_focus?: boolean;
           observed_on?: string;
           detail?: string;
+          tempo_note?: string | null;
           created_at?: string;
           updated_at?: string;
         };

@@ -1,6 +1,7 @@
 import { saveProgressItemAction } from "@/app/students/[studentId]/actions";
 import { FormSubmitButton } from "@/components/students/form-submit-button";
 import { progressLabelByStatus } from "@/components/students/status-labels";
+import { TempoNoteField } from "@/components/students/tempo-note-field";
 import {
   progressItemCategories,
   progressItemStatuses,
@@ -116,6 +117,8 @@ export function ProgressItemForm({
           required
         />
       </div>
+
+      <TempoNoteField defaultValue={progressItem?.tempoNote} fieldPrefix={fieldPrefix} />
 
       <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <label className="flex items-start gap-3 text-sm leading-5">

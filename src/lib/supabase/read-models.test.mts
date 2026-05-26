@@ -36,12 +36,14 @@ test("mapStudentRoster derives current focus from focused progress item", () => 
           current_focus: true,
           observed_on: "2026-05-15",
           detail: "Main focus for next lesson.",
+          tempo_note: "Clean at 84, tense at 96.",
         },
       ],
       assignments: [
-        { status: "not_started", created_at: "2026-05-01T10:00:00.000Z" },
-        { status: "needs_review", created_at: "2026-05-15T10:00:00.000Z" },
+        { id: "assignment-old", status: "not_started", created_at: "2026-05-01T10:00:00.000Z" },
+        { id: "assignment-new", status: "needs_review", created_at: "2026-05-15T10:00:00.000Z" },
       ],
+      lesson_notes: [{ lesson_date: "2026-05-18" }],
       next_lesson_plans: [
         {
           id: "plan-1",
@@ -67,9 +69,15 @@ test("mapStudentRoster derives current focus from focused progress item", () => 
         title: "Syncopated eighth-note groove",
         observedOn: "2026-05-15",
         detail: "Main focus for next lesson.",
+        tempoNote: "Clean at 84, tense at 96.",
       },
       weakPoint: "Rushing fills",
       assignmentStatus: "needs_review",
+      assignmentId: "assignment-new",
+      assignmentTitle: null,
+      lastLessonDate: "2026-05-18",
+      hasRecentNote: true,
+      progressNeedsReview: true,
       nextAction: "Check slow fill transitions",
       nextPlan: {
         id: "plan-1",
@@ -101,12 +109,61 @@ test("mapStudentRoster returns null current focus when no focused progress item 
         },
       ],
       assignments: [],
+      lesson_notes: [],
       next_lesson_plans: [],
     },
-  ]);
+  ], "2026-05-25");
 
   assert.equal(roster[0]?.currentFocus, null);
   assert.equal(roster[0]?.nextPlan, null);
+  assert.equal(roster[0]?.lastLessonDate, null);
+  assert.equal(roster[0]?.hasRecentNote, false);
+  assert.equal(roster[0]?.progressNeedsReview, false);
+});
+
+test("mapStudentRoster derives filter source fields for recent notes and progress review", () => {
+  const roster = mapStudentRoster(
+    [
+      {
+        id: "recent-review",
+        name: "Recent Review",
+        profile_cue: "Recent note",
+        primary_weak_point: "Weak point",
+        progress_items: [
+          {
+            id: "progress-review",
+            category: "song",
+            status: "needs_review",
+            title: "Review groove",
+            current_focus: false,
+            observed_on: "2026-05-20",
+            detail: "Review this.",
+          },
+        ],
+        assignments: [],
+        lesson_notes: [{ lesson_date: "2026-05-12" }, { lesson_date: "2026-05-20" }],
+        next_lesson_plans: [],
+      },
+      {
+        id: "old-note",
+        name: "Old Note",
+        profile_cue: "Old note",
+        primary_weak_point: "Weak point",
+        progress_items: [],
+        assignments: [],
+        lesson_notes: [{ lesson_date: "2026-05-10" }],
+        next_lesson_plans: [],
+      },
+    ],
+    "2026-05-26",
+  );
+
+  assert.equal(roster[0]?.lastLessonDate, "2026-05-20");
+  assert.equal(roster[0]?.hasRecentNote, true);
+  assert.equal(roster[0]?.progressNeedsReview, true);
+  assert.equal(roster[1]?.lastLessonDate, "2026-05-10");
+  assert.equal(roster[1]?.hasRecentNote, false);
+  assert.equal(roster[1]?.progressNeedsReview, false);
 });
 
 test("pickCurrentFocusProgressItem prefers the newest focused progress item", () => {
@@ -181,11 +238,12 @@ test("pickPriorityNextPlan prefers high priority before recency", () => {
 
 test("pickLatestAssignment chooses newest assignment status", () => {
   const assignment = pickLatestAssignment([
-    { status: "in_progress", created_at: "2026-05-10T10:00:00.000Z" },
-    { status: "complete", created_at: "2026-05-21T10:00:00.000Z" },
+    { id: "older-assignment", status: "in_progress", created_at: "2026-05-10T10:00:00.000Z" },
+    { id: "newer-assignment", status: "complete", created_at: "2026-05-21T10:00:00.000Z" },
   ]);
 
   assert.equal(assignment?.status, "complete");
+  assert.equal(assignment?.id, "newer-assignment");
 });
 
 test("mapStudentDetail limits recent notes to newest three by lesson date", () => {
@@ -262,6 +320,122 @@ test("mapStudentDetail limits recent notes to newest three by lesson date", () =
   assert.equal(detail.lessonBrief.latestObservation, "Newest observation");
 });
 
+test("mapStudentDetail feeds closeout-updated note assignment and next plan into Lesson Brief", () => {
+  const detail = mapStudentDetail({
+    id: "student-1",
+    name: "Mina Park",
+    profile_cue: "Likes compact goals",
+    primary_weak_point: "Rushing fills",
+    progress_items: [],
+    student_traits: [],
+    assignments: [
+      {
+        id: "assignment-closeout",
+        status: "needs_review",
+        created_at: "2026-05-26T10:00:00.000Z",
+        title: "Closeout assignment",
+        due_date: "2026-05-29",
+        detail: "Review the closeout practice task.",
+      },
+    ],
+    next_lesson_plans: [
+      {
+        id: "plan-closeout",
+        next_action: "Check the closeout assignment first",
+        priority: "high",
+        created_at: "2026-05-26T10:00:00.000Z",
+        planned_for: "2026-05-29",
+        detail: "Do this before adding material.",
+      },
+    ],
+    lesson_notes: [
+      {
+        id: "note-closeout",
+        lesson_date: "2026-05-26",
+        created_at: "2026-05-26T10:00:00.000Z",
+        covered_material: "Closeout material",
+        observations: "Closeout observation should lead the brief.",
+        practice_assigned: "Closeout practice",
+        next_step_hint: "Closeout hint",
+      },
+    ],
+  });
+
+  assert.equal(detail.assignment?.id, "assignment-closeout");
+  assert.equal(detail.nextPlan?.id, "plan-closeout");
+  assert.equal(detail.lessonBrief.latestObservation, "Closeout observation should lead the brief.");
+  assert.equal(detail.lessonBrief.assignmentReviewCue, "Closeout assignment needs review.");
+  assert.equal(detail.lessonBrief.firstCheck, "Check the closeout assignment first");
+});
+
+test("mapStudentDetail includes weak-point traits in the Lesson Brief weak point", () => {
+  const detail = mapStudentDetail({
+    id: "student-1",
+    name: "Mina Park",
+    profile_cue: "Likes compact goals",
+    primary_weak_point: "Rushing fills",
+    progress_items: [],
+    student_traits: [
+      {
+        id: "weak-trait",
+        trait_type: "weak_point",
+        label: "Left hand tension",
+        detail: "Grip tightens when ghost notes move above 92 bpm.",
+      },
+      {
+        id: "learning-trait",
+        trait_type: "learning_style",
+        label: "Show first",
+        detail: "Copies a demo faster than verbal instructions.",
+      },
+    ],
+    assignments: [],
+    next_lesson_plans: [],
+    lesson_notes: [],
+  });
+
+  assert.equal(
+    detail.lessonBrief.weakPoint,
+    "Rushing fills. Left hand tension: Grip tightens when ghost notes move above 92 bpm.",
+  );
+});
+
+test("mapStudentDetail uses newest same-date note for closeout Lesson Brief", () => {
+  const detail = mapStudentDetail({
+    id: "student-1",
+    name: "Mina Park",
+    profile_cue: "Likes compact goals",
+    primary_weak_point: "Rushing fills",
+    progress_items: [],
+    student_traits: [],
+    assignments: [],
+    next_lesson_plans: [],
+    lesson_notes: [
+      {
+        id: "same-day-old",
+        lesson_date: "2026-05-26",
+        created_at: "2026-05-26T09:00:00.000Z",
+        covered_material: "Earlier material",
+        observations: "Earlier same-day observation.",
+        practice_assigned: "Earlier practice",
+        next_step_hint: "Earlier hint",
+      },
+      {
+        id: "same-day-new",
+        lesson_date: "2026-05-26",
+        created_at: "2026-05-26T11:00:00.000Z",
+        covered_material: "Later material",
+        observations: "Later same-day closeout observation.",
+        practice_assigned: "Later practice",
+        next_step_hint: "Later hint",
+      },
+    ],
+  });
+
+  assert.equal(detail.recentNotes[0]?.id, "same-day-new");
+  assert.equal(detail.lessonBrief.latestObservation, "Later same-day closeout observation.");
+});
+
 test("buildLessonBrief falls back to the latest note hint when next plan is missing", () => {
   const brief = buildLessonBrief({
     profileCue: "Learns by watching first",
@@ -300,6 +474,7 @@ test("buildLessonBrief carries the briefing fields used by the UI", () => {
     currentFocus,
     weakPoint: "Practice is uneven",
     assignment: {
+      id: "assignment-1",
       status: "needs_review",
       title: "Song section loop",
       dueDate: "2026-05-27",

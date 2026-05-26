@@ -55,7 +55,7 @@ export function LessonQueue({ items }: LessonQueueProps) {
             return (
               <article
                 key={`${item.studentId}-${item.plannedFor}`}
-                className="grid gap-4 p-5 xl:grid-cols-[160px_minmax(150px,0.7fr)_minmax(0,1.15fr)_minmax(0,1fr)_120px] xl:items-start"
+                className="grid gap-4 p-5 xl:grid-cols-[160px_minmax(150px,0.7fr)_minmax(0,1.15fr)_minmax(0,1fr)_136px] xl:items-start"
               >
                 <div className="flex flex-wrap items-center gap-2 xl:block xl:space-y-2">
                   <Badge variant={dateStateVariant[item.dateState]}>
@@ -90,7 +90,7 @@ export function LessonQueue({ items }: LessonQueueProps) {
                 </div>
 
                 <div className="flex xl:justify-end">
-                  <Button asChild variant="secondary" className="w-full sm:w-auto">
+                  <Button asChild variant="secondary" className="w-full whitespace-nowrap sm:w-auto">
                     <Link href={`/students/${item.studentId}`} aria-label={`Open student ${item.studentName}`}>
                       Open student
                     </Link>

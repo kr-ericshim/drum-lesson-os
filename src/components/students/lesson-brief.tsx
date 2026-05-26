@@ -27,7 +27,7 @@ export function LessonBrief({ student }: LessonBriefProps) {
         <BriefField label="Profile cue" value={brief.profileCue} />
         <BriefField
           label="Current focus"
-          value={brief.currentFocus?.title ?? "No current focus set"}
+          value={formatCurrentFocusBrief(brief.currentFocus)}
           badge={brief.currentFocus ? "Progress focus" : undefined}
         />
         <BriefField
@@ -55,6 +55,16 @@ export function LessonBrief({ student }: LessonBriefProps) {
   );
 }
 
+function formatCurrentFocusBrief(currentFocus: StudentDetail["currentFocus"]) {
+  if (!currentFocus) {
+    return "No current focus set";
+  }
+
+  return currentFocus.tempoNote
+    ? `${currentFocus.title} · ${currentFocus.tempoNote}`
+    : currentFocus.title;
+}
+
 function BriefField({
   badge,
   icon,
@@ -75,7 +85,7 @@ function BriefField({
         </p>
         {badge ? <Badge variant="muted">{badge}</Badge> : null}
       </div>
-      <p className="mt-2 text-sm leading-5 text-pretty">{value}</p>
+      <p className="mt-2 break-words text-sm leading-5 text-pretty">{value}</p>
     </div>
   );
 }

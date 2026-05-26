@@ -30,8 +30,9 @@ export async function getStudentRoster(): Promise<{
         name,
         profile_cue,
         primary_weak_point,
-        progress_items(id, category, status, title, current_focus, observed_on, detail),
-        assignments(status, created_at, title, due_date, detail),
+        progress_items(id, category, status, title, current_focus, observed_on, detail, tempo_note),
+        assignments(id, status, created_at, title, due_date, detail),
+        lesson_notes(lesson_date),
         next_lesson_plans(id, next_action, priority, created_at, planned_for, detail)
       `,
     )
@@ -71,11 +72,11 @@ export async function getStudentDetail(studentId: string): Promise<{
         name,
         profile_cue,
         primary_weak_point,
-        progress_items(id, category, status, title, current_focus, observed_on, detail),
+        progress_items(id, category, status, title, current_focus, observed_on, detail, tempo_note),
         student_traits(id, trait_type, label, detail),
-        assignments(status, created_at, title, due_date, detail),
+        assignments(id, status, created_at, title, due_date, detail),
         next_lesson_plans(id, next_action, priority, created_at, planned_for, detail),
-        lesson_notes(id, lesson_date, covered_material, observations, practice_assigned, next_step_hint)
+        lesson_notes(id, lesson_date, created_at, covered_material, observations, practice_assigned, next_step_hint)
       `,
     )
     .eq("id", studentId)

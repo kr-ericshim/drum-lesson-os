@@ -47,7 +47,7 @@ export function StudentDetailHeader({ student }: StudentDetailHeaderProps) {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
           <div>
             <p className="field-label">Current focus</p>
-            <p className="mt-1 text-sm leading-5">
+            <p className="mt-1 break-words text-sm leading-5">
               {student.currentFocus?.title ?? "No current focus set"}
             </p>
           </div>
@@ -56,7 +56,7 @@ export function StudentDetailHeader({ student }: StudentDetailHeaderProps) {
               <ArrowRight className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
               Next lesson
             </p>
-            <p className="mt-1 text-sm leading-5">{student.nextAction}</p>
+            <p className="mt-1 break-words text-sm leading-5">{student.nextAction}</p>
           </div>
         </div>
       </div>

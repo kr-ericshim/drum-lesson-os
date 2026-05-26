@@ -3,6 +3,7 @@ import { ArrowRight, AlertTriangle } from "lucide-react";
 
 import { Badge, type BadgeProps } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { StudentQuickActions } from "@/components/dashboard/student-quick-actions";
 import type { StudentRosterItem } from "@/lib/supabase/queries";
 
 type StudentSummaryRowProps = {
@@ -77,6 +78,7 @@ export function StudentSummaryRow({ student }: StudentSummaryRowProps) {
           </Button>
         </div>
       </div>
+      <StudentQuickActions student={student} />
     </article>
   );
 }

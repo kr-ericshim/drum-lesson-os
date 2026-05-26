@@ -20,14 +20,14 @@ on conflict (id) do update set
   active = excluded.active,
   updated_at = now();
 
-insert into public.progress_items (instructor_id, student_id, category, status, title, current_focus, observed_on, detail)
+insert into public.progress_items (instructor_id, student_id, category, status, title, current_focus, observed_on, detail, tempo_note)
 values
-  ('11111111-1111-4111-8111-111111111111', '21111111-1111-4111-8111-111111111111', 'technique', 'in_progress', 'Basic 8-beat coordination', true, '2026-05-12', 'Can place kick and snare cleanly at slow tempo; needs count-aloud habit for fills.'),
-  ('11111111-1111-4111-8111-111111111111', '22222222-2222-4222-8222-222222222222', 'song', 'needs_review', 'Song groove: Come As You Are-style pattern', true, '2026-05-13', 'Groove is musical when relaxed, but tempo drops after missed entrances.'),
-  ('11111111-1111-4111-8111-111111111111', '23333333-3333-4333-8333-333333333333', 'genre', 'in_progress', 'Funk ghost-note comping', true, '2026-05-15', 'Audition prep focus: keep left-hand ghost notes lower than backbeat.'),
-  ('11111111-1111-4111-8111-111111111111', '24444444-4444-4444-8444-444444444444', 'rudiment', 'steady', 'Paradiddle orchestration', true, '2026-05-16', 'After watching a two-bar demo, can mirror accent shapes around toms.'),
-  ('11111111-1111-4111-8111-111111111111', '25555555-5555-4555-8555-555555555555', 'technique', 'needs_review', 'Two-bar fill timing', true, '2026-05-18', 'Weak fills show up when moving from snare to floor tom; downbeat crash lands early.'),
-  ('11111111-1111-4111-8111-111111111111', '26666666-6666-4666-8666-666666666666', 'assignment', 'in_progress', 'Hi-hat opening checklist', true, '2026-05-19', 'Small checklist improves consistency more than a long practice note.')
+  ('11111111-1111-4111-8111-111111111111', '21111111-1111-4111-8111-111111111111', 'technique', 'in_progress', 'Basic 8-beat coordination', true, '2026-05-12', 'Can place kick and snare cleanly at slow tempo; needs count-aloud habit for fills.', 'Comfortable at 62 with counting aloud.'),
+  ('11111111-1111-4111-8111-111111111111', '22222222-2222-4222-8222-222222222222', 'song', 'needs_review', 'Song groove: Come As You Are-style pattern', true, '2026-05-13', 'Groove is musical when relaxed, but tempo drops after missed entrances.', 'Clean around 82; drops after missed entrances.'),
+  ('11111111-1111-4111-8111-111111111111', '23333333-3333-4333-8333-333333333333', 'genre', 'in_progress', 'Funk ghost-note comping', true, '2026-05-15', 'Audition prep focus: keep left-hand ghost notes lower than backbeat.', 'Clean at 84, tense at 96.'),
+  ('11111111-1111-4111-8111-111111111111', '24444444-4444-4444-8444-444444444444', 'rudiment', 'steady', 'Paradiddle orchestration', true, '2026-05-16', 'After watching a two-bar demo, can mirror accent shapes around toms.', null),
+  ('11111111-1111-4111-8111-111111111111', '25555555-5555-4555-8555-555555555555', 'technique', 'needs_review', 'Two-bar fill timing', true, '2026-05-18', 'Weak fills show up when moving from snare to floor tom; downbeat crash lands early.', 'Rushes above 88 when moving to floor tom.'),
+  ('11111111-1111-4111-8111-111111111111', '26666666-6666-4666-8666-666666666666', 'assignment', 'in_progress', 'Hi-hat opening checklist', true, '2026-05-19', 'Small checklist improves consistency more than a long practice note.', null)
 on conflict do nothing;
 
 insert into public.student_traits (instructor_id, student_id, trait_type, label, detail)

@@ -1,6 +1,9 @@
+import Link from "next/link";
+
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
-import { StudentSummaryRow } from "@/components/dashboard/student-summary-row";
+import { Button } from "@/components/ui/button";
+import { FilterableStudentRoster } from "@/components/dashboard/filterable-student-roster";
 import type { StudentRosterItem } from "@/lib/supabase/queries";
 
 type StudentRosterPreviewProps = {
@@ -18,16 +21,21 @@ export function StudentRosterPreview({
 }: StudentRosterPreviewProps) {
   return (
     <section className="space-y-4" aria-labelledby="student-roster-heading">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="quiet-label">Student roster</p>
           <h2 id="student-roster-heading" className="mt-2 text-[22px] font-semibold leading-[1.2] text-pretty">
             Student roster
           </h2>
         </div>
-        <p className="max-w-sm text-sm leading-5 text-muted-foreground">
-          Open a student to review progress, traits, notes, and next lesson cues.
-        </p>
+        <div className="flex flex-col gap-3 sm:items-end">
+          <p className="max-w-sm text-sm leading-5 text-muted-foreground sm:text-right">
+            Open a student to review progress, traits, notes, and next lesson cues.
+          </p>
+          <Button asChild variant="secondary">
+            <Link href="/students/new">Add student</Link>
+          </Button>
+        </div>
       </div>
 
       <Separator />
@@ -66,11 +74,7 @@ export function StudentRosterPreview({
       ) : null}
 
       {!isLoading && !error && students.length > 0 ? (
-        <div className="space-y-3">
-          {students.map((student) => (
-            <StudentSummaryRow key={student.id} student={student} />
-          ))}
-        </div>
+        <FilterableStudentRoster students={students} />
       ) : null}
     </section>
   );
