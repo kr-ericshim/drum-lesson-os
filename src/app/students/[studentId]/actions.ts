@@ -2,8 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
-import { DEMO_INSTRUCTOR_ID } from "@/lib/demo-instructor";
-import { createServerSupabaseAnonClient } from "@/lib/supabase/server";
+import { loadCurrentInstructor } from "@/lib/auth/instructor";
 import {
   assignmentInputSchema,
   lessonNoteInputSchema,
@@ -42,14 +41,17 @@ function getTodayDateInputValue() {
   return `${partByType.get("year")}-${partByType.get("month")}-${partByType.get("day")}`;
 }
 
-async function ensureDemoStudent(studentId: string) {
-  const supabase = createServerSupabaseAnonClient();
+async function ensureOwnedStudent(studentId: string) {
+  const instructorResult = await loadCurrentInstructor();
+  const supabase = instructorResult.supabase;
 
-  if (!supabase) {
+  if (!instructorResult.ok || !supabase) {
     return {
       supabase,
       ok: false,
-      message: "Supabase environment is not configured.",
+      message: instructorResult.ok
+        ? "Supabase environment is not configured."
+        : instructorResult.message,
     } as const;
   }
 
@@ -57,7 +59,7 @@ async function ensureDemoStudent(studentId: string) {
     .from("students")
     .select("id, slug")
     .eq("id", studentId)
-    .eq("instructor_id", DEMO_INSTRUCTOR_ID)
+    .eq("instructor_id", instructorResult.instructor.id)
     .maybeSingle();
 
   if (error) {
@@ -65,10 +67,20 @@ async function ensureDemoStudent(studentId: string) {
   }
 
   if (!data) {
-    return { supabase, ok: false, message: "Student was not found." } as const;
+    return {
+      supabase,
+      ok: false,
+      message: "Student was not found.",
+    } as const;
   }
 
-  return { supabase, ok: true, message: "", slug: data.slug as string | null } as const;
+  return {
+    supabase,
+    instructorId: instructorResult.instructor.id,
+    ok: true,
+    message: "",
+    slug: data.slug as string | null,
+  } as const;
 }
 
 function revalidateStudentPaths(studentId: string, studentSlug?: string | null) {
@@ -96,14 +108,14 @@ export async function createLessonNoteAction(formData: FormData): Promise<void> 
 
   const { studentId, lessonDate, coveredMaterial, observations, practiceAssigned, nextStepHint } =
     parsed.data;
-  const studentCheck = await ensureDemoStudent(studentId);
+  const studentCheck = await ensureOwnedStudent(studentId);
 
   if (!studentCheck.ok) {
     failAction(studentCheck.message);
   }
 
   const { error } = await studentCheck.supabase.from("lesson_notes").insert({
-    instructor_id: DEMO_INSTRUCTOR_ID,
+    instructor_id: studentCheck.instructorId,
     student_id: studentId,
     lesson_date: lessonDate,
     covered_material: coveredMaterial,
@@ -136,7 +148,7 @@ export async function saveNextLessonPlanAction(
   }
 
   const { studentId, planId, plannedFor, priority, nextAction, detail } = parsed.data;
-  const studentCheck = await ensureDemoStudent(studentId);
+  const studentCheck = await ensureOwnedStudent(studentId);
 
   if (!studentCheck.ok) {
     failAction(studentCheck.message);
@@ -156,7 +168,7 @@ export async function saveNextLessonPlanAction(
       .update(planPayload)
       .eq("id", planId)
       .eq("student_id", studentId)
-      .eq("instructor_id", DEMO_INSTRUCTOR_ID)
+      .eq("instructor_id", studentCheck.instructorId)
       .select("id")
       .maybeSingle();
 
@@ -169,7 +181,7 @@ export async function saveNextLessonPlanAction(
     }
   } else {
     const { error } = await studentCheck.supabase.from("next_lesson_plans").insert({
-      instructor_id: DEMO_INSTRUCTOR_ID,
+      instructor_id: studentCheck.instructorId,
       student_id: studentId,
       ...planPayload,
     });
@@ -200,7 +212,7 @@ export async function saveProgressItemAction(formData: FormData): Promise<void> 
   }
 
   const { studentId, progressItemId, category, status, title, detail, tempoNote, observedOn, currentFocus } = parsed.data;
-  const studentCheck = await ensureDemoStudent(studentId);
+  const studentCheck = await ensureOwnedStudent(studentId);
 
   if (!studentCheck.ok) {
     failAction(studentCheck.message);
@@ -226,7 +238,7 @@ export async function saveProgressItemAction(formData: FormData): Promise<void> 
           .select("id")
           .eq("id", progressItemId)
           .eq("student_id", studentId)
-          .eq("instructor_id", DEMO_INSTRUCTOR_ID)
+          .eq("instructor_id", studentCheck.instructorId)
           .maybeSingle();
 
       if (existingProgressItemError) {
@@ -244,7 +256,7 @@ export async function saveProgressItemAction(formData: FormData): Promise<void> 
           updated_at: updatedAt,
         })
         .eq("student_id", studentId)
-        .eq("instructor_id", DEMO_INSTRUCTOR_ID)
+        .eq("instructor_id", studentCheck.instructorId)
         .neq("id", progressItemId);
 
       if (clearFocusError) {
@@ -257,7 +269,7 @@ export async function saveProgressItemAction(formData: FormData): Promise<void> 
       .update(progressPayload)
       .eq("id", progressItemId)
       .eq("student_id", studentId)
-      .eq("instructor_id", DEMO_INSTRUCTOR_ID)
+      .eq("instructor_id", studentCheck.instructorId)
       .select("id")
       .maybeSingle();
 
@@ -272,7 +284,7 @@ export async function saveProgressItemAction(formData: FormData): Promise<void> 
     const { data, error } = await studentCheck.supabase
       .from("progress_items")
       .insert({
-        instructor_id: DEMO_INSTRUCTOR_ID,
+        instructor_id: studentCheck.instructorId,
         student_id: studentId,
         ...progressPayload,
         current_focus: false,
@@ -292,7 +304,7 @@ export async function saveProgressItemAction(formData: FormData): Promise<void> 
           updated_at: updatedAt,
         })
         .eq("student_id", studentId)
-        .eq("instructor_id", DEMO_INSTRUCTOR_ID)
+        .eq("instructor_id", studentCheck.instructorId)
         .neq("id", data.id);
 
       if (clearFocusError) {
@@ -307,7 +319,7 @@ export async function saveProgressItemAction(formData: FormData): Promise<void> 
         })
         .eq("id", data.id)
         .eq("student_id", studentId)
-        .eq("instructor_id", DEMO_INSTRUCTOR_ID);
+        .eq("instructor_id", studentCheck.instructorId);
 
       if (setFocusError) {
         failAction(setFocusError.message);
@@ -330,7 +342,7 @@ export async function saveProgressItemStatusAction(formData: FormData): Promise<
   }
 
   const { studentId, progressItemId, nextStatus } = parsed.data;
-  const studentCheck = await ensureDemoStudent(studentId);
+  const studentCheck = await ensureOwnedStudent(studentId);
 
   if (!studentCheck.ok) {
     failAction(studentCheck.message);
@@ -341,7 +353,7 @@ export async function saveProgressItemStatusAction(formData: FormData): Promise<
     .select("status")
     .eq("id", progressItemId)
     .eq("student_id", studentId)
-    .eq("instructor_id", DEMO_INSTRUCTOR_ID)
+    .eq("instructor_id", studentCheck.instructorId)
     .maybeSingle();
 
   if (progressItemError) {
@@ -364,7 +376,7 @@ export async function saveProgressItemStatusAction(formData: FormData): Promise<
     })
     .eq("id", progressItemId)
     .eq("student_id", studentId)
-    .eq("instructor_id", DEMO_INSTRUCTOR_ID)
+    .eq("instructor_id", studentCheck.instructorId)
     .select("id")
     .maybeSingle();
 
@@ -398,7 +410,7 @@ export async function saveStudentProfileAction(formData: FormData): Promise<void
     failAction("Student was not found.");
   }
 
-  const studentCheck = await ensureDemoStudent(studentId);
+  const studentCheck = await ensureOwnedStudent(studentId);
 
   if (!studentCheck.ok) {
     failAction(studentCheck.message);
@@ -414,7 +426,7 @@ export async function saveStudentProfileAction(formData: FormData): Promise<void
       updated_at: new Date().toISOString(),
     })
     .eq("id", studentId)
-    .eq("instructor_id", DEMO_INSTRUCTOR_ID)
+    .eq("instructor_id", studentCheck.instructorId)
     .select("id")
     .maybeSingle();
 
@@ -443,7 +455,7 @@ export async function saveStudentTraitAction(formData: FormData): Promise<void> 
   }
 
   const { studentId, traitId, type, label, detail } = parsed.data;
-  const studentCheck = await ensureDemoStudent(studentId);
+  const studentCheck = await ensureOwnedStudent(studentId);
 
   if (!studentCheck.ok) {
     failAction(studentCheck.message);
@@ -462,7 +474,7 @@ export async function saveStudentTraitAction(formData: FormData): Promise<void> 
       .update(traitPayload)
       .eq("id", traitId)
       .eq("student_id", studentId)
-      .eq("instructor_id", DEMO_INSTRUCTOR_ID)
+      .eq("instructor_id", studentCheck.instructorId)
       .select("id")
       .maybeSingle();
 
@@ -475,7 +487,7 @@ export async function saveStudentTraitAction(formData: FormData): Promise<void> 
     }
   } else {
     const { error } = await studentCheck.supabase.from("student_traits").insert({
-      instructor_id: DEMO_INSTRUCTOR_ID,
+      instructor_id: studentCheck.instructorId,
       student_id: studentId,
       ...traitPayload,
     });
@@ -503,7 +515,7 @@ export async function saveAssignmentAction(formData: FormData): Promise<void> {
   }
 
   const { studentId, assignmentId, title, status, dueDate, detail } = parsed.data;
-  const studentCheck = await ensureDemoStudent(studentId);
+  const studentCheck = await ensureOwnedStudent(studentId);
 
   if (!studentCheck.ok) {
     failAction(studentCheck.message);
@@ -523,7 +535,7 @@ export async function saveAssignmentAction(formData: FormData): Promise<void> {
       .update(assignmentPayload)
       .eq("id", assignmentId)
       .eq("student_id", studentId)
-      .eq("instructor_id", DEMO_INSTRUCTOR_ID)
+      .eq("instructor_id", studentCheck.instructorId)
       .select("id")
       .maybeSingle();
 
@@ -536,7 +548,7 @@ export async function saveAssignmentAction(formData: FormData): Promise<void> {
     }
   } else {
     const { error } = await studentCheck.supabase.from("assignments").insert({
-      instructor_id: DEMO_INSTRUCTOR_ID,
+      instructor_id: studentCheck.instructorId,
       student_id: studentId,
       ...assignmentPayload,
     });
@@ -563,14 +575,14 @@ export async function createQuickLessonNoteAction(formData: FormData): Promise<v
   }
 
   const { studentId, coveredMaterial, observation, practiceAssigned, nextStepHint } = parsed.data;
-  const studentCheck = await ensureDemoStudent(studentId);
+  const studentCheck = await ensureOwnedStudent(studentId);
 
   if (!studentCheck.ok) {
     failAction(studentCheck.message);
   }
 
   const { error } = await studentCheck.supabase.from("lesson_notes").insert({
-    instructor_id: DEMO_INSTRUCTOR_ID,
+    instructor_id: studentCheck.instructorId,
     student_id: studentId,
     lesson_date: getTodayDateInputValue(),
     covered_material: coveredMaterial,
@@ -598,7 +610,7 @@ export async function saveQuickNextActionAction(formData: FormData): Promise<voi
   }
 
   const { studentId, planId, nextAction } = parsed.data;
-  const studentCheck = await ensureDemoStudent(studentId);
+  const studentCheck = await ensureOwnedStudent(studentId);
 
   if (!studentCheck.ok) {
     failAction(studentCheck.message);
@@ -616,7 +628,7 @@ export async function saveQuickNextActionAction(formData: FormData): Promise<voi
       .update(updatePayload)
       .eq("id", planId)
       .eq("student_id", studentId)
-      .eq("instructor_id", DEMO_INSTRUCTOR_ID)
+      .eq("instructor_id", studentCheck.instructorId)
       .select("id")
       .maybeSingle();
 
@@ -629,7 +641,7 @@ export async function saveQuickNextActionAction(formData: FormData): Promise<voi
     }
   } else {
     const { error } = await studentCheck.supabase.from("next_lesson_plans").insert({
-      instructor_id: DEMO_INSTRUCTOR_ID,
+      instructor_id: studentCheck.instructorId,
       student_id: studentId,
       detail: nextAction,
       planned_for: null,
@@ -656,7 +668,7 @@ export async function markAssignmentNeedsReviewAction(formData: FormData): Promi
   }
 
   const { studentId, assignmentId } = parsed.data;
-  const studentCheck = await ensureDemoStudent(studentId);
+  const studentCheck = await ensureOwnedStudent(studentId);
 
   if (!studentCheck.ok) {
     failAction(studentCheck.message);
@@ -670,7 +682,7 @@ export async function markAssignmentNeedsReviewAction(formData: FormData): Promi
     })
     .eq("id", assignmentId)
     .eq("student_id", studentId)
-    .eq("instructor_id", DEMO_INSTRUCTOR_ID)
+    .eq("instructor_id", studentCheck.instructorId)
     .select("id")
     .maybeSingle();
 
@@ -713,7 +725,7 @@ export async function closeoutLessonAction(formData: FormData): Promise<void> {
   }
 
   const input = parsed.data;
-  const studentCheck = await ensureDemoStudent(input.studentId);
+  const studentCheck = await ensureOwnedStudent(input.studentId);
 
   if (!studentCheck.ok) {
     failAction(studentCheck.message);
@@ -721,7 +733,7 @@ export async function closeoutLessonAction(formData: FormData): Promise<void> {
 
   const updatedAt = new Date().toISOString();
   const { error: noteError } = await studentCheck.supabase.from("lesson_notes").insert({
-    instructor_id: DEMO_INSTRUCTOR_ID,
+    instructor_id: studentCheck.instructorId,
     student_id: input.studentId,
     lesson_date: input.lessonDate,
     covered_material: input.coveredMaterial,
@@ -757,7 +769,7 @@ export async function closeoutLessonAction(formData: FormData): Promise<void> {
       .update(nextPlanPayload)
       .eq("id", input.nextPlanId)
       .eq("student_id", input.studentId)
-      .eq("instructor_id", DEMO_INSTRUCTOR_ID)
+      .eq("instructor_id", studentCheck.instructorId)
       .select("id")
       .maybeSingle();
 
@@ -770,7 +782,7 @@ export async function closeoutLessonAction(formData: FormData): Promise<void> {
     }
   } else {
     const { error } = await studentCheck.supabase.from("next_lesson_plans").insert({
-      instructor_id: DEMO_INSTRUCTOR_ID,
+      instructor_id: studentCheck.instructorId,
       student_id: input.studentId,
       ...nextPlanPayload,
       detail: input.nextPlanDetail || input.nextAction,
@@ -796,7 +808,7 @@ export async function closeoutLessonAction(formData: FormData): Promise<void> {
         .update(assignmentPayload)
         .eq("id", input.assignmentId)
         .eq("student_id", input.studentId)
-        .eq("instructor_id", DEMO_INSTRUCTOR_ID)
+        .eq("instructor_id", studentCheck.instructorId)
         .select("id")
         .maybeSingle();
 
@@ -809,7 +821,7 @@ export async function closeoutLessonAction(formData: FormData): Promise<void> {
       }
     } else {
       const { error } = await studentCheck.supabase.from("assignments").insert({
-        instructor_id: DEMO_INSTRUCTOR_ID,
+        instructor_id: studentCheck.instructorId,
         student_id: input.studentId,
         ...assignmentPayload,
       });
@@ -827,7 +839,7 @@ export async function closeoutLessonAction(formData: FormData): Promise<void> {
         .select("id")
         .eq("id", input.progressItemId)
         .eq("student_id", input.studentId)
-        .eq("instructor_id", DEMO_INSTRUCTOR_ID)
+        .eq("instructor_id", studentCheck.instructorId)
         .maybeSingle();
 
     if (existingProgressItemError) {
@@ -846,7 +858,7 @@ export async function closeoutLessonAction(formData: FormData): Promise<void> {
           updated_at: updatedAt,
         })
         .eq("student_id", input.studentId)
-        .eq("instructor_id", DEMO_INSTRUCTOR_ID)
+        .eq("instructor_id", studentCheck.instructorId)
         .neq("id", input.progressItemId);
 
       if (clearFocusError) {
@@ -875,7 +887,7 @@ export async function closeoutLessonAction(formData: FormData): Promise<void> {
       .update(progressPayload)
       .eq("id", input.progressItemId)
       .eq("student_id", input.studentId)
-      .eq("instructor_id", DEMO_INSTRUCTOR_ID)
+      .eq("instructor_id", studentCheck.instructorId)
       .select("id")
       .maybeSingle();
 

@@ -3,8 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 
-import { DEMO_INSTRUCTOR_ID } from "@/lib/demo-instructor";
-import { createServerSupabaseAnonClient } from "@/lib/supabase/server";
+import { loadCurrentInstructor } from "@/lib/auth/instructor";
 import { studentProfileInputSchema } from "@/lib/students/editing-schemas";
 
 function formText(formData: FormData, key: string) {
@@ -42,10 +41,16 @@ export async function createStudentAction(formData: FormData): Promise<void> {
     failAction("Check the student profile fields and try again.");
   }
 
-  const supabase = createServerSupabaseAnonClient();
+  const instructorResult = await loadCurrentInstructor();
 
-  if (!supabase) {
-    failAction("Supabase environment is not configured.");
+  const supabase = instructorResult.supabase;
+
+  if (!instructorResult.ok || !supabase) {
+    failAction(
+      instructorResult.ok
+        ? "Supabase environment is not configured."
+        : instructorResult.message,
+    );
   }
 
   const { name, profileCue, primaryWeakPoint } = parsed.data;
@@ -53,7 +58,7 @@ export async function createStudentAction(formData: FormData): Promise<void> {
   const { data, error } = await supabase
     .from("students")
     .insert({
-      instructor_id: DEMO_INSTRUCTOR_ID,
+      instructor_id: instructorResult.instructor.id,
       slug,
       name,
       profile_cue: profileCue,

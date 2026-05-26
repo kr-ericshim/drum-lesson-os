@@ -1,2 +1,1 @@
-grant insert (tempo_note) on public.progress_items to anon;
-grant update (tempo_note) on public.progress_items to anon;
+-- Retired by 0013_real_instructor_auth.sql.

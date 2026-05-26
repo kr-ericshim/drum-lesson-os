@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: instructor-side MVP
 status: complete
-stopped_at: Phase 4C complete after Brief and Closeout tightening
+stopped_at: Release-gate auth implementation complete; DB migration still needs live application
 last_updated: "2026-05-26T00:00:00+09:00"
-last_activity: 2026-05-26 -- Lesson Brief now starts with first-check context, Closeout allows focus-only progress updates, and next plan selection prefers latest updates.
+last_activity: 2026-05-26 -- Single-instructor Supabase email/password auth, proxy protection, owner-scoped server actions, and real-auth RLS migration were implemented and verified locally.
 progress:
   total_phases: 4
   completed_phases: 4
@@ -21,7 +21,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-22)
 
 **Core value:** An instructor can quickly understand a student's current progress and personal characteristics before or during a lesson.
-**Current focus:** Instructor-side MVP phases complete; next meaningful work is release-gate hardening such as real instructor auth, production RLS cleanup, and optional closeout transaction RPC.
+**Current focus:** Instructor-side MVP phases complete; real instructor auth and production RLS cleanup are implemented in code. Before real data use, apply `0013_real_instructor_auth.sql`, create the Supabase Auth user, bind `instructors.auth_user_id`, and disable public signup.
 
 ## Current Position
 
@@ -82,7 +82,10 @@ Recent decisions affecting current work:
 
 ### Pending Todos
 
-- Release-gate hardening remains before any real student data is used outside the demo environment.
+- Apply the real-auth migration to the linked Supabase project.
+- Create or confirm the single instructor Supabase Auth account.
+- Bind `public.instructors.auth_user_id` for instructor id `11111111-1111-4111-8111-111111111111`.
+- Disable public signup in hosted Supabase Auth settings.
 
 ### Blockers/Concerns
 
@@ -96,10 +99,10 @@ None for the requested phase execution work.
 | Studio operations | Payments, invoices, attendance, calendar automation | Not planned | 2026-05-26 |
 | AI/media | AI summaries, audio/video upload, audio/video analysis | Not planned | 2026-05-26 |
 | Curriculum | Full syllabus builder | Excluded from v1 | 2026-05-26 |
-| Release gate | Real instructor auth and production RLS cleanup | Required before real deployment | 2026-05-26 |
+| Release gate | Real instructor auth and production RLS cleanup | Implemented; live DB/auth binding still required | 2026-05-26 |
 
 ## Session Continuity
 
 Last session: 2026-05-26T00:00:00+09:00
-Stopped at: Korean demo data and short student slugs applied to the remote demo database
+Stopped at: Single-instructor auth release gate implemented and locally verified; remote migration dry-run shows `0013_real_instructor_auth.sql` pending
 Resume file: .planning/phases/04c-brief-closeout-tightening/04C-CHECKPOINT.md
