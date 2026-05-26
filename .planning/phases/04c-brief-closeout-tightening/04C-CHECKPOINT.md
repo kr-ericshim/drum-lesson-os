@@ -29,4 +29,4 @@
 
 ## Remaining Follow-Up
 
-None for 04C. Production auth/RLS cleanup and the closeout transaction RPC have moved into release-gate hardening; public signup and real inbox recovery-link checks remain manual release checks.
+None for 04C. Production auth/RLS cleanup, public signup lock, and the closeout transaction RPC have moved into release-gate hardening; real inbox recovery-link and authenticated browser smoke checks remain real-account release checks.

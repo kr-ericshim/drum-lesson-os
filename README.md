@@ -48,6 +48,7 @@ where id = '11111111-1111-4111-8111-111111111111';
 ```
 
 For hosted Supabase projects, disable public signup in Auth settings after creating the single instructor account.
+This repo also records that release-gate default in `supabase/config.toml` with `auth.enable_signup = false`.
 
 Password recovery emails should redirect to the app reset screen. In Supabase Auth URL settings, allow:
 
