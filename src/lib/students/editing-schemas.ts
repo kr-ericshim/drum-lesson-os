@@ -71,6 +71,10 @@ function requiredTrimmedText(maxLength: number) {
   return z.string().trim().min(1).max(maxLength);
 }
 
+function optionalTrimmedText(maxLength: number) {
+  return z.string().trim().max(maxLength);
+}
+
 const dateOnlySchema = z.string().trim().refine(isValidDateOnly, {
   message: "Use a valid YYYY-MM-DD date.",
 });
@@ -169,7 +173,7 @@ export const lessonCloseoutInputSchema = z
     nextStepHint: requiredTrimmedText(1000),
     nextPlanId: optionalUuidFromForm,
     nextAction: requiredTrimmedText(240),
-    nextPlanDetail: requiredTrimmedText(2000),
+    nextPlanDetail: optionalTrimmedText(2000),
     plannedFor: optionalDateFromForm,
     priority: z.enum(nextPlanPriorities),
     assignmentId: optionalUuidFromForm,
@@ -215,11 +219,11 @@ export const lessonCloseoutInputSchema = z
       });
     }
 
-    if (input.progressItemId && !input.progressStatus) {
+    if ((input.progressStatus || input.progressCurrentFocus) && !input.progressItemId) {
       context.addIssue({
         code: "custom",
-        message: "Progress status is required when updating progress.",
-        path: ["progressStatus"],
+        message: "Progress item is required when updating progress.",
+        path: ["progressItemId"],
       });
     }
   });

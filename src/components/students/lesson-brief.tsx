@@ -23,33 +23,39 @@ export function LessonBrief({ student }: LessonBriefProps) {
         </div>
       </div>
 
-      <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <BriefField label="Profile cue" value={brief.profileCue} />
-        <BriefField
-          label="Current focus"
-          value={formatCurrentFocusBrief(brief.currentFocus)}
-          badge={brief.currentFocus ? "Progress focus" : undefined}
-        />
-        <BriefField
-          icon={<AlertTriangle className="h-3.5 w-3.5 text-attention" aria-hidden="true" />}
-          label="Primary weak point"
-          value={brief.weakPoint}
-        />
-        <BriefField
-          icon={<ArrowRight className="h-3.5 w-3.5 text-primary" aria-hidden="true" />}
-          label="Next lesson"
-          value={brief.nextAction}
-        />
+      <div className="mt-5 border-y border-border py-4">
+        <p className="quiet-label">Start here</p>
+        <div className="mt-3 grid gap-4 lg:grid-cols-3">
+          <BriefField label="First check" value={brief.firstCheck} />
+          <BriefField
+            label="Current focus"
+            value={formatCurrentFocusBrief(brief.currentFocus)}
+            badge={brief.currentFocus ? "Progress focus" : undefined}
+          />
+          <BriefField
+            icon={<Eye className="h-3.5 w-3.5 text-primary" aria-hidden="true" />}
+            label="Last observation"
+            value={brief.latestObservation}
+          />
+        </div>
       </div>
 
-      <div className="mt-4 grid gap-4 lg:grid-cols-3">
-        <BriefField label="Assignment review" value={brief.assignmentReviewCue} />
-        <BriefField
-          icon={<Eye className="h-3.5 w-3.5 text-primary" aria-hidden="true" />}
-          label="Last observation"
-          value={brief.latestObservation}
-        />
-        <BriefField label="First check" value={brief.firstCheck} />
+      <div className="mt-4">
+        <p className="quiet-label">Remember</p>
+        <div className="mt-3 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <BriefField label="Assignment review" value={brief.assignmentReviewCue} />
+          <BriefField
+            icon={<AlertTriangle className="h-3.5 w-3.5 text-attention" aria-hidden="true" />}
+            label="Primary weak point"
+            value={brief.weakPoint}
+          />
+          <BriefField label="Profile cue" value={brief.profileCue} />
+          <BriefField
+            icon={<ArrowRight className="h-3.5 w-3.5 text-primary" aria-hidden="true" />}
+            label="Next lesson"
+            value={brief.nextAction}
+          />
+        </div>
       </div>
     </section>
   );
@@ -77,7 +83,7 @@ function BriefField({
   value: string;
 }) {
   return (
-    <div className="min-w-0 border-t border-border pt-3">
+    <div className="min-w-0">
       <div className="flex flex-wrap items-center gap-2">
         <p className="field-label flex items-center gap-1.5">
           {icon}

@@ -86,7 +86,7 @@ Required closeout fields:
 - `practiceAssigned`: 1-2000 characters.
 - `nextStepHint`: 1-1000 characters.
 - `nextAction`: 1-240 characters.
-- `nextPlanDetail`: 1-2000 characters.
+- `nextPlanDetail`: originally 1-2000 characters; Phase 4C later relaxed the closeout form/schema so blank detail keeps the existing plan detail or falls back to next action on insert.
 - `priority`: `low`, `normal`, or `high`.
 
 Optional closeout fields:

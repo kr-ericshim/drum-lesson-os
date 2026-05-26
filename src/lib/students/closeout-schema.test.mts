@@ -99,14 +99,55 @@ test("lessonCloseoutInputSchema rejects status-only assignment updates", () => {
   assert.equal(result.success, false);
 });
 
-test("lessonCloseoutInputSchema requires progress status when progress item is selected", () => {
-  const result = lessonCloseoutInputSchema.safeParse({
+test("lessonCloseoutInputSchema allows focus-only progress updates", () => {
+  const parsed = lessonCloseoutInputSchema.parse({
     ...validCloseout,
     progressItemId,
     progressStatus: "",
   });
 
-  assert.equal(result.success, false);
+  assert.equal(parsed.progressItemId, progressItemId);
+  assert.equal(parsed.progressStatus, undefined);
+  assert.equal(parsed.progressCurrentFocus, true);
+});
+
+test("lessonCloseoutInputSchema allows status-only progress updates", () => {
+  const parsed = lessonCloseoutInputSchema.parse({
+    ...validCloseout,
+    progressStatus: "steady",
+    progressCurrentFocus: "",
+  });
+
+  assert.equal(parsed.progressItemId, progressItemId);
+  assert.equal(parsed.progressStatus, "steady");
+  assert.equal(parsed.progressCurrentFocus, false);
+});
+
+test("lessonCloseoutInputSchema accepts a blank next plan detail", () => {
+  const parsed = lessonCloseoutInputSchema.parse({
+    ...validCloseout,
+    nextPlanDetail: " ",
+  });
+
+  assert.equal(parsed.nextPlanDetail, "");
+});
+
+test("lessonCloseoutInputSchema rejects progress updates without a progress item", () => {
+  const statusResult = lessonCloseoutInputSchema.safeParse({
+    ...validCloseout,
+    progressItemId: "",
+    progressStatus: "steady",
+    progressCurrentFocus: "",
+  });
+  const focusResult = lessonCloseoutInputSchema.safeParse({
+    ...validCloseout,
+    progressItemId: "",
+    progressStatus: "",
+    progressCurrentFocus: "on",
+  });
+
+  assert.equal(statusResult.success, false);
+  assert.equal(focusResult.success, false);
 });
 
 test("lessonCloseoutInputSchema rejects invalid required note and next-plan fields", () => {

@@ -27,13 +27,14 @@ export async function getStudentRoster(): Promise<{
     .select(
       `
         id,
+        slug,
         name,
         profile_cue,
         primary_weak_point,
         progress_items(id, category, status, title, current_focus, observed_on, detail, tempo_note),
         assignments(id, status, created_at, title, due_date, detail),
         lesson_notes(lesson_date),
-        next_lesson_plans(id, next_action, priority, created_at, planned_for, detail)
+        next_lesson_plans(id, next_action, priority, created_at, updated_at, planned_for, detail)
       `,
     )
     .eq("active", true)
@@ -54,7 +55,7 @@ export async function getStudentDashboardPreview() {
   return getStudentRoster();
 }
 
-export async function getStudentDetail(studentId: string): Promise<{
+export async function getStudentDetail(studentRef: string): Promise<{
   data: StudentDetail | null;
   error: string | null;
 }> {
@@ -64,25 +65,27 @@ export async function getStudentDetail(studentId: string): Promise<{
     return { data: null, error: "Supabase environment is not configured." };
   }
 
-  const { data, error } = await supabase
+  let query = supabase
     .from("students")
     .select(
       `
         id,
+        slug,
         name,
         profile_cue,
         primary_weak_point,
         progress_items(id, category, status, title, current_focus, observed_on, detail, tempo_note),
         student_traits(id, trait_type, label, detail),
         assignments(id, status, created_at, title, due_date, detail),
-        next_lesson_plans(id, next_action, priority, created_at, planned_for, detail),
+        next_lesson_plans(id, next_action, priority, created_at, updated_at, planned_for, detail),
         lesson_notes(id, lesson_date, created_at, covered_material, observations, practice_assigned, next_step_hint)
       `,
     )
-    .eq("id", studentId)
-    .eq("active", true)
-    .maybeSingle()
-    .returns<StudentDetailSourceRow | null>();
+    .eq("active", true);
+
+  query = isUuid(studentRef) ? query.eq("id", studentRef) : query.eq("slug", studentRef);
+
+  const { data, error } = await query.maybeSingle().returns<StudentDetailSourceRow | null>();
 
   if (error) {
     return { data: null, error: error.message };
@@ -92,4 +95,10 @@ export async function getStudentDetail(studentId: string): Promise<{
     data: data ? mapStudentDetail(data) : null,
     error: null,
   };
+}
+
+function isUuid(value: string) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+    value,
+  );
 }

@@ -29,6 +29,7 @@ const assignmentLabelByStatus: Record<string, string> = {
 export function StudentSummaryRow({ student }: StudentSummaryRowProps) {
   const assignmentVariant = assignmentVariantByStatus[student.assignmentStatus] ?? "muted";
   const assignmentLabel = assignmentLabelByStatus[student.assignmentStatus] ?? student.assignmentStatus;
+  const studentHref = `/students/${student.slug ?? student.id}`;
 
   return (
     <article className="student-row rounded-lg border border-border bg-card p-4 transition-colors hover:border-primary/35 focus-within:border-primary/50">
@@ -72,7 +73,7 @@ export function StudentSummaryRow({ student }: StudentSummaryRowProps) {
 
         <div className="flex xl:justify-end">
           <Button asChild variant="secondary" className="w-full sm:w-auto">
-            <Link href={`/students/${student.id}`} aria-label={`Open student ${student.name}`}>
+            <Link href={studentHref} aria-label={`Open student ${student.name}`}>
               Open student
             </Link>
           </Button>

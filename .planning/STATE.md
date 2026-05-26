@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: instructor-side MVP
 status: complete
-stopped_at: Phase 4B complete after 0009 apply and tempo note Browser smoke
+stopped_at: Phase 4C complete after Brief and Closeout tightening
 last_updated: "2026-05-26T00:00:00+09:00"
-last_activity: 2026-05-26 -- Linked Supabase 0009 applied and Browser plugin verified tempo note persistence in Progress row and Lesson Brief
+last_activity: 2026-05-26 -- Lesson Brief now starts with first-check context, Closeout allows focus-only progress updates, and next plan selection prefers latest updates.
 progress:
   total_phases: 4
   completed_phases: 4
-  total_plans: 14
-  completed_plans: 14
+  total_plans: 15
+  completed_plans: 15
   percent: 100
 ---
 
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-22)
 
 **Core value:** An instructor can quickly understand a student's current progress and personal characteristics before or during a lesson.
-**Current focus:** Instructor-side MVP phases complete; next meaningful work is release-gate hardening such as real instructor auth and production RLS cleanup.
+**Current focus:** Instructor-side MVP phases complete; next meaningful work is release-gate hardening such as real instructor auth, production RLS cleanup, and optional closeout transaction RPC.
 
 ## Current Position
 
 Phase: 4 (Instructor Workbench Polish) — COMPLETE
-Plan: 2 of 2 complete in Phase 4
-Status: Phase 1 through Phase 4 complete with tests, Browser plugin verification, and agent verification.
-Last activity: 2026-05-26 -- Browser plugin verified tempo note persistence after `0009`, including Progress row and Lesson Brief current-focus display.
+Plan: 3 of 3 complete in Phase 4
+Status: Phase 1 through Phase 4 complete with tests and Browser plugin verification.
+Last activity: 2026-05-26 -- Brief and Closeout tightening made Lesson Brief action-first, made assignment review cues more specific, allowed focus-only closeout updates, and switched current next-plan selection to latest update.
 
 Progress: ██████████ 100%
 
@@ -36,7 +36,7 @@ Progress: ██████████ 100%
 
 **Velocity:**
 
-- Total plans completed: 14
+- Total plans completed: 15
 - Average duration: N/A
 - Total execution time: N/A
 
@@ -47,11 +47,11 @@ Progress: ██████████ 100%
 | 01 | 3 | 3 | Complete |
 | 02 | 3 | 3 | Complete |
 | 03 | 6 | 6 | Complete |
-| 04 | 2 | 2 | Complete |
+| 04 | 3 | 3 | Complete |
 
 **Recent Trend:**
 
-- Last 5 plans: 03D, 03E, 03F, 04A, 04B
+- Last 5 plans: 03E, 03F, 04A, 04B, 04C
 - Next 5 plans: release-gate hardening if real deployment is requested
 
 ## Accumulated Context
@@ -77,10 +77,12 @@ Recent decisions affecting current work:
 - 2026-05-26 replanning: Do not plan student portal, payments, attendance, calendar automation, AI summaries, or audio/video analysis as near-term phases.
 - 2026-05-26 replanning: Finish the remaining MVP through 03D profile/trait editing, 03E assignment review editing, 03F closeout, 04A workbench filters/progress status polish, and 04B tempo/quick-add refinements.
 - 2026-05-26 replanning: Treat real instructor auth and production RLS cleanup as a release gate before real deployment, not as one of the requested product feature phases.
+- Phase 4C: Keep the next slice to UX tightening only; make Lesson Brief action-first, make Closeout less strict, allow focus-only closeout updates, and choose the current next plan by latest update instead of priority.
+- Demo maintenance: Keep seeded demo content Korean and expose short student slugs in routes while preserving UUID primary keys for writes and relations.
 
 ### Pending Todos
 
-- `gh auth status` reports the `kr-ericshim` token is invalid. GitHub public repo creation/push is pending `gh auth login -h github.com`.
+- Release-gate hardening remains before any real student data is used outside the demo environment.
 
 ### Blockers/Concerns
 
@@ -99,5 +101,5 @@ None for the requested phase execution work.
 ## Session Continuity
 
 Last session: 2026-05-26T00:00:00+09:00
-Stopped at: Phase 4B complete
-Resume file: .planning/phases/04b-tempo-and-quick-add-refinements/04B-CHECKPOINT.md
+Stopped at: Korean demo data and short student slugs applied to the remote demo database
+Resume file: .planning/phases/04c-brief-closeout-tightening/04C-CHECKPOINT.md

@@ -17,6 +17,18 @@ function failAction(message: string): never {
   throw new Error(message);
 }
 
+function createStudentSlug(name: string) {
+  const base = name
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 40);
+
+  return `${base || "student"}-${Date.now().toString(36)}`;
+}
+
 export async function createStudentAction(formData: FormData): Promise<void> {
   const parsed = studentProfileInputSchema.safeParse({
     studentId: "",
@@ -37,17 +49,19 @@ export async function createStudentAction(formData: FormData): Promise<void> {
   }
 
   const { name, profileCue, primaryWeakPoint } = parsed.data;
+  const slug = createStudentSlug(name);
   const { data, error } = await supabase
     .from("students")
     .insert({
       instructor_id: DEMO_INSTRUCTOR_ID,
+      slug,
       name,
       profile_cue: profileCue,
       primary_weak_point: primaryWeakPoint,
       active: true,
       updated_at: new Date().toISOString(),
     })
-    .select("id")
+    .select("id, slug")
     .maybeSingle();
 
   if (error) {
@@ -59,5 +73,5 @@ export async function createStudentAction(formData: FormData): Promise<void> {
   }
 
   revalidatePath("/");
-  redirect(`/students/${data.id}`);
+  redirect(`/students/${data.slug}`);
 }

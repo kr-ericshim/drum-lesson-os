@@ -12,6 +12,7 @@ export type NextPlanContextRow = {
   next_action: string;
   priority: string;
   created_at: string;
+  updated_at?: string;
   planned_for?: string | null;
   detail?: string;
 };
@@ -22,6 +23,7 @@ export type LessonNoteContextRow = {
 
 export type StudentRosterSourceRow = {
   id: string;
+  slug?: string;
   name: string;
   profile_cue: string;
   primary_weak_point: string;
@@ -51,6 +53,7 @@ export type StudentNextPlan = {
 
 export type StudentRosterItem = {
   id: string;
+  slug?: string;
   name: string;
   profileCue: string;
   currentFocus: ProgressFocusSummary | null;
@@ -155,6 +158,7 @@ export type StudentDetail = StudentRosterItem & {
 
 export type LessonQueueItem = {
   studentId: string;
+  studentSlug?: string;
   studentName: string;
   currentFocus: ProgressFocusSummary | null;
   assignmentStatus: string;
@@ -176,17 +180,12 @@ export function pickLatestAssignment(assignments: AssignmentContextRow[]) {
   return [...assignments].sort((a, b) => b.created_at.localeCompare(a.created_at))[0];
 }
 
-export function pickPriorityNextPlan(nextPlans: NextPlanContextRow[]) {
+export function pickCurrentNextPlan(nextPlans: NextPlanContextRow[]) {
   return [...nextPlans].sort((a, b) => {
-    const priorityDifference =
-      (priorityRank[a.priority] ?? priorityRank.normal) -
-      (priorityRank[b.priority] ?? priorityRank.normal);
+    const aUpdatedAt = a.updated_at ?? a.created_at;
+    const bUpdatedAt = b.updated_at ?? b.created_at;
 
-    if (priorityDifference !== 0) {
-      return priorityDifference;
-    }
-
-    return b.created_at.localeCompare(a.created_at);
+    return bUpdatedAt.localeCompare(aUpdatedAt) || a.id.localeCompare(b.id);
   })[0];
 }
 
@@ -235,12 +234,13 @@ export function mapStudentRoster(
 ): StudentRosterItem[] {
   return students.map((student) => {
     const assignment = pickLatestAssignment(student.assignments);
-    const nextPlan = pickPriorityNextPlan(student.next_lesson_plans);
+    const nextPlan = pickCurrentNextPlan(student.next_lesson_plans);
     const mappedNextPlan = mapNextPlan(nextPlan);
     const lastLessonDate = pickLatestLessonDate(student.lesson_notes);
 
     return {
       id: student.id,
+      ...(student.slug ? { slug: student.slug } : {}),
       name: student.name,
       profileCue: student.profile_cue,
       currentFocus: pickCurrentFocusProgressItem(student.progress_items),
@@ -260,7 +260,7 @@ export function mapStudentRoster(
 export function mapStudentDetail(student: StudentDetailSourceRow): StudentDetail {
   const [rosterItem] = mapStudentRoster([student]);
   const assignment = pickLatestAssignment(student.assignments);
-  const nextPlan = pickPriorityNextPlan(student.next_lesson_plans);
+  const nextPlan = pickCurrentNextPlan(student.next_lesson_plans);
   const traits = mapStudentTraits(student.student_traits);
   const progressItems = [...student.progress_items]
     .sort((a, b) => b.observed_on.localeCompare(a.observed_on))
@@ -364,7 +364,7 @@ export function buildLessonBrief({
     nextAction,
     assignmentReviewCue: buildAssignmentReviewCue(assignment),
     latestObservation: latestNote?.observations ?? "No recent observation recorded.",
-    firstCheck: nextPlan?.nextAction ?? latestNote?.nextStepHint ?? currentFocus?.title ?? "Set next lesson action",
+    firstCheck: latestNote?.nextStepHint ?? nextPlan?.nextAction ?? currentFocus?.title ?? "Set next lesson action",
   };
 }
 
@@ -374,7 +374,9 @@ function buildAssignmentReviewCue(assignment: StudentAssignment | null) {
   }
 
   if (assignment.status === "needs_review") {
-    return `${assignment.title} needs review.`;
+    return assignment.detail
+      ? `${assignment.title} needs review: ${assignment.detail}`
+      : `${assignment.title} needs review.`;
   }
 
   if (assignment.status === "complete") {
@@ -403,6 +405,7 @@ export function mapLessonQueue(
 
       return {
         studentId: student.id,
+        ...(student.slug ? { studentSlug: student.slug } : {}),
         studentName: student.name,
         currentFocus: student.currentFocus,
         assignmentStatus: student.assignmentStatus,

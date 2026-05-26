@@ -51,6 +51,7 @@ export function LessonQueue({ items }: LessonQueueProps) {
             const assignmentVariant = assignmentVariantByStatus[item.assignmentStatus] ?? "muted";
             const assignmentLabel =
               assignmentLabelByStatus[item.assignmentStatus] ?? item.assignmentStatus;
+            const studentHref = `/students/${item.studentSlug ?? item.studentId}`;
 
             return (
               <article
@@ -91,7 +92,7 @@ export function LessonQueue({ items }: LessonQueueProps) {
 
                 <div className="flex xl:justify-end">
                   <Button asChild variant="secondary" className="w-full whitespace-nowrap sm:w-auto">
-                    <Link href={`/students/${item.studentId}`} aria-label={`Open student ${item.studentName}`}>
+                    <Link href={studentHref} aria-label={`Open student ${item.studentName}`}>
                       Open student
                     </Link>
                   </Button>

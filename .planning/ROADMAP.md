@@ -2,7 +2,7 @@
 
 ## Overview
 
-Drum Lesson OS v1 stays focused on the instructor-side memory loop: know the student before the lesson, update the teaching record quickly, and leave the next lesson action visible. Phase 3C already landed the pre-lesson routine slice, so the next work should finish the remaining instructor editing loops without expanding into studio operations, student accounts, or AI/media products.
+Drum Lesson OS v1 stays focused on the instructor-side memory loop: know the student before the lesson, update the teaching record quickly, and leave the next lesson action visible. Phase 4C tightened the Lesson Brief and Closeout meanings so the MVP stays centered on the 30-second pre-lesson and 2-minute post-lesson routine.
 
 The next phases intentionally exclude student portals, payments, attendance, calendar automation, AI summaries, and audio/video analysis. Real instructor authentication remains a release gate before any real deployment, but it is not part of these product feature phases.
 
@@ -17,7 +17,7 @@ The next phases intentionally exclude student portals, payments, attendance, cal
 - [x] **Phase 1: App Foundation And Data Model** - Create the runnable app foundation, persistent database, schema, and sample teaching data. (completed 2026-05-22)
 - [x] **Phase 2: Student Roster And Detail Read Views** - Let the instructor browse students and read the full teaching context for one student. (completed 2026-05-25)
 - [x] **Phase 3: Teaching Workflow Editing** - Finish student/profile, trait, assignment, lesson-note, next-plan, progress, and closeout editing. (completed 2026-05-26)
-- [x] **Phase 4: Instructor Workbench Polish** - Add filters, faster progress status updates, small tempo checkpoints, and dashboard quick-add actions. (completed 2026-05-26)
+- [x] **Phase 4: Instructor Workbench Polish** - Add filters, faster progress status updates, small tempo checkpoints, dashboard quick-add actions, and action-first brief/closeout tightening. (completed 2026-05-26)
 
 ## Phase Details
 
@@ -96,7 +96,7 @@ Plan files:
 
 ### Phase 4: Instructor Workbench Polish
 
-**Goal**: The dashboard and student detail surfaces become faster for repeated daily teaching work.
+**Goal**: The dashboard and student detail surfaces become faster and clearer for repeated daily teaching work.
 **Mode:** mvp-polish
 **UI hint**: yes
 **Depends on**: Phase 3
@@ -108,11 +108,13 @@ Plan files:
   3. Instructor can record a small tempo checkpoint on progress items when BPM matters.
   4. Instructor can add the smallest useful note or next-action update from the dashboard without leaving the scan surface.
   5. Desktop and 320px mobile layouts remain dense, readable, and free of text overlap.
+  6. Lesson Brief starts with the first action to check, and Closeout can change current focus without forcing a status change.
 
 Plans:
 
 - [x] 04A: Add dashboard filters and faster progress status transitions. (completed 2026-05-26)
 - [x] 04B: Add tempo checkpoint and limited dashboard quick-add actions. (completed 2026-05-26)
+- [x] 04C: Tighten Lesson Brief and Closeout meanings. (completed 2026-05-26)
 
 Plan files:
 
@@ -120,6 +122,8 @@ Plan files:
 - [04A-CHECKPOINT.md](phases/04a-workbench-filters-and-progress-polish/04A-CHECKPOINT.md)
 - [04B-PLAN.md](phases/04b-tempo-and-quick-add-refinements/04B-PLAN.md)
 - [04B-CHECKPOINT.md](phases/04b-tempo-and-quick-add-refinements/04B-CHECKPOINT.md)
+- [04C-PLAN.md](phases/04c-brief-closeout-tightening/04C-PLAN.md)
+- [04C-CHECKPOINT.md](phases/04c-brief-closeout-tightening/04C-CHECKPOINT.md)
 
 ## Explicitly Not Planned
 
@@ -136,11 +140,11 @@ These items should not be revived as near-term phases without a new product deci
 ## Progress
 
 **Execution Order:**
-Phases execute in this order: 1 -> 2 -> 3A -> 3B -> 3C -> 3D -> 3E -> 3F -> 4A -> 4B
+Phases execute in this order: 1 -> 2 -> 3A -> 3B -> 3C -> 3D -> 3E -> 3F -> 4A -> 4B -> 4C
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. App Foundation And Data Model | 3/3 | Complete | 2026-05-22 |
 | 2. Student Roster And Detail Read Views | 3/3 | Complete | 2026-05-25 |
 | 3. Teaching Workflow Editing | 6/6 | Complete | 2026-05-26 |
-| 4. Instructor Workbench Polish | 2/2 | Complete | 2026-05-26 |
+| 4. Instructor Workbench Polish | 3/3 | Complete | 2026-05-26 |

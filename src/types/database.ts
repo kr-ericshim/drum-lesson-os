@@ -31,6 +31,7 @@ export type Database = {
         Row: {
           id: string;
           instructor_id: string;
+          slug: string;
           name: string;
           profile_cue: string;
           primary_weak_point: string;
@@ -41,6 +42,7 @@ export type Database = {
         Insert: {
           id?: string;
           instructor_id: string;
+          slug?: string;
           name: string;
           profile_cue: string;
           primary_weak_point: string;
@@ -51,6 +53,7 @@ export type Database = {
         Update: {
           id?: string;
           instructor_id?: string;
+          slug?: string;
           name?: string;
           profile_cue?: string;
           primary_weak_point?: string;

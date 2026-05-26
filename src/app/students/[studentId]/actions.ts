@@ -55,7 +55,7 @@ async function ensureDemoStudent(studentId: string) {
 
   const { data, error } = await supabase
     .from("students")
-    .select("id")
+    .select("id, slug")
     .eq("id", studentId)
     .eq("instructor_id", DEMO_INSTRUCTOR_ID)
     .maybeSingle();
@@ -68,7 +68,16 @@ async function ensureDemoStudent(studentId: string) {
     return { supabase, ok: false, message: "Student was not found." } as const;
   }
 
-  return { supabase, ok: true, message: "" } as const;
+  return { supabase, ok: true, message: "", slug: data.slug as string | null } as const;
+}
+
+function revalidateStudentPaths(studentId: string, studentSlug?: string | null) {
+  revalidatePath("/");
+  revalidatePath(`/students/${studentId}`);
+
+  if (studentSlug) {
+    revalidatePath(`/students/${studentSlug}`);
+  }
 }
 
 export async function createLessonNoteAction(formData: FormData): Promise<void> {
@@ -107,8 +116,7 @@ export async function createLessonNoteAction(formData: FormData): Promise<void> 
     failAction(error.message);
   }
 
-  revalidatePath("/");
-  revalidatePath(`/students/${studentId}`);
+  revalidateStudentPaths(studentId, studentCheck.slug);
 }
 
 export async function saveNextLessonPlanAction(
@@ -171,8 +179,7 @@ export async function saveNextLessonPlanAction(
     }
   }
 
-  revalidatePath("/");
-  revalidatePath(`/students/${studentId}`);
+  revalidateStudentPaths(studentId, studentCheck.slug);
 }
 
 export async function saveProgressItemAction(formData: FormData): Promise<void> {
@@ -308,8 +315,7 @@ export async function saveProgressItemAction(formData: FormData): Promise<void> 
     }
   }
 
-  revalidatePath("/");
-  revalidatePath(`/students/${studentId}`);
+  revalidateStudentPaths(studentId, studentCheck.slug);
 }
 
 export async function saveProgressItemStatusAction(formData: FormData): Promise<void> {
@@ -370,8 +376,7 @@ export async function saveProgressItemStatusAction(formData: FormData): Promise<
     failAction("Progress item was not found.");
   }
 
-  revalidatePath("/");
-  revalidatePath(`/students/${studentId}`);
+  revalidateStudentPaths(studentId, studentCheck.slug);
 }
 
 export async function saveStudentProfileAction(formData: FormData): Promise<void> {
@@ -421,8 +426,7 @@ export async function saveStudentProfileAction(formData: FormData): Promise<void
     failAction("Student was not found.");
   }
 
-  revalidatePath("/");
-  revalidatePath(`/students/${studentId}`);
+  revalidateStudentPaths(studentId, studentCheck.slug);
 }
 
 export async function saveStudentTraitAction(formData: FormData): Promise<void> {
@@ -481,8 +485,7 @@ export async function saveStudentTraitAction(formData: FormData): Promise<void> 
     }
   }
 
-  revalidatePath("/");
-  revalidatePath(`/students/${studentId}`);
+  revalidateStudentPaths(studentId, studentCheck.slug);
 }
 
 export async function saveAssignmentAction(formData: FormData): Promise<void> {
@@ -543,8 +546,7 @@ export async function saveAssignmentAction(formData: FormData): Promise<void> {
     }
   }
 
-  revalidatePath("/");
-  revalidatePath(`/students/${studentId}`);
+  revalidateStudentPaths(studentId, studentCheck.slug);
 }
 
 export async function createQuickLessonNoteAction(formData: FormData): Promise<void> {
@@ -581,8 +583,7 @@ export async function createQuickLessonNoteAction(formData: FormData): Promise<v
     failAction(error.message);
   }
 
-  revalidatePath("/");
-  revalidatePath(`/students/${studentId}`);
+  revalidateStudentPaths(studentId, studentCheck.slug);
 }
 
 export async function saveQuickNextActionAction(formData: FormData): Promise<void> {
@@ -641,8 +642,7 @@ export async function saveQuickNextActionAction(formData: FormData): Promise<voi
     }
   }
 
-  revalidatePath("/");
-  revalidatePath(`/students/${studentId}`);
+  revalidateStudentPaths(studentId, studentCheck.slug);
 }
 
 export async function markAssignmentNeedsReviewAction(formData: FormData): Promise<void> {
@@ -682,8 +682,7 @@ export async function markAssignmentNeedsReviewAction(formData: FormData): Promi
     failAction("Assignment was not found.");
   }
 
-  revalidatePath("/");
-  revalidatePath(`/students/${studentId}`);
+  revalidateStudentPaths(studentId, studentCheck.slug);
 }
 
 export async function closeoutLessonAction(formData: FormData): Promise<void> {
@@ -735,13 +734,22 @@ export async function closeoutLessonAction(formData: FormData): Promise<void> {
     failAction(noteError.message);
   }
 
-  const nextPlanPayload = {
+  const nextPlanPayload: {
+    planned_for: string | null;
+    priority: string;
+    next_action: string;
+    detail?: string;
+    updated_at: string;
+  } = {
     planned_for: input.plannedFor,
     priority: input.priority,
     next_action: input.nextAction,
-    detail: input.nextPlanDetail,
     updated_at: updatedAt,
   };
+
+  if (input.nextPlanDetail) {
+    nextPlanPayload.detail = input.nextPlanDetail;
+  }
 
   if (input.nextPlanId) {
     const { data, error } = await studentCheck.supabase
@@ -765,6 +773,7 @@ export async function closeoutLessonAction(formData: FormData): Promise<void> {
       instructor_id: DEMO_INSTRUCTOR_ID,
       student_id: input.studentId,
       ...nextPlanPayload,
+      detail: input.nextPlanDetail || input.nextAction,
     });
 
     if (error) {
@@ -811,7 +820,7 @@ export async function closeoutLessonAction(formData: FormData): Promise<void> {
     }
   }
 
-  if (input.progressItemId && input.progressStatus) {
+  if (input.progressItemId && (input.progressStatus || input.progressCurrentFocus)) {
     const { data: existingProgressItem, error: existingProgressItemError } =
       await studentCheck.supabase
         .from("progress_items")
@@ -845,13 +854,25 @@ export async function closeoutLessonAction(formData: FormData): Promise<void> {
       }
     }
 
+    const progressPayload: {
+      status?: string;
+      current_focus?: boolean;
+      updated_at: string;
+    } = {
+      updated_at: updatedAt,
+    };
+
+    if (input.progressStatus) {
+      progressPayload.status = input.progressStatus;
+    }
+
+    if (input.progressCurrentFocus) {
+      progressPayload.current_focus = true;
+    }
+
     const { data, error } = await studentCheck.supabase
       .from("progress_items")
-      .update({
-        status: input.progressStatus,
-        current_focus: input.progressCurrentFocus,
-        updated_at: updatedAt,
-      })
+      .update(progressPayload)
       .eq("id", input.progressItemId)
       .eq("student_id", input.studentId)
       .eq("instructor_id", DEMO_INSTRUCTOR_ID)
@@ -867,6 +888,5 @@ export async function closeoutLessonAction(formData: FormData): Promise<void> {
     }
   }
 
-  revalidatePath("/");
-  revalidatePath(`/students/${input.studentId}`);
+  revalidateStudentPaths(input.studentId, studentCheck.slug);
 }

@@ -135,10 +135,11 @@ export function LessonCloseoutForm({ student }: LessonCloseoutFormProps) {
             <TextAreaField
               defaultValue={student.nextPlan?.detail ?? ""}
               id="closeout-next-detail"
-              label="Next detail"
+              label="Next detail (optional)"
               maxLength={2000}
               name="nextPlanDetail"
               placeholder="Prep sequence, tempo target, or review note"
+              required={false}
             />
           </div>
 
@@ -241,7 +242,7 @@ export function LessonCloseoutForm({ student }: LessonCloseoutFormProps) {
               <span>
                 <span className="font-semibold">Set selected item as current focus</span>
                 <span className="block text-muted-foreground">
-                  Applies only when a progress item is selected.
+                  Works with or without a status change.
                 </span>
               </span>
             </label>

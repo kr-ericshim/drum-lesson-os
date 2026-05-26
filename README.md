@@ -37,9 +37,9 @@ For a local Supabase stack, reset and seed together:
 supabase db reset
 ```
 
-The seed data uses demo instructor id `11111111-1111-4111-8111-111111111111`. If you change the demo instructor, update `NEXT_PUBLIC_DEMO_INSTRUCTOR_ID`, the seed rows, and the demo migration policies together.
+The seed data uses demo instructor id `11111111-1111-4111-8111-111111111111` with Korean demo roster content and short student slugs such as `kim-daniel`. If you change the demo instructor, update `NEXT_PUBLIC_DEMO_INSTRUCTOR_ID`, the seed rows, and the demo migration policies together.
 
-For the early MVP demo, `0002_demo_read_policy.sql` temporarily allows anonymous read access only to rows owned by the seeded demo instructor id. Phase 3A adds `0003_demo_lesson_note_next_plan_write_policy.sql`, which temporarily allows anonymous demo writes only for lesson note creation and next lesson plan creation/update under the same seeded instructor id. Phase 3B adds `0004_demo_progress_item_write_policy.sql`, which temporarily allows anonymous demo writes only for progress item creation/update under the same seeded instructor id. Phase 3C adds `0005_progress_focus_source_of_truth.sql`, which normalizes duplicate focused progress rows, enforces one focused progress item per student, and removes the old student-level focus column. Phase 3D adds `0006_demo_student_trait_write_policy.sql`, which temporarily allows anonymous demo writes only for student profile and trait creation/update under the same seeded instructor id. Phase 3E adds `0007_demo_assignment_write_policy.sql`, which temporarily allows anonymous demo writes only for assignment creation/update under the same seeded instructor id. Phase 4B adds `0008_progress_tempo_note.sql`, which adds a small optional tempo note to progress items, and `0009_demo_progress_tempo_note_write_grant.sql`, which extends the temporary demo progress write grant to that new column.
+For the early MVP demo, `0002_demo_read_policy.sql` temporarily allows anonymous read access only to rows owned by the seeded demo instructor id. Phase 3A adds `0003_demo_lesson_note_next_plan_write_policy.sql`, which temporarily allows anonymous demo writes only for lesson note creation and next lesson plan creation/update under the same seeded instructor id. Phase 3B adds `0004_demo_progress_item_write_policy.sql`, which temporarily allows anonymous demo writes only for progress item creation/update under the same seeded instructor id. Phase 3C adds `0005_progress_focus_source_of_truth.sql`, which normalizes duplicate focused progress rows, enforces one focused progress item per student, and removes the old student-level focus column. Phase 3D adds `0006_demo_student_trait_write_policy.sql`, which temporarily allows anonymous demo writes only for student profile and trait creation/update under the same seeded instructor id. Phase 3E adds `0007_demo_assignment_write_policy.sql`, which temporarily allows anonymous demo writes only for assignment creation/update under the same seeded instructor id. Phase 4B adds `0008_progress_tempo_note.sql`, which adds a small optional tempo note to progress items, and `0009_demo_progress_tempo_note_write_grant.sql`, which extends the temporary demo progress write grant to that new column. Demo maintenance adds `0010_korean_demo_data.sql` to replace seeded demo content with Korean rows, `0011_student_short_slugs.sql` to keep public student URLs short while preserving UUID primary keys, and `0012_prune_extra_demo_students.sql` to remove old smoke-created demo students.
 
 These demo policies are not production auth. Anyone with the public Supabase key could call the Supabase REST API directly and mutate the scoped demo rows. Remove or replace these policies when real instructor authentication is added.
 
@@ -170,6 +170,18 @@ With Supabase env, seed data, and migrations through `0009` applied:
 6. From `/`, mark a student assignment as `Needs review` and confirm roster, queue, Summary, and Lesson Brief cues update.
 7. Use the Browser plugin to confirm dashboard quick actions stay readable at desktop width and 320px mobile width.
 
+## Phase 4C Brief And Closeout Tightening Smoke Check
+
+With Supabase env, seed data, and migrations through `0009` applied:
+
+1. Open a seeded student detail page and confirm Lesson Brief shows `Start here` above `Remember`.
+2. Add or submit a newest lesson note whose next-step hint differs from the next lesson action, then confirm Lesson Brief `First check` uses the note hint.
+3. Set an assignment to `Needs review` with a detail, then confirm Lesson Brief includes that detail in the assignment review cue.
+4. Submit closeout with a progress item selected, `No status change`, and `Set selected item as current focus` checked.
+5. Refresh `/` and `/students/{id}` and confirm dashboard, header, Lesson Brief, Summary, and Progress tab show the same focused progress item.
+6. Clear `Next detail` in closeout, save, and confirm the next lesson action still saves without violating the existing next-plan detail constraint.
+7. Use the Browser plugin to confirm dashboard and student detail stay readable at desktop width and 320px mobile width.
+
 ## Phase Plan Docs
 
 - `.planning/phases/03d-student-profile-and-trait-editing/03D-PLAN.md`
@@ -182,3 +194,5 @@ With Supabase env, seed data, and migrations through `0009` applied:
 - `.planning/phases/04a-workbench-filters-and-progress-polish/04A-CHECKPOINT.md`
 - `.planning/phases/04b-tempo-and-quick-add-refinements/04B-PLAN.md`
 - `.planning/phases/04b-tempo-and-quick-add-refinements/04B-CHECKPOINT.md`
+- `.planning/phases/04c-brief-closeout-tightening/04C-PLAN.md`
+- `.planning/phases/04c-brief-closeout-tightening/04C-CHECKPOINT.md`

@@ -7,8 +7,8 @@ import {
   mapLessonQueue,
   mapStudentRoster,
   pickCurrentFocusProgressItem,
+  pickCurrentNextPlan,
   pickLatestAssignment,
-  pickPriorityNextPlan,
 } from "./read-models.ts";
 
 test("mapStudentRoster derives current focus from focused progress item", () => {
@@ -216,24 +216,26 @@ test("pickCurrentFocusProgressItem has a deterministic same-date tie-break", () 
   assert.equal(focus?.id, "alpha");
 });
 
-test("pickPriorityNextPlan prefers high priority before recency", () => {
-  const plan = pickPriorityNextPlan([
+test("pickCurrentNextPlan prefers the recently updated plan before priority", () => {
+  const plan = pickCurrentNextPlan([
     {
       id: "plan-recent",
       next_action: "Recent normal plan",
       priority: "normal",
       created_at: "2026-05-20T10:00:00.000Z",
+      updated_at: "2026-05-25T10:00:00.000Z",
     },
     {
       id: "plan-high",
       next_action: "Older high plan",
       priority: "high",
       created_at: "2026-05-10T10:00:00.000Z",
+      updated_at: "2026-05-10T10:00:00.000Z",
     },
   ]);
 
-  assert.equal(plan?.next_action, "Older high plan");
-  assert.equal(plan?.id, "plan-high");
+  assert.equal(plan?.next_action, "Recent normal plan");
+  assert.equal(plan?.id, "plan-recent");
 });
 
 test("pickLatestAssignment chooses newest assignment status", () => {
@@ -364,8 +366,11 @@ test("mapStudentDetail feeds closeout-updated note assignment and next plan into
   assert.equal(detail.assignment?.id, "assignment-closeout");
   assert.equal(detail.nextPlan?.id, "plan-closeout");
   assert.equal(detail.lessonBrief.latestObservation, "Closeout observation should lead the brief.");
-  assert.equal(detail.lessonBrief.assignmentReviewCue, "Closeout assignment needs review.");
-  assert.equal(detail.lessonBrief.firstCheck, "Check the closeout assignment first");
+  assert.equal(
+    detail.lessonBrief.assignmentReviewCue,
+    "Closeout assignment needs review: Review the closeout practice task.",
+  );
+  assert.equal(detail.lessonBrief.firstCheck, "Closeout hint");
 });
 
 test("mapStudentDetail includes weak-point traits in the Lesson Brief weak point", () => {
@@ -460,6 +465,35 @@ test("buildLessonBrief falls back to the latest note hint when next plan is miss
   assert.equal(brief.firstCheck, "Lead with full-phrase demo.");
 });
 
+test("buildLessonBrief uses the latest note hint before the next plan action", () => {
+  const brief = buildLessonBrief({
+    profileCue: "Learns by watching first",
+    currentFocus: null,
+    weakPoint: "Needs visual demo",
+    assignment: null,
+    nextAction: "Review the new plan first",
+    nextPlan: {
+      id: "plan-1",
+      nextAction: "Review the new plan first",
+      priority: "high",
+      plannedFor: "2026-05-29",
+      detail: "Plan detail.",
+    },
+    recentNotes: [
+      {
+        id: "note-new",
+        lessonDate: "2026-05-22",
+        coveredMaterial: "Paradiddle movement",
+        observations: "Visual demo landed quickly.",
+        practiceAssigned: "Two-bar loop.",
+        nextStepHint: "Lead with the assignment playback.",
+      },
+    ],
+  });
+
+  assert.equal(brief.firstCheck, "Lead with the assignment playback.");
+});
+
 test("buildLessonBrief carries the briefing fields used by the UI", () => {
   const currentFocus = {
     id: "focus-1",
@@ -505,10 +539,30 @@ test("buildLessonBrief carries the briefing fields used by the UI", () => {
     currentFocus,
     weakPoint: "Practice is uneven",
     nextAction: "Check the assignment first",
-    assignmentReviewCue: "Song section loop needs review.",
+    assignmentReviewCue: "Song section loop needs review: Review before adding the chorus.",
     latestObservation: "Tempo dropped after the entrance.",
-    firstCheck: "Check the assignment first",
+    firstCheck: "Ask about practice consistency.",
   });
+});
+
+test("buildLessonBrief keeps the short needs-review cue when assignment detail is blank", () => {
+  const brief = buildLessonBrief({
+    profileCue: "Adult hobby student",
+    currentFocus: null,
+    weakPoint: "Practice is uneven",
+    assignment: {
+      id: "assignment-1",
+      status: "needs_review",
+      title: "Song section loop",
+      dueDate: null,
+      detail: "",
+    },
+    nextAction: "Check the assignment first",
+    nextPlan: null,
+    recentNotes: [],
+  });
+
+  assert.equal(brief.assignmentReviewCue, "Song section loop needs review.");
 });
 
 test("mapLessonQueue sorts dated plans by date priority and name", () => {
