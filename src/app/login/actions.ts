@@ -1,9 +1,21 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 
 import { getPostLoginRedirectPath } from "@/lib/auth/protected-routes";
+import { clearRateLimit, consumeRateLimit, getAuthRateLimitKeys } from "@/lib/auth/rate-limit";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+
+const loginIpRateLimit = {
+  maxAttempts: 30,
+  windowMs: 15 * 60 * 1000,
+};
+
+const loginEmailRateLimit = {
+  maxAttempts: 5,
+  windowMs: 15 * 60 * 1000,
+};
 
 function loginPathWithError(error: string, nextPath: string) {
   const params = new URLSearchParams({ error });
@@ -24,6 +36,19 @@ export async function signInAction(formData: FormData): Promise<void> {
     redirect(loginPathWithError("missing", nextPath));
   }
 
+  const requestHeaders = await headers();
+  const [ipRateLimitKey, emailRateLimitKey] = getAuthRateLimitKeys(
+    "login",
+    email,
+    requestHeaders,
+  );
+  const ipLimit = consumeRateLimit(ipRateLimitKey, loginIpRateLimit);
+  const emailLimit = consumeRateLimit(emailRateLimitKey, loginEmailRateLimit);
+
+  if (!ipLimit.allowed || !emailLimit.allowed) {
+    redirect(loginPathWithError("rate_limited", nextPath));
+  }
+
   const supabase = await createServerSupabaseClient();
 
   if (!supabase) {
@@ -39,6 +64,7 @@ export async function signInAction(formData: FormData): Promise<void> {
     redirect(loginPathWithError("invalid", nextPath));
   }
 
+  clearRateLimit(emailRateLimitKey);
   redirect(nextPath);
 }
 

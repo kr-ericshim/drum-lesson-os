@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "lint": "eslint .",
-    "test": "node --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types --test src/lib/auth/instructor.test.mts src/lib/auth/protected-routes.test.mts src/lib/supabase/real-auth-rls.test.mts src/lib/supabase/read-models.test.mts src/lib/students/editing-schemas.test.mts src/lib/students/closeout-schema.test.mts src/lib/students/roster-filters.test.mts"
+    "test": "node --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types --test src/lib/auth/instructor.test.mts src/lib/auth/password-reset.test.mts src/lib/auth/protected-routes.test.mts src/lib/auth/rate-limit.test.mts src/lib/supabase/real-auth-rls.test.mts src/lib/supabase/read-models.test.mts src/lib/students/editing-schemas.test.mts src/lib/students/closeout-schema.test.mts src/lib/students/roster-filters.test.mts"
   },
   "dependencies": {
     "@radix-ui/react-slot": "latest",
@@ -31,5 +31,8 @@
     "eslint-config-next": "latest",
     "tailwindcss": "latest",
     "typescript": "latest"
+  },
+  "overrides": {
+    "postcss": "^8.5.10"
   }
 }

@@ -18,6 +18,7 @@ Create `.env.local` from `.env.example`:
 ```bash
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
+NEXT_PUBLIC_APP_ORIGIN=http://localhost:3000
 SUPABASE_DB_URL=
 ```
 
@@ -47,6 +48,14 @@ where id = '11111111-1111-4111-8111-111111111111';
 ```
 
 For hosted Supabase projects, disable public signup in Auth settings after creating the single instructor account.
+
+Password recovery emails should redirect to the app reset screen. In Supabase Auth URL settings, allow:
+
+```text
+http://localhost:3000/reset-password
+```
+
+Then use the app's `/forgot-password` page or `Authentication` -> `Users` -> `Send password recovery` and open the newest email link.
 
 ## Current Roadmap Scope
 

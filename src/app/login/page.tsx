@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 
 import { signInAction } from "@/app/login/actions";
 import { Button } from "@/components/ui/button";
@@ -17,6 +18,7 @@ type LoginPageProps = {
 const errorMessageByCode: Record<string, string> = {
   invalid: "Email or password did not match an instructor account.",
   missing: "Enter both email and password.",
+  rate_limited: "Too many sign-in attempts. Wait a few minutes, then try again.",
   setup: "Supabase environment variables are not configured.",
   unlinked: "This login is not linked to the instructor workspace.",
 };
@@ -82,6 +84,14 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
             <Button className="w-full" type="submit">
               Sign in
             </Button>
+            <div className="text-center">
+              <Link
+                className="text-sm font-semibold text-primary underline-offset-4 hover:underline"
+                href="/forgot-password"
+              >
+                Reset password
+              </Link>
+            </div>
           </form>
         </CardContent>
       </Card>
