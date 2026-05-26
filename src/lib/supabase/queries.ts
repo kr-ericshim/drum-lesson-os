@@ -1,4 +1,4 @@
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { loadCurrentInstructor } from "@/lib/auth/instructor";
 import {
   mapStudentDetail,
   mapStudentRoster,
@@ -16,10 +16,16 @@ export async function getStudentRoster(): Promise<{
   data: StudentRosterItem[];
   error: string | null;
 }> {
-  const supabase = await createServerSupabaseClient();
+  const instructorResult = await loadCurrentInstructor();
+  const supabase = instructorResult.supabase;
 
-  if (!supabase) {
-    return { data: [], error: "Supabase environment is not configured." };
+  if (!instructorResult.ok || !supabase) {
+    return {
+      data: [],
+      error: instructorResult.ok
+        ? "Supabase environment is not configured."
+        : instructorResult.message,
+    };
   }
 
   const { data, error } = await supabase
@@ -37,6 +43,7 @@ export async function getStudentRoster(): Promise<{
         next_lesson_plans(id, next_action, priority, created_at, updated_at, planned_for, detail)
       `,
     )
+    .eq("instructor_id", instructorResult.instructor.id)
     .eq("active", true)
     .order("name", { ascending: true })
     .returns<StudentRosterSourceRow[]>();
@@ -59,10 +66,16 @@ export async function getStudentDetail(studentRef: string): Promise<{
   data: StudentDetail | null;
   error: string | null;
 }> {
-  const supabase = await createServerSupabaseClient();
+  const instructorResult = await loadCurrentInstructor();
+  const supabase = instructorResult.supabase;
 
-  if (!supabase) {
-    return { data: null, error: "Supabase environment is not configured." };
+  if (!instructorResult.ok || !supabase) {
+    return {
+      data: null,
+      error: instructorResult.ok
+        ? "Supabase environment is not configured."
+        : instructorResult.message,
+    };
   }
 
   let query = supabase
@@ -81,6 +94,7 @@ export async function getStudentDetail(studentRef: string): Promise<{
         lesson_notes(id, lesson_date, created_at, covered_material, observations, practice_assigned, next_step_hint)
       `,
     )
+    .eq("instructor_id", instructorResult.instructor.id)
     .eq("active", true);
 
   query = isUuid(studentRef) ? query.eq("id", studentRef) : query.eq("slug", studentRef);

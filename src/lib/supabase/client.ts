@@ -1,4 +1,4 @@
-import { createClient } from "@supabase/supabase-js";
+import { createBrowserClient } from "@supabase/ssr";
 
 import { getSupabaseSetupStatus } from "@/lib/env";
 import type { Database } from "@/types/database";
@@ -10,7 +10,7 @@ export function createBrowserSupabaseClient() {
     return null;
   }
 
-  return createClient<Database>(
+  return createBrowserClient<Database>(
     status.env.NEXT_PUBLIC_SUPABASE_URL,
     status.env.NEXT_PUBLIC_SUPABASE_KEY,
   );

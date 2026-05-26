@@ -19,7 +19,6 @@ Create `.env.local` from `.env.example`:
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
 SUPABASE_DB_URL=
-NEXT_PUBLIC_DEMO_INSTRUCTOR_ID=
 ```
 
 Phase 1 uses hosted Supabase/Postgres assumptions from the start. The browser bundle only uses the public Supabase URL and publishable key. Legacy projects can use `NEXT_PUBLIC_SUPABASE_ANON_KEY` instead of `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`.
@@ -37,23 +36,30 @@ For a local Supabase stack, reset and seed together:
 supabase db reset
 ```
 
-The seed data uses demo instructor id `11111111-1111-4111-8111-111111111111` with Korean demo roster content and short student slugs such as `kim-daniel`. If you change the demo instructor, update `NEXT_PUBLIC_DEMO_INSTRUCTOR_ID`, the seed rows, and the demo migration policies together.
+The seed data uses instructor id `11111111-1111-4111-8111-111111111111` with Korean roster content and short student slugs such as `kim-daniel`.
 
-For the early MVP demo, `0002_demo_read_policy.sql` temporarily allows anonymous read access only to rows owned by the seeded demo instructor id. Phase 3A adds `0003_demo_lesson_note_next_plan_write_policy.sql`, which temporarily allows anonymous demo writes only for lesson note creation and next lesson plan creation/update under the same seeded instructor id. Phase 3B adds `0004_demo_progress_item_write_policy.sql`, which temporarily allows anonymous demo writes only for progress item creation/update under the same seeded instructor id. Phase 3C adds `0005_progress_focus_source_of_truth.sql`, which normalizes duplicate focused progress rows, enforces one focused progress item per student, and removes the old student-level focus column. Phase 3D adds `0006_demo_student_trait_write_policy.sql`, which temporarily allows anonymous demo writes only for student profile and trait creation/update under the same seeded instructor id. Phase 3E adds `0007_demo_assignment_write_policy.sql`, which temporarily allows anonymous demo writes only for assignment creation/update under the same seeded instructor id. Phase 4B adds `0008_progress_tempo_note.sql`, which adds a small optional tempo note to progress items, and `0009_demo_progress_tempo_note_write_grant.sql`, which extends the temporary demo progress write grant to that new column. Demo maintenance adds `0010_korean_demo_data.sql` to replace seeded demo content with Korean rows, `0011_student_short_slugs.sql` to keep public student URLs short while preserving UUID primary keys, and `0012_prune_extra_demo_students.sql` to remove old smoke-created demo students.
+`0013_real_instructor_auth.sql` adds the `instructors.auth_user_id` link, removes anonymous access grants, and scopes every student-domain table through the authenticated instructor owner. After creating your Supabase Auth user, bind the existing instructor row to that user:
 
-These demo policies are not production auth. Anyone with the public Supabase key could call the Supabase REST API directly and mutate the scoped demo rows. Remove or replace these policies when real instructor authentication is added.
+```sql
+update public.instructors
+set auth_user_id = '<your-supabase-auth-user-id>'
+where id = '11111111-1111-4111-8111-111111111111';
+```
+
+For hosted Supabase projects, disable public signup in Auth settings after creating the single instructor account.
 
 ## Current Roadmap Scope
 
-The documented MVP phases stay inside the instructor-side workflow and are complete through Phase 4B:
+The documented MVP phases stay inside the instructor-side workflow and are complete through Phase 4C:
 
 - Phase 3D: student profile and trait editing.
 - Phase 3E: assignment/homework review editing.
 - Phase 3F: post-lesson closeout.
 - Phase 4A: dashboard filters and progress status polish.
 - Phase 4B: small tempo checkpoints and limited dashboard quick actions.
+- Phase 4C: Lesson Brief and Closeout tightening.
 
-Student portal, payments, attendance, calendar automation, AI summaries, and audio/video analysis are not planned in the near-term roadmap. Real instructor auth and production RLS cleanup remain required before using real student data outside the demo environment.
+Student portal, payments, attendance, calendar automation, AI summaries, and audio/video analysis are not planned in the near-term roadmap. Real instructor auth and production RLS cleanup are now part of the release gate.
 
 ## Verification
 
@@ -61,7 +67,6 @@ Student portal, payments, attendance, calendar automation, AI summaries, and aud
 npm test
 npm run build
 npm run lint
-rg "SERVICE_ROLE|service_role" src .env.example
 ```
 
 For a first-screen smoke check:
@@ -70,7 +75,7 @@ For a first-screen smoke check:
 npm run dev
 ```
 
-Inspect http://localhost:3000 at desktop width and at 320px mobile width. Without Supabase env vars, the page should show `Review setup` and the `Supabase setup needed` empty state instead of crashing.
+Inspect http://localhost:3000 at desktop width and at 320px mobile width. Without Supabase env vars, the page should show `Review setup` and the `Supabase setup needed` empty state instead of crashing. With Supabase configured, signed-out visitors should be redirected to `/login`.
 
 ## Phase 2 Read-View Smoke Check
 
@@ -80,21 +85,15 @@ The student detail route is read-only. It should render `Summary`, `Progress`, a
 
 ## Phase 3A Editing Smoke Check
 
-With Supabase env, seed data, and migrations through `0003` applied:
+With Supabase env, seed data, auth user binding, and migrations through `0003` applied:
 
 1. Open `/students/22222222-2222-4222-8222-222222222222`.
 2. In `Summary`, edit `Next lesson`, save, and confirm the header and panel reflect the saved next action.
 3. In `Notes`, add a dated lesson note and confirm it appears in the latest notes list.
 
-The app should still have no service-role key usage:
-
-```bash
-rg "SERVICE_ROLE|service_role" src .env.example
-```
-
 ## Phase 3B Progress Editing Smoke Check
 
-With Supabase env, seed data, and migrations through `0004` applied:
+With Supabase env, seed data, auth user binding, and migrations through `0004` applied:
 
 1. Open `/students/22222222-2222-4222-8222-222222222222`.
 2. In `Progress`, add a progress item, save it, and confirm it appears in the progress list.
@@ -103,7 +102,7 @@ With Supabase env, seed data, and migrations through `0004` applied:
 
 ## Phase 3C Pre-Lesson Routine Smoke Check
 
-With Supabase env, seed data, and migrations through `0005` applied:
+With Supabase env, seed data, auth user binding, and migrations through `0005` applied:
 
 1. Open `/` and confirm `Today and upcoming` appears above the student roster.
 2. Confirm each dated queue row shows date state, student, priority, next lesson action, assignment status, current focus, and an `Open student` action.
@@ -113,7 +112,7 @@ With Supabase env, seed data, and migrations through `0005` applied:
 
 ## Phase 3D Student Profile And Trait Editing Smoke Check
 
-With Supabase env, seed data, and migrations through `0006` applied:
+With Supabase env, seed data, auth user binding, and migrations through `0006` applied:
 
 1. Open `/` and click `Add student`.
 2. Create a student and confirm the app redirects to that student's detail page.
@@ -124,7 +123,7 @@ With Supabase env, seed data, and migrations through `0006` applied:
 
 ## Phase 3E Assignment Review Editing Smoke Check
 
-With Supabase env, seed data, and migrations through `0007` applied:
+With Supabase env, seed data, auth user binding, and migrations through `0007` applied:
 
 1. Open a seeded student detail page.
 2. In `Summary`, expand `Edit assignment`.

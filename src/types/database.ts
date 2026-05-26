@@ -6,6 +6,7 @@ export type Database = {
       instructors: {
         Row: {
           id: string;
+          auth_user_id: string | null;
           display_name: string;
           studio_name: string | null;
           created_at: string;
@@ -13,6 +14,7 @@ export type Database = {
         };
         Insert: {
           id: string;
+          auth_user_id?: string | null;
           display_name: string;
           studio_name?: string | null;
           created_at?: string;
@@ -20,6 +22,7 @@ export type Database = {
         };
         Update: {
           id?: string;
+          auth_user_id?: string | null;
           display_name?: string;
           studio_name?: string | null;
           created_at?: string;

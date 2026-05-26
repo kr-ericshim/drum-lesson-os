@@ -4,7 +4,7 @@
 
 Drum Lesson OS v1 stays focused on the instructor-side memory loop: know the student before the lesson, update the teaching record quickly, and leave the next lesson action visible. Phase 4C tightened the Lesson Brief and Closeout meanings so the MVP stays centered on the 30-second pre-lesson and 2-minute post-lesson routine.
 
-The next phases intentionally exclude student portals, payments, attendance, calendar automation, AI summaries, and audio/video analysis. Real instructor authentication remains a release gate before any real deployment, but it is not part of these product feature phases.
+The next phases intentionally exclude student portals, payments, attendance, calendar automation, AI summaries, and audio/video analysis. Real instructor authentication is implemented as a release gate; live deployment still requires applying the auth migration and binding the single Supabase Auth user to the existing instructor row.
 
 ## Phases
 

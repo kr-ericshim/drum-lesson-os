@@ -1,6 +1,7 @@
 import { LessonQueue } from "@/components/dashboard/lesson-queue";
 import { SetupStatusPanel } from "@/components/dashboard/setup-status-panel";
 import { StudentRosterPreview } from "@/components/dashboard/student-roster-preview";
+import { SignOutButton } from "@/components/auth/sign-out-button";
 import { getSupabaseSetupStatus } from "@/lib/env";
 import { getStudentRoster } from "@/lib/supabase/queries";
 import { mapLessonQueue } from "@/lib/supabase/read-models";
@@ -41,6 +42,7 @@ export default async function Home() {
 
         <aside className="space-y-4">
           <SetupStatusPanel status={setupStatus} />
+          {setupStatus.state === "configured" ? <SignOutButton /> : null}
         </aside>
       </div>
     </main>
