@@ -2,10 +2,10 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: instructor-side MVP
-status: release-gate-verification
-stopped_at: Linked Supabase auth/RLS, public signup lock, closeout RPC, signed-out route protection, and authenticated closeout smoke verified; inbox recovery link still needs real inbox access
-last_updated: "2026-05-27T02:54:23+09:00"
-last_activity: 2026-05-27 -- Password recovery UI, login rate limiting, security headers, public signup lock, signed-out route protection, transactional closeout RPC, and authenticated dashboard/detail closeout smoke were verified; linked Supabase dry-run reports migrations up to date, the instructor row has a bound Auth user, and demo anon policies/grants are removed.
+status: release-gate-complete
+stopped_at: Instructor-side MVP release gate complete; linked Supabase auth/RLS, public signup lock, closeout RPC, signed-out route protection, inbox recovery link, and authenticated closeout smoke verified
+last_updated: "2026-05-27T02:57:34+09:00"
+last_activity: 2026-05-27 -- Password recovery UI, real inbox recovery link, login rate limiting, security headers, public signup lock, signed-out route protection, transactional closeout RPC, and authenticated dashboard/detail closeout smoke were verified; linked Supabase dry-run reports migrations up to date, the instructor row has a bound Auth user, and demo anon policies/grants are removed.
 progress:
   total_phases: 4
   completed_phases: 4
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-22)
 
 **Core value:** An instructor can quickly understand a student's current progress and personal characteristics before or during a lesson.
-**Current focus:** Instructor-side MVP phases complete; real instructor auth, production RLS cleanup, public signup lock, signed-out route protection, the closeout transaction RPC, and the authenticated browser smoke path are implemented and verified against the linked Supabase project/local app. Before real data use, verify a real password recovery email link from the instructor inbox.
+**Current focus:** Instructor-side MVP phases and release gate are complete. Real instructor auth, production RLS cleanup, public signup lock, signed-out route protection, the closeout transaction RPC, real inbox recovery link, and the authenticated browser smoke path are implemented and verified against the linked Supabase project/local app.
 
 ## Current Position
 
 Phase: 4 (Instructor Workbench Polish) — COMPLETE
 Plan: 3 of 3 complete in Phase 4
 Status: Phase 1 through Phase 4 complete with tests and Browser plugin verification.
-Last activity: 2026-05-27 -- Auth/password recovery release-gate slice verified locally; linked Supabase real-auth/RLS, public signup lock, and closeout RPC state checked/applied; signed-out protected routes redirect to login; logged-in dashboard/detail closeout smoke persists after refresh.
+Last activity: 2026-05-27 -- Auth/password recovery release-gate slice verified locally; real inbox recovery link checked; linked Supabase real-auth/RLS, public signup lock, and closeout RPC state checked/applied; signed-out protected routes redirect to login; logged-in dashboard/detail closeout smoke persists after refresh.
 
 Progress: ██████████ 100%
 
@@ -82,7 +82,7 @@ Recent decisions affecting current work:
 
 ### Pending Todos
 
-- Verify a real password recovery email for the bound instructor account by opening the newest recovery link from the instructor inbox.
+None.
 
 ### Blockers/Concerns
 
@@ -96,10 +96,10 @@ None for the requested phase execution work.
 | Studio operations | Payments, invoices, attendance, calendar automation | Not planned | 2026-05-26 |
 | AI/media | AI summaries, audio/video upload, audio/video analysis | Not planned | 2026-05-26 |
 | Curriculum | Full syllabus builder | Excluded from v1 | 2026-05-26 |
-| Release gate | Real instructor auth, production RLS cleanup, public signup lock, signed-out route protection, and closeout transaction RPC | Linked DB migrations, instructor auth binding, public signup lock, signed-out route redirects, closeout RPC, and authenticated browser smoke verified; inbox recovery link remains a real-inbox check | 2026-05-27 |
+| Release gate | Real instructor auth, production RLS cleanup, public signup lock, signed-out route protection, inbox recovery link, and closeout transaction RPC | Complete: linked DB migrations, instructor auth binding, public signup lock, signed-out route redirects, real inbox recovery link, closeout RPC, and authenticated browser smoke verified | 2026-05-27 |
 
 ## Session Continuity
 
 Last session: 2026-05-27T02:18:00+09:00
-Stopped at: Password recovery/auth security slice locally verified; linked Supabase auth/RLS, public signup lock, signed-out route protection, closeout RPC, and authenticated browser closeout smoke applied/verified; real inbox recovery link still needs inbox access
+Stopped at: Password recovery/auth security slice locally verified; linked Supabase auth/RLS, public signup lock, signed-out route protection, closeout RPC, real inbox recovery link, and authenticated browser closeout smoke applied/verified
 Resume file: .planning/phases/04c-brief-closeout-tightening/04C-CHECKPOINT.md
