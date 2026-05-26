@@ -731,173 +731,30 @@ export async function closeoutLessonAction(formData: FormData): Promise<void> {
     failAction(studentCheck.message);
   }
 
-  const updatedAt = new Date().toISOString();
-  const { error: noteError } = await studentCheck.supabase.from("lesson_notes").insert({
-    instructor_id: studentCheck.instructorId,
-    student_id: input.studentId,
-    lesson_date: input.lessonDate,
-    covered_material: input.coveredMaterial,
-    observations: input.observations,
-    practice_assigned: input.practiceAssigned,
-    next_step_hint: input.nextStepHint,
+  const { error } = await studentCheck.supabase.rpc("closeout_lesson", {
+    target_student_id: input.studentId,
+    closeout_lesson_date: input.lessonDate,
+    closeout_covered_material: input.coveredMaterial,
+    closeout_observations: input.observations,
+    closeout_practice_assigned: input.practiceAssigned,
+    closeout_next_step_hint: input.nextStepHint,
+    target_next_plan_id: input.nextPlanId ?? null,
+    closeout_next_action: input.nextAction,
+    closeout_next_plan_detail: input.nextPlanDetail,
+    closeout_planned_for: input.plannedFor,
+    closeout_priority: input.priority,
+    target_assignment_id: input.assignmentId ?? null,
+    closeout_assignment_title: input.assignmentTitle ?? "",
+    closeout_assignment_status: input.assignmentStatus ?? null,
+    closeout_assignment_due_date: input.assignmentDueDate,
+    closeout_assignment_detail: input.assignmentDetail ?? "",
+    target_progress_item_id: input.progressItemId ?? null,
+    closeout_progress_status: input.progressStatus ?? null,
+    closeout_progress_current_focus: input.progressCurrentFocus,
   });
 
-  if (noteError) {
-    failAction(noteError.message);
-  }
-
-  const nextPlanPayload: {
-    planned_for: string | null;
-    priority: string;
-    next_action: string;
-    detail?: string;
-    updated_at: string;
-  } = {
-    planned_for: input.plannedFor,
-    priority: input.priority,
-    next_action: input.nextAction,
-    updated_at: updatedAt,
-  };
-
-  if (input.nextPlanDetail) {
-    nextPlanPayload.detail = input.nextPlanDetail;
-  }
-
-  if (input.nextPlanId) {
-    const { data, error } = await studentCheck.supabase
-      .from("next_lesson_plans")
-      .update(nextPlanPayload)
-      .eq("id", input.nextPlanId)
-      .eq("student_id", input.studentId)
-      .eq("instructor_id", studentCheck.instructorId)
-      .select("id")
-      .maybeSingle();
-
-    if (error) {
-      failAction(error.message);
-    }
-
-    if (!data) {
-      failAction("Next lesson plan was not found.");
-    }
-  } else {
-    const { error } = await studentCheck.supabase.from("next_lesson_plans").insert({
-      instructor_id: studentCheck.instructorId,
-      student_id: input.studentId,
-      ...nextPlanPayload,
-      detail: input.nextPlanDetail || input.nextAction,
-    });
-
-    if (error) {
-      failAction(error.message);
-    }
-  }
-
-  if (input.assignmentTitle && input.assignmentStatus && input.assignmentDetail) {
-    const assignmentPayload = {
-      title: input.assignmentTitle,
-      status: input.assignmentStatus,
-      due_date: input.assignmentDueDate,
-      detail: input.assignmentDetail,
-      updated_at: updatedAt,
-    };
-
-    if (input.assignmentId) {
-      const { data, error } = await studentCheck.supabase
-        .from("assignments")
-        .update(assignmentPayload)
-        .eq("id", input.assignmentId)
-        .eq("student_id", input.studentId)
-        .eq("instructor_id", studentCheck.instructorId)
-        .select("id")
-        .maybeSingle();
-
-      if (error) {
-        failAction(error.message);
-      }
-
-      if (!data) {
-        failAction("Assignment was not found.");
-      }
-    } else {
-      const { error } = await studentCheck.supabase.from("assignments").insert({
-        instructor_id: studentCheck.instructorId,
-        student_id: input.studentId,
-        ...assignmentPayload,
-      });
-
-      if (error) {
-        failAction(error.message);
-      }
-    }
-  }
-
-  if (input.progressItemId && (input.progressStatus || input.progressCurrentFocus)) {
-    const { data: existingProgressItem, error: existingProgressItemError } =
-      await studentCheck.supabase
-        .from("progress_items")
-        .select("id")
-        .eq("id", input.progressItemId)
-        .eq("student_id", input.studentId)
-        .eq("instructor_id", studentCheck.instructorId)
-        .maybeSingle();
-
-    if (existingProgressItemError) {
-      failAction(existingProgressItemError.message);
-    }
-
-    if (!existingProgressItem) {
-      failAction("Progress item was not found.");
-    }
-
-    if (input.progressCurrentFocus) {
-      const { error: clearFocusError } = await studentCheck.supabase
-        .from("progress_items")
-        .update({
-          current_focus: false,
-          updated_at: updatedAt,
-        })
-        .eq("student_id", input.studentId)
-        .eq("instructor_id", studentCheck.instructorId)
-        .neq("id", input.progressItemId);
-
-      if (clearFocusError) {
-        failAction(clearFocusError.message);
-      }
-    }
-
-    const progressPayload: {
-      status?: string;
-      current_focus?: boolean;
-      updated_at: string;
-    } = {
-      updated_at: updatedAt,
-    };
-
-    if (input.progressStatus) {
-      progressPayload.status = input.progressStatus;
-    }
-
-    if (input.progressCurrentFocus) {
-      progressPayload.current_focus = true;
-    }
-
-    const { data, error } = await studentCheck.supabase
-      .from("progress_items")
-      .update(progressPayload)
-      .eq("id", input.progressItemId)
-      .eq("student_id", input.studentId)
-      .eq("instructor_id", studentCheck.instructorId)
-      .select("id")
-      .maybeSingle();
-
-    if (error) {
-      failAction(error.message);
-    }
-
-    if (!data) {
-      failAction("Progress item was not found.");
-    }
+  if (error) {
+    failAction(error.message);
   }
 
   revalidateStudentPaths(input.studentId, studentCheck.slug);

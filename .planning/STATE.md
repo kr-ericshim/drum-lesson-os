@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: instructor-side MVP
 status: release-gate-verification
-stopped_at: Linked Supabase migration and instructor auth binding verified; public signup and inbox recovery link still need manual Supabase console/email verification
+stopped_at: Linked Supabase auth/RLS and closeout RPC migrations verified; public signup and inbox recovery link still need manual Supabase console/email verification
 last_updated: "2026-05-27T02:18:00+09:00"
-last_activity: 2026-05-27 -- Password recovery UI, login rate limiting, and security headers were browser-checked locally; linked Supabase dry-run reported migrations up to date, the instructor row has a bound Auth user, and demo anon policies/grants are removed.
+last_activity: 2026-05-27 -- Password recovery UI, login rate limiting, security headers, and transactional closeout RPC were verified; linked Supabase dry-run reports migrations up to date, the instructor row has a bound Auth user, and demo anon policies/grants are removed.
 progress:
   total_phases: 4
   completed_phases: 4
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-22)
 
 **Core value:** An instructor can quickly understand a student's current progress and personal characteristics before or during a lesson.
-**Current focus:** Instructor-side MVP phases complete; real instructor auth and production RLS cleanup are implemented and the linked Supabase project has the real-auth migration plus bound instructor Auth user. Before real data use, manually confirm public signup is disabled in hosted Supabase Auth settings and verify a real password recovery email link from the instructor inbox.
+**Current focus:** Instructor-side MVP phases complete; real instructor auth, production RLS cleanup, and the closeout transaction RPC are implemented and applied to the linked Supabase project. Before real data use, manually confirm public signup is disabled in hosted Supabase Auth settings and verify a real password recovery email link from the instructor inbox.
 
 ## Current Position
 
 Phase: 4 (Instructor Workbench Polish) — COMPLETE
 Plan: 3 of 3 complete in Phase 4
 Status: Phase 1 through Phase 4 complete with tests and Browser plugin verification.
-Last activity: 2026-05-27 -- Auth/password recovery release-gate slice verified locally and linked Supabase real-auth/RLS state checked read-only.
+Last activity: 2026-05-27 -- Auth/password recovery release-gate slice verified locally; linked Supabase real-auth/RLS and closeout RPC state checked/applied.
 
 Progress: ██████████ 100%
 
@@ -98,10 +98,10 @@ None for the requested phase execution work.
 | Studio operations | Payments, invoices, attendance, calendar automation | Not planned | 2026-05-26 |
 | AI/media | AI summaries, audio/video upload, audio/video analysis | Not planned | 2026-05-26 |
 | Curriculum | Full syllabus builder | Excluded from v1 | 2026-05-26 |
-| Release gate | Real instructor auth and production RLS cleanup | Linked DB migration and instructor auth binding verified; public signup and inbox recovery link remain manual checks | 2026-05-27 |
+| Release gate | Real instructor auth, production RLS cleanup, and closeout transaction RPC | Linked DB migrations and instructor auth binding verified; public signup and inbox recovery link remain manual checks | 2026-05-27 |
 
 ## Session Continuity
 
 Last session: 2026-05-27T02:18:00+09:00
-Stopped at: Password recovery/auth security slice locally verified; linked Supabase migration/auth binding verified read-only; public signup and real inbox recovery link still need manual confirmation
+Stopped at: Password recovery/auth security slice locally verified; linked Supabase auth/RLS and closeout RPC migrations applied/verified; public signup and real inbox recovery link still need manual confirmation
 Resume file: .planning/phases/04c-brief-closeout-tightening/04C-CHECKPOINT.md

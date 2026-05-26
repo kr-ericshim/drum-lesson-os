@@ -257,7 +257,32 @@ export type Database = {
       };
     };
     Views: Record<string, never>;
-    Functions: Record<string, never>;
+    Functions: {
+      closeout_lesson: {
+        Args: {
+          target_student_id: string;
+          closeout_lesson_date: string;
+          closeout_covered_material: string;
+          closeout_observations: string;
+          closeout_practice_assigned: string;
+          closeout_next_step_hint: string;
+          target_next_plan_id: string | null;
+          closeout_next_action: string;
+          closeout_next_plan_detail: string;
+          closeout_planned_for: string | null;
+          closeout_priority: string;
+          target_assignment_id: string | null;
+          closeout_assignment_title: string;
+          closeout_assignment_status: string | null;
+          closeout_assignment_due_date: string | null;
+          closeout_assignment_detail: string;
+          target_progress_item_id: string | null;
+          closeout_progress_status: string | null;
+          closeout_progress_current_focus: boolean;
+        };
+        Returns: undefined;
+      };
+    };
   };
 };
 
