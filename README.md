@@ -1,6 +1,6 @@
 # Drum Lesson OS
 
-Instructor-side mini CRM for drum lessons. The current MVP covers the instructor workflow from pre-lesson briefing through post-lesson closeout: roster, student detail, progress/current focus, traits, assignments, lesson notes, next lesson planning, dashboard filters, tempo notes, quick actions, lesson operating board, and in-lesson run panel.
+Instructor-side mini CRM for drum lessons. The current MVP covers the instructor workflow from pre-lesson briefing through post-lesson closeout: roster, student detail, progress/current focus, traits, assignments, lesson notes, next lesson planning, dashboard filters, tempo notes, quick actions, lesson operating board, and in-lesson run panel. Phase 6 is planned around calendar-first scheduling and Apple Calendar sync.
 
 ## Local Development
 
@@ -60,7 +60,7 @@ Then use the app's `/forgot-password` page or `Authentication` -> `Users` -> `Se
 
 ## Current Roadmap Scope
 
-The documented MVP phases stay inside the instructor-side workflow and are complete through Phase 5:
+The documented MVP phases stay inside the instructor-side workflow and are complete through Phase 5. Phase 6 is planned:
 
 - Phase 3D: student profile and trait editing.
 - Phase 3E: assignment/homework review editing.
@@ -69,8 +69,9 @@ The documented MVP phases stay inside the instructor-side workflow and are compl
 - Phase 4B: small tempo checkpoints and limited dashboard quick actions.
 - Phase 4C: Lesson Brief and Closeout tightening.
 - Phase 5: lesson operating board and in-lesson run panel with closeout draft handoff.
+- Phase 6: calendar-first scheduling with Drum Lesson OS as the source of truth and Apple Calendar as the sync target.
 
-Student portal, payments, attendance, calendar automation, AI summaries, and audio/video analysis are not planned in the near-term roadmap. Real instructor auth and production RLS cleanup are now part of the release gate.
+Student portal, payments, attendance, reminders, external booking, AI summaries, and audio/video analysis are not planned in the near-term roadmap. Real instructor auth and production RLS cleanup are now part of the release gate.
 
 ## Verification
 
@@ -207,6 +208,18 @@ With Supabase env, seed data, and migrations through `0014` applied:
 9. Confirm the dashboard operating board, Lesson Brief, Notes, and Progress/current focus agree.
 10. Use the Chrome extension to confirm dashboard and student detail stay readable at desktop width and 320px mobile width.
 
+## Phase 6 Calendar Planning Notes
+
+Phase 6 is planned but not implemented. The plan is documented in `.planning/phases/06-calendar-apple-sync/06-PLAN.md`.
+
+The planned direction:
+
+1. Drum Lesson OS owns lesson schedules.
+2. Apple Calendar receives synced app-owned lesson occurrences.
+3. Recurring lessons are expanded by Drum Lesson OS into individual occurrences.
+4. Apple sync uses an outbox so app schedule saves remain durable when CalDAV sync fails.
+5. Optional reverse sync only imports Apple-side changes for events originally created by Drum Lesson OS.
+
 ## Phase Plan Docs
 
 - `.planning/phases/03d-student-profile-and-trait-editing/03D-PLAN.md`
@@ -223,3 +236,4 @@ With Supabase env, seed data, and migrations through `0014` applied:
 - `.planning/phases/04c-brief-closeout-tightening/04C-CHECKPOINT.md`
 - `.planning/phases/05-lesson-flow-operating-board/05-PLAN.md`
 - `.planning/phases/05-lesson-flow-operating-board/05-CHECKPOINT.md`
+- `.planning/phases/06-calendar-apple-sync/06-PLAN.md`

@@ -28,7 +28,7 @@ An instructor can quickly understand a student's current progress and personal c
 ### Out of Scope
 
 - Student-facing accounts - MVP is instructor-side first, so students do not need login or self-service screens.
-- Payments, invoices, attendance, and calendar automation - useful for a broader studio CRM, but not part of the current product direction.
+- Payments, invoices, attendance, reminders, and external booking - useful for a broader studio CRM, but not part of the current product direction.
 - AI summaries, full music notation, and audio/video analysis - high complexity and not necessary to validate instructor workflow.
 - Multi-instructor studio administration - MVP targets one instructor managing their own students.
 
@@ -54,7 +54,8 @@ The first screen should feel like a working instructor dashboard, not a marketin
 | Build for instructor-side use first | The core problem is the instructor remembering progress and student traits across many students. | - Pending |
 | Treat progress tracking and student traits as the MVP center | These are the two strongest pain points identified during project questioning. | - Pending |
 | Defer payments, scheduling automation, student accounts, and audio analysis | These add complexity before validating the core lesson-management workflow. | - Pending |
-| Exclude student portal, payments, attendance, calendar automation, AI summaries, and audio/video analysis from the next roadmap | The next useful work is finishing instructor-side editing, closeout, filters, and small drum-specific checkpoints. | 2026-05-26 |
+| Exclude student portal, payments, attendance, calendar automation, AI summaries, and audio/video analysis from the next roadmap | The next useful work was finishing instructor-side editing, closeout, filters, and small drum-specific checkpoints. Superseded in part by the later Phase 6 Apple Calendar decision. | 2026-05-26 |
+| Add calendar-first scheduling and Apple Calendar sync as Phase 6 | The instructor already uses Apple Calendar, and the lesson operating board can become more useful when schedule changes from Drum Lesson OS write through to Apple Calendar. Drum Lesson OS remains the schedule source of truth. | 2026-05-28 |
 
 ## Evolution
 
@@ -74,4 +75,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-05-26 after remaining MVP phase replanning*
+*Last updated: 2026-05-28 after Phase 6 calendar scheduling planning*

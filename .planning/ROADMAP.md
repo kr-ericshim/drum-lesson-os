@@ -2,9 +2,9 @@
 
 ## Overview
 
-Drum Lesson OS v1 stays focused on the instructor-side memory loop: know the student before the lesson, update the teaching record quickly, and leave the next lesson action visible. Phase 5 connects dashboard triage, in-lesson checks, and closeout drafting so the MVP stays centered on the 30-second pre-lesson and 2-minute post-lesson routine.
+Drum Lesson OS v1 stays focused on the instructor-side memory loop: know the student before the lesson, update the teaching record quickly, and leave the next lesson action visible. Phase 5 connects dashboard triage, in-lesson checks, and closeout drafting so the MVP stays centered on the 30-second pre-lesson and 2-minute post-lesson routine. Phase 6 now adds a calendar-first schedule surface and Apple Calendar write-through sync because the instructor already uses Apple Calendar day to day.
 
-The next phases intentionally exclude student portals, payments, attendance, calendar automation, AI summaries, and audio/video analysis. Real instructor authentication is implemented as a release gate; live deployment still requires applying the auth migration and binding the single Supabase Auth user to the existing instructor row.
+The next phases intentionally exclude student portals, payments, attendance, reminders, AI summaries, and audio/video analysis. Real instructor authentication is implemented as a release gate; live deployment still requires applying the auth migration and binding the single Supabase Auth user to the existing instructor row.
 
 ## Phases
 
@@ -19,6 +19,7 @@ The next phases intentionally exclude student portals, payments, attendance, cal
 - [x] **Phase 3: Teaching Workflow Editing** - Finish student/profile, trait, assignment, lesson-note, next-plan, progress, and closeout editing. (completed 2026-05-26)
 - [x] **Phase 4: Instructor Workbench Polish** - Add filters, faster progress status updates, small tempo checkpoints, dashboard quick-add actions, and action-first brief/closeout tightening. (completed 2026-05-26)
 - [x] **Phase 5: Lesson Flow Operating Board** - Connect dashboard triage, in-lesson checks, and closeout drafting into one lesson-flow surface. (completed 2026-05-28)
+- [ ] **Phase 6: Calendar-First Scheduling And Apple Calendar Sync** - Add app-owned lesson schedules, a calendar-first dashboard, recurring occurrence expansion, and outbox-based Apple Calendar sync.
 
 ## Phase Details
 
@@ -151,6 +152,32 @@ Plan files:
 - [05-PLAN.md](phases/05-lesson-flow-operating-board/05-PLAN.md)
 - [05-CHECKPOINT.md](phases/05-lesson-flow-operating-board/05-CHECKPOINT.md)
 
+### Phase 6: Calendar-First Scheduling And Apple Calendar Sync
+
+**Goal**: The instructor can manage lesson schedule occurrences from Drum Lesson OS and have app-owned create/update/delete operations sync to Apple Calendar.
+**Mode:** integration
+**UI hint**: yes
+**Depends on**: Phase 5
+**Requirements**: [CAL-01, CAL-02, CAL-03, CAL-04, CAL-05, CAL-06, CAL-07, CAL-08, CAL-09, CAL-10]
+**Success Criteria**:
+
+  1. Dashboard opens as a calendar-first today/week lesson schedule.
+  2. Instructor can create, edit, and delete one-off lesson occurrences.
+  3. Instructor can create a weekly recurring lesson template that expands into individual upcoming occurrences.
+  4. Each scheduled occurrence can open the existing lesson-flow workspace.
+  5. Apple Calendar connection uses iCloud CalDAV credentials stored server-side and encrypted.
+  6. App-owned occurrence creates, updates, and deletes sync to Apple Calendar through an outbox.
+  7. Failed Apple sync is visible, retryable, and does not corrupt app-owned schedule data.
+  8. Optional reverse sync imports only app-created Apple events and keeps Drum Lesson OS as canonical on conflicts.
+
+Plans:
+
+- [ ] 06: Add calendar-first scheduling and Apple Calendar sync.
+
+Plan files:
+
+- [06-PLAN.md](phases/06-calendar-apple-sync/06-PLAN.md)
+
 ## Explicitly Not Planned
 
 These items should not be revived as near-term phases without a new product decision:
@@ -158,7 +185,7 @@ These items should not be revived as near-term phases without a new product deci
 - Student portal or student login.
 - Payments, invoices, or billing.
 - Attendance tracking.
-- Calendar integration or recurring schedule automation.
+- Calendar reminders, external booking, or non-Apple calendar providers.
 - AI summary generation.
 - Audio/video upload or analysis.
 - Full curriculum/syllabus builder.
@@ -166,7 +193,7 @@ These items should not be revived as near-term phases without a new product deci
 ## Progress
 
 **Execution Order:**
-Phases execute in this order: 1 -> 2 -> 3A -> 3B -> 3C -> 3D -> 3E -> 3F -> 4A -> 4B -> 4C -> 5
+Phases execute in this order: 1 -> 2 -> 3A -> 3B -> 3C -> 3D -> 3E -> 3F -> 4A -> 4B -> 4C -> 5 -> 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -175,3 +202,4 @@ Phases execute in this order: 1 -> 2 -> 3A -> 3B -> 3C -> 3D -> 3E -> 3F -> 4A -
 | 3. Teaching Workflow Editing | 6/6 | Complete | 2026-05-26 |
 | 4. Instructor Workbench Polish | 3/3 | Complete | 2026-05-26 |
 | 5. Lesson Flow Operating Board | 1/1 | Complete | 2026-05-28 |
+| 6. Calendar-First Scheduling And Apple Calendar Sync | 0/1 | Planned | - |

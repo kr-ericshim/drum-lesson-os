@@ -65,6 +65,19 @@
 - [x] **FLOW-04**: Instructor can turn in-lesson working notes into a closeout draft without retyping.
 - [x] **FLOW-05**: Existing closeout remains the durable save path and keeps dashboard/detail state aligned after refresh.
 
+### Calendar Scheduling And Apple Sync
+
+- [ ] **CAL-01**: Instructor can view today and the current week as a calendar-first lesson schedule.
+- [ ] **CAL-02**: Instructor can create a one-off scheduled lesson for an existing student.
+- [ ] **CAL-03**: Instructor can create a recurring lesson template that expands into individual upcoming lesson occurrences.
+- [ ] **CAL-04**: Instructor can edit or delete a Drum Lesson OS lesson occurrence.
+- [ ] **CAL-05**: Instructor can start the existing lesson-flow workspace from a scheduled calendar occurrence.
+- [ ] **CAL-06**: Drum Lesson OS syncs app-owned occurrence creates, updates, and deletes to Apple Calendar.
+- [ ] **CAL-07**: Instructor can see whether an occurrence is Apple-synced, pending, failed, or disconnected.
+- [ ] **CAL-08**: Instructor can manually retry Apple Calendar sync.
+- [ ] **CAL-09**: Apple Calendar credential failures do not corrupt app-owned schedule data.
+- [ ] **CAL-10**: Optional reverse sync imports Apple-side changes only for events originally created by Drum Lesson OS.
+
 ## Not Planned
 
 The following are not part of the current product direction:
@@ -74,7 +87,7 @@ The following are not part of the current product direction:
 | Student portal or student login | Excluded from the near-term roadmap. |
 | Payments, invoices, or billing | Excluded from the near-term roadmap. |
 | Attendance tracking | Excluded from the near-term roadmap. |
-| Calendar integration or recurring schedule automation | Excluded from the near-term roadmap. |
+| Calendar reminders, external booking, or non-Apple calendar providers | Excluded from Phase 6. |
 | AI lesson summaries | Excluded from the near-term roadmap. |
 | Audio/video upload or analysis | Excluded from the near-term roadmap. |
 | Full curriculum/syllabus builder | Excluded from v1; keep student progress flexible. |
@@ -121,8 +134,18 @@ Traceability maps every v1 requirement to exactly one phase.
 | FLOW-03 | Phase 5 | Complete |
 | FLOW-04 | Phase 5 | Complete |
 | FLOW-05 | Phase 5 | Complete |
+| CAL-01 | Phase 6 | Planned |
+| CAL-02 | Phase 6 | Planned |
+| CAL-03 | Phase 6 | Planned |
+| CAL-04 | Phase 6 | Planned |
+| CAL-05 | Phase 6 | Planned |
+| CAL-06 | Phase 6 | Planned |
+| CAL-07 | Phase 6 | Planned |
+| CAL-08 | Phase 6 | Planned |
+| CAL-09 | Phase 6 | Planned |
+| CAL-10 | Phase 6 | Planned |
 
 **Coverage:**
-- tracked requirements: 32 total
-- Mapped to phases: 32
+- tracked requirements: 42 total
+- Mapped to phases: 42
 - Unmapped: 0
