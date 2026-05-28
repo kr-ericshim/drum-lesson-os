@@ -1,6 +1,6 @@
 # Drum Lesson OS
 
-Instructor-side mini CRM for drum lessons. The current MVP covers the instructor workflow from pre-lesson briefing through post-lesson closeout: roster, student detail, progress/current focus, traits, assignments, lesson notes, next lesson planning, dashboard filters, tempo notes, and quick actions.
+Instructor-side mini CRM for drum lessons. The current MVP covers the instructor workflow from pre-lesson briefing through post-lesson closeout: roster, student detail, progress/current focus, traits, assignments, lesson notes, next lesson planning, dashboard filters, tempo notes, quick actions, lesson operating board, and in-lesson run panel.
 
 ## Local Development
 
@@ -60,7 +60,7 @@ Then use the app's `/forgot-password` page or `Authentication` -> `Users` -> `Se
 
 ## Current Roadmap Scope
 
-The documented MVP phases stay inside the instructor-side workflow and are complete through Phase 4C:
+The documented MVP phases stay inside the instructor-side workflow and are complete through Phase 5:
 
 - Phase 3D: student profile and trait editing.
 - Phase 3E: assignment/homework review editing.
@@ -68,6 +68,7 @@ The documented MVP phases stay inside the instructor-side workflow and are compl
 - Phase 4A: dashboard filters and progress status polish.
 - Phase 4B: small tempo checkpoints and limited dashboard quick actions.
 - Phase 4C: Lesson Brief and Closeout tightening.
+- Phase 5: lesson operating board and in-lesson run panel with closeout draft handoff.
 
 Student portal, payments, attendance, calendar automation, AI summaries, and audio/video analysis are not planned in the near-term roadmap. Real instructor auth and production RLS cleanup are now part of the release gate.
 
@@ -191,6 +192,21 @@ With Supabase env, seed data, and migrations through `0009` applied:
 6. Clear `Next detail` in closeout, save, and confirm the next lesson action still saves without violating the existing next-plan detail constraint.
 7. Use the Browser plugin to confirm dashboard and student detail stay readable at desktop width and 320px mobile width.
 
+## Phase 5 Lesson Flow Smoke Check
+
+With Supabase env, seed data, and migrations through `0014` applied:
+
+1. Sign in as the instructor.
+2. Open `/` and confirm the lesson operating board groups queued lessons into overdue, today, and upcoming sections.
+3. Confirm each queued lesson shows a first check and attention flags where relevant.
+4. Use `Start lesson` to open a student detail page.
+5. Use `Run the lesson` to draft covered material, observation, practice, next hint, and optional focus carry-over.
+6. Send the draft into `Closeout`.
+7. Confirm `Closeout` opens and the draft next hint fills both note hint and next action unless edited.
+8. Save closeout and refresh.
+9. Confirm the dashboard operating board, Lesson Brief, Notes, and Progress/current focus agree.
+10. Use the Chrome extension to confirm dashboard and student detail stay readable at desktop width and 320px mobile width.
+
 ## Phase Plan Docs
 
 - `.planning/phases/03d-student-profile-and-trait-editing/03D-PLAN.md`
@@ -205,3 +221,5 @@ With Supabase env, seed data, and migrations through `0009` applied:
 - `.planning/phases/04b-tempo-and-quick-add-refinements/04B-CHECKPOINT.md`
 - `.planning/phases/04c-brief-closeout-tightening/04C-PLAN.md`
 - `.planning/phases/04c-brief-closeout-tightening/04C-CHECKPOINT.md`
+- `.planning/phases/05-lesson-flow-operating-board/05-PLAN.md`
+- `.planning/phases/05-lesson-flow-operating-board/05-CHECKPOINT.md`

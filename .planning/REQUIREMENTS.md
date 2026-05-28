@@ -1,7 +1,7 @@
 # Requirements: Drum Lesson OS
 
 **Defined:** 2026-05-22
-**Last updated:** 2026-05-26
+**Last updated:** 2026-05-28
 **Core Value:** An instructor can quickly understand a student's current progress and personal characteristics before or during a lesson.
 
 ## v1 Requirements
@@ -57,6 +57,14 @@
 
 - [x] **QUICK-01**: Instructor can add the smallest useful note or next-action update from the dashboard without opening the full student detail workflow.
 
+### Lesson Flow
+
+- [x] **FLOW-01**: Instructor can see the first action to check for each queued lesson from the dashboard.
+- [x] **FLOW-02**: Instructor can tell which queued lessons are overdue, today, or upcoming without reading every date.
+- [x] **FLOW-03**: Instructor can record short in-lesson working notes before committing the final closeout.
+- [x] **FLOW-04**: Instructor can turn in-lesson working notes into a closeout draft without retyping.
+- [x] **FLOW-05**: Existing closeout remains the durable save path and keeps dashboard/detail state aligned after refresh.
+
 ## Not Planned
 
 The following are not part of the current product direction:
@@ -108,8 +116,13 @@ Traceability maps every v1 requirement to exactly one phase.
 | CLOSE-02 | Phase 3F | Complete |
 | CLOSE-03 | Phase 3F | Complete |
 | QUICK-01 | Phase 4B | Complete |
+| FLOW-01 | Phase 5 | Complete |
+| FLOW-02 | Phase 5 | Complete |
+| FLOW-03 | Phase 5 | Complete |
+| FLOW-04 | Phase 5 | Complete |
+| FLOW-05 | Phase 5 | Complete |
 
 **Coverage:**
-- v1 requirements: 27 total
-- Mapped to phases: 27
+- tracked requirements: 32 total
+- Mapped to phases: 32
 - Unmapped: 0

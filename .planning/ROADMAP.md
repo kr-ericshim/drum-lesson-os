@@ -2,7 +2,7 @@
 
 ## Overview
 
-Drum Lesson OS v1 stays focused on the instructor-side memory loop: know the student before the lesson, update the teaching record quickly, and leave the next lesson action visible. Phase 4C tightened the Lesson Brief and Closeout meanings so the MVP stays centered on the 30-second pre-lesson and 2-minute post-lesson routine.
+Drum Lesson OS v1 stays focused on the instructor-side memory loop: know the student before the lesson, update the teaching record quickly, and leave the next lesson action visible. Phase 5 connects dashboard triage, in-lesson checks, and closeout drafting so the MVP stays centered on the 30-second pre-lesson and 2-minute post-lesson routine.
 
 The next phases intentionally exclude student portals, payments, attendance, calendar automation, AI summaries, and audio/video analysis. Real instructor authentication is implemented as a release gate; live deployment still requires applying the auth migration and binding the single Supabase Auth user to the existing instructor row.
 
@@ -18,6 +18,7 @@ The next phases intentionally exclude student portals, payments, attendance, cal
 - [x] **Phase 2: Student Roster And Detail Read Views** - Let the instructor browse students and read the full teaching context for one student. (completed 2026-05-25)
 - [x] **Phase 3: Teaching Workflow Editing** - Finish student/profile, trait, assignment, lesson-note, next-plan, progress, and closeout editing. (completed 2026-05-26)
 - [x] **Phase 4: Instructor Workbench Polish** - Add filters, faster progress status updates, small tempo checkpoints, dashboard quick-add actions, and action-first brief/closeout tightening. (completed 2026-05-26)
+- [x] **Phase 5: Lesson Flow Operating Board** - Connect dashboard triage, in-lesson checks, and closeout drafting into one lesson-flow surface. (completed 2026-05-28)
 
 ## Phase Details
 
@@ -125,6 +126,31 @@ Plan files:
 - [04C-PLAN.md](phases/04c-brief-closeout-tightening/04C-PLAN.md)
 - [04C-CHECKPOINT.md](phases/04c-brief-closeout-tightening/04C-CHECKPOINT.md)
 
+### Phase 5: Lesson Flow Operating Board
+
+**Goal**: The instructor can run a lesson from the dashboard queue through in-lesson checks into closeout without retyping.
+**Mode:** mvp-polish
+**UI hint**: yes
+**Depends on**: Phase 4
+**Requirements**: [FLOW-01, FLOW-02, FLOW-03, FLOW-04, FLOW-05]
+**Success Criteria**:
+
+  1. Dashboard queue is grouped into overdue, today, and upcoming work.
+  2. Each queued lesson exposes the first action to check and attention flags.
+  3. Student detail shows Lesson Brief, in-lesson run panel, and Closeout as one lesson-flow workspace.
+  4. In-lesson working notes can become a closeout draft without saving partial data.
+  5. Draft next hint fills both note hint and next action unless the instructor edits the closeout.
+  6. Existing closeout remains the durable write path and dashboard/detail state agrees after refresh.
+
+Plans:
+
+- [x] 05: Add lesson operating board and in-lesson run panel. (completed 2026-05-28)
+
+Plan files:
+
+- [05-PLAN.md](phases/05-lesson-flow-operating-board/05-PLAN.md)
+- [05-CHECKPOINT.md](phases/05-lesson-flow-operating-board/05-CHECKPOINT.md)
+
 ## Explicitly Not Planned
 
 These items should not be revived as near-term phases without a new product decision:
@@ -140,7 +166,7 @@ These items should not be revived as near-term phases without a new product deci
 ## Progress
 
 **Execution Order:**
-Phases execute in this order: 1 -> 2 -> 3A -> 3B -> 3C -> 3D -> 3E -> 3F -> 4A -> 4B -> 4C
+Phases execute in this order: 1 -> 2 -> 3A -> 3B -> 3C -> 3D -> 3E -> 3F -> 4A -> 4B -> 4C -> 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -148,3 +174,4 @@ Phases execute in this order: 1 -> 2 -> 3A -> 3B -> 3C -> 3D -> 3E -> 3F -> 4A -
 | 2. Student Roster And Detail Read Views | 3/3 | Complete | 2026-05-25 |
 | 3. Teaching Workflow Editing | 6/6 | Complete | 2026-05-26 |
 | 4. Instructor Workbench Polish | 3/3 | Complete | 2026-05-26 |
+| 5. Lesson Flow Operating Board | 1/1 | Complete | 2026-05-28 |

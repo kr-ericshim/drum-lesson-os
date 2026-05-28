@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: instructor-side MVP
-status: release-gate-complete
-stopped_at: Instructor-side MVP release gate complete; linked Supabase auth/RLS, public signup lock, closeout RPC, signed-out route protection, inbox recovery link, and authenticated closeout smoke verified
-last_updated: "2026-05-27T02:57:34+09:00"
-last_activity: 2026-05-27 -- Password recovery UI, real inbox recovery link, login rate limiting, security headers, public signup lock, signed-out route protection, transactional closeout RPC, and authenticated dashboard/detail closeout smoke were verified; linked Supabase dry-run reports migrations up to date, the instructor row has a bound Auth user, and demo anon policies/grants are removed.
+status: phase-5-complete
+stopped_at: Phase 5 Lesson Flow Operating Board complete; implementation, docs, tests, build, lint, Chrome extension UAT, and agent review evidence are recorded.
+last_updated: "2026-05-28T10:52:51+09:00"
+last_activity: 2026-05-28 -- Phase 5 added dashboard operating-board triage, lesson queue first checks and attention flags, student in-lesson run panel, and closeout draft handoff while preserving closeout as the durable write path.
 progress:
-  total_phases: 4
-  completed_phases: 4
-  total_plans: 15
-  completed_plans: 15
+  total_phases: 5
+  completed_phases: 5
+  total_plans: 16
+  completed_plans: 16
   percent: 100
 ---
 
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-22)
 
 **Core value:** An instructor can quickly understand a student's current progress and personal characteristics before or during a lesson.
-**Current focus:** Instructor-side MVP phases and release gate are complete. Real instructor auth, production RLS cleanup, public signup lock, signed-out route protection, the closeout transaction RPC, real inbox recovery link, and the authenticated browser smoke path are implemented and verified against the linked Supabase project/local app.
+**Current focus:** Phase 5 is complete. Real instructor auth, production RLS cleanup, public signup lock, signed-out route protection, the closeout transaction RPC, real inbox recovery link, and the authenticated browser smoke path remain implemented and verified against the linked Supabase project/local app.
 
 ## Current Position
 
-Phase: 4 (Instructor Workbench Polish) — COMPLETE
-Plan: 3 of 3 complete in Phase 4
-Status: Phase 1 through Phase 4 complete with tests and Browser plugin verification.
-Last activity: 2026-05-27 -- Auth/password recovery release-gate slice verified locally; real inbox recovery link checked; linked Supabase real-auth/RLS, public signup lock, and closeout RPC state checked/applied; signed-out protected routes redirect to login; logged-in dashboard/detail closeout smoke persists after refresh.
+Phase: 5 (Lesson Flow Operating Board) — COMPLETE
+Plan: 1 of 1 implemented in Phase 5
+Status: Phase 1 through Phase 5 complete; Phase 5 code, docs, Chrome extension UAT, and verification evidence are recorded.
+Last activity: 2026-05-28 -- Operating board, first-check/attention flags, run panel, and closeout draft handoff implemented.
 
 Progress: ██████████ 100%
 
@@ -48,11 +48,12 @@ Progress: ██████████ 100%
 | 02 | 3 | 3 | Complete |
 | 03 | 6 | 6 | Complete |
 | 04 | 3 | 3 | Complete |
+| 05 | 1 | 1 | Complete |
 
 **Recent Trend:**
 
-- Last 5 plans: 03E, 03F, 04A, 04B, 04C
-- Next 5 plans: release-gate hardening if real deployment is requested
+- Last 5 plans: 03F, 04A, 04B, 04C, 05
+- Next 5 plans: none defined
 
 ## Accumulated Context
 
@@ -78,6 +79,8 @@ Recent decisions affecting current work:
 - 2026-05-26 replanning: Finish the remaining MVP through 03D profile/trait editing, 03E assignment review editing, 03F closeout, 04A workbench filters/progress status polish, and 04B tempo/quick-add refinements.
 - 2026-05-26 replanning: Treat real instructor auth and production RLS cleanup as a release gate before real deployment, not as one of the requested product feature phases.
 - Phase 4C: Keep the next slice to UX tightening only; make Lesson Brief action-first, make Closeout less strict, allow focus-only closeout updates, and choose the current next plan by latest update instead of priority.
+- Phase 5: Keep in-lesson run notes session-local and avoid new tables; the existing closeout save remains the durable write path.
+- Phase 5: Initialize closeout `nextStepHint` and `nextAction` from the same run-panel next hint so dashboard and Lesson Brief do not split after save.
 - Demo maintenance: Keep seeded demo content Korean and expose short student slugs in routes while preserving UUID primary keys for writes and relations.
 
 ### Pending Todos
@@ -86,7 +89,7 @@ None.
 
 ### Blockers/Concerns
 
-None for the requested phase execution work.
+None.
 
 ## Deferred Or Excluded Items
 
@@ -100,6 +103,6 @@ None for the requested phase execution work.
 
 ## Session Continuity
 
-Last session: 2026-05-27T02:18:00+09:00
-Stopped at: Password recovery/auth security slice locally verified; linked Supabase auth/RLS, public signup lock, signed-out route protection, closeout RPC, real inbox recovery link, and authenticated browser closeout smoke applied/verified
-Resume file: .planning/phases/04c-brief-closeout-tightening/04C-CHECKPOINT.md
+Last session: 2026-05-28T10:52:51+09:00
+Stopped at: Phase 5 complete with verification evidence recorded
+Resume file: .planning/phases/05-lesson-flow-operating-board/05-CHECKPOINT.md
