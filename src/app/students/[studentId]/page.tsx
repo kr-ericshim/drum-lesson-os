@@ -1,8 +1,7 @@
 import Link from "next/link";
 
 import { SetupStatusPanel } from "@/components/dashboard/setup-status-panel";
-import { LessonBrief } from "@/components/students/lesson-brief";
-import { LessonCloseoutForm } from "@/components/students/lesson-closeout-form";
+import { LessonFlowWorkspace } from "@/components/students/lesson-flow-workspace";
 import { StudentDetailHeader } from "@/components/students/student-detail-header";
 import { StudentDetailTabs } from "@/components/students/student-detail-tabs";
 import { Button } from "@/components/ui/button";
@@ -66,8 +65,7 @@ export default async function StudentDetailPage({ params }: StudentDetailPagePro
     <main className="min-h-screen bg-background text-foreground">
       <div className="mx-auto w-full max-w-6xl space-y-6 px-4 py-8 sm:px-6 lg:px-8 lg:py-12">
         <StudentDetailHeader student={studentResult.data} />
-        <LessonBrief student={studentResult.data} />
-        <LessonCloseoutForm student={studentResult.data} />
+        <LessonFlowWorkspace student={studentResult.data} />
         <StudentDetailTabs student={studentResult.data} />
       </div>
     </main>

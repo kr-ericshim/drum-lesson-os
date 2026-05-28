@@ -1,3 +1,5 @@
+"use client";
+
 import { closeoutLessonAction } from "@/app/students/[studentId]/actions";
 import { FormSubmitButton } from "@/components/students/form-submit-button";
 import {
@@ -8,10 +10,12 @@ import {
   assignmentStatuses,
   nextPlanPriorities,
   progressItemStatuses,
-} from "@/lib/students/editing-schemas";
+} from "@/lib/students/status-options";
+import type { LessonCloseoutDraft } from "@/lib/students/lesson-closeout-draft";
 import type { StudentDetail } from "@/lib/supabase/queries";
 
 type LessonCloseoutFormProps = {
+  draft?: LessonCloseoutDraft | null;
   student: StudentDetail;
 };
 
@@ -24,7 +28,7 @@ const priorityLabels: Record<(typeof nextPlanPriorities)[number], string> = {
   normal: "Normal",
 };
 
-export function LessonCloseoutForm({ student }: LessonCloseoutFormProps) {
+export function LessonCloseoutForm({ draft = null, student }: LessonCloseoutFormProps) {
   return (
     <section className="rounded-lg border border-border bg-card p-5" aria-labelledby="closeout-heading">
       <div>
@@ -37,7 +41,7 @@ export function LessonCloseoutForm({ student }: LessonCloseoutFormProps) {
         </p>
       </div>
 
-      <details className="mt-4 border-t border-border pt-4">
+      <details className="mt-4 border-t border-border pt-4" open={Boolean(draft)}>
         <summary className="cursor-pointer text-sm font-semibold leading-5">Closeout form</summary>
         <form action={closeoutLessonAction} className="mt-4 space-y-5">
           <input type="hidden" name="studentId" value={student.id} />
@@ -59,6 +63,7 @@ export function LessonCloseoutForm({ student }: LessonCloseoutFormProps) {
               />
             </div>
             <TextAreaField
+              defaultValue={draft?.coveredMaterial ?? ""}
               id="closeout-covered"
               label="Covered"
               maxLength={2000}
@@ -69,6 +74,7 @@ export function LessonCloseoutForm({ student }: LessonCloseoutFormProps) {
 
           <div className="grid gap-4 md:grid-cols-3">
             <TextAreaField
+              defaultValue={draft?.observations ?? ""}
               id="closeout-observations"
               label="Observation"
               maxLength={2000}
@@ -76,6 +82,7 @@ export function LessonCloseoutForm({ student }: LessonCloseoutFormProps) {
               placeholder="What changed or got stuck?"
             />
             <TextAreaField
+              defaultValue={draft?.practiceAssigned ?? ""}
               id="closeout-practice"
               label="Practice assigned"
               maxLength={2000}
@@ -83,6 +90,7 @@ export function LessonCloseoutForm({ student }: LessonCloseoutFormProps) {
               placeholder="What should they practice?"
             />
             <TextAreaField
+              defaultValue={draft?.nextStepHint ?? ""}
               id="closeout-next-hint"
               label="Next hint"
               maxLength={1000}
@@ -100,7 +108,7 @@ export function LessonCloseoutForm({ student }: LessonCloseoutFormProps) {
                 </label>
                 <input
                   className={`${fieldClassName} mt-1`}
-                  defaultValue={student.nextPlan?.nextAction ?? ""}
+                  defaultValue={draft?.nextAction ?? student.nextPlan?.nextAction ?? ""}
                   id="closeout-next-action"
                   maxLength={240}
                   name="nextAction"
@@ -207,7 +215,7 @@ export function LessonCloseoutForm({ student }: LessonCloseoutFormProps) {
             </div>
             <div className="mt-3 grid gap-3 md:grid-cols-[minmax(0,1fr)_160px]">
               <SelectField
-                defaultValue=""
+                defaultValue={draft?.progressItemId ?? ""}
                 id="closeout-progress-item"
                 label="Progress item"
                 name="progressItemId"
@@ -236,6 +244,7 @@ export function LessonCloseoutForm({ student }: LessonCloseoutFormProps) {
             <label className="mt-3 flex items-start gap-3 text-sm leading-5">
               <input
                 className="mt-1 h-4 w-4 rounded border-input text-primary"
+                defaultChecked={Boolean(draft?.progressCurrentFocus)}
                 name="progressCurrentFocus"
                 type="checkbox"
               />
