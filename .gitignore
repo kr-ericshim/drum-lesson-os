@@ -2,6 +2,7 @@
 node_modules/
 .env*
 !.env.example
+.DS_Store
 .idea/
 supabase/.temp/
 npm-debug.log*
@@ -10,3 +11,8 @@ yarn-error.log*
 pnpm-debug.log*
 tsconfig.tsbuildinfo
 .superpowers/
+DerivedData/
+build/
+.build/
+xcuserdata/
+*.xcuserstate

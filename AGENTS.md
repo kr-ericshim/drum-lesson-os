@@ -21,22 +21,24 @@ The MVP focuses on instructor-side student management: a clear student list, per
 ## Technology Stack
 
 ## Recommendation
-- **App framework**: Next.js App Router with TypeScript
-- **UI**: Tailwind CSS v4 plus shadcn/ui components
-- **Data access**: Prisma ORM
-- **Database for MVP**: SQLite for fast local iteration
-- **Future production path**: Postgres or Supabase Postgres if the app needs hosted sync, accounts, or multi-device access
+- **App framework**: macOS SwiftUI with Swift 6.2
+- **Project generation**: XcodeGen (`project.yml`)
+- **Native integrations**: EventKit for Apple Calendar writes and Keychain/local storage for native state
+- **Data access**: Supabase Swift client plus authenticated SQL RPCs
+- **Database**: Supabase Postgres with RLS and migrations under `supabase/`
+- **SQL/security guards**: Node test runner for migration checks under `tests/`
 ## Rationale
+Phase 7 moved the product to a native macOS app as the primary implementation. The legacy Next.js web runtime has been removed from the working tree to keep the project shape clear for future agents.
 ## What Not To Use Yet
 - **Student portal stack**: Defer until student-facing accounts are in scope.
 - **Realtime sync**: Defer until there is a real multi-device or collaborative need.
 - **Audio/video analysis**: Defer; it distracts from the CRM memory/progress workflow.
-- **Full separate API service**: Defer; a single Next.js app is simpler for the MVP.
+- **Full separate API service**: Defer; keep native writes behind Supabase RPCs until a server boundary becomes necessary.
 ## Sources
-- Next.js App Router docs: https://en.nextjs.im/docs/app/
-- Prisma Next.js guide: https://www.prisma.io/docs/guides/frameworks/nextjs
-- Tailwind CSS Next.js guide: https://tailwindcss.com/docs/installation/framework-guides/nextjs
-- shadcn/ui Next.js guide: https://v3.shadcn.com/docs/installation/next
+- SwiftUI docs: https://developer.apple.com/documentation/swiftui
+- EventKit docs: https://developer.apple.com/documentation/eventkit
+- XcodeGen docs: https://github.com/yonaskolb/XcodeGen
+- Supabase Swift docs: https://supabase.com/docs/reference/swift/introduction
 - Supabase RLS docs for future hosted auth/data boundary: https://supabase.com/docs/guides/database/postgres/row-level-security
 <!-- GSD:stack-end -->
 
@@ -67,6 +69,7 @@ Use these standalone entry points:
 - For small fixes, state the goal, touched files, and verification command.
 - For investigation and bug fixing, write down the observed symptom, root cause, fix, and verification.
 - For planned phase work, read `.planning/ROADMAP.md`, `.planning/STATE.md`, and the target phase folder before editing.
+- For native app work, treat `project.yml`, `DrumLessonOS/`, `DrumLessonOSTests/`, `supabase/`, and `tests/` as the active surfaces.
 
 Do not make broad direct repo edits without a concrete phase/task goal and verification loop.
 <!-- GSD:workflow-end -->

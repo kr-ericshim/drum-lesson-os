@@ -67,16 +67,26 @@
 
 ### Calendar Scheduling And Apple Sync
 
-- [ ] **CAL-01**: Instructor can view today and the current week as a calendar-first lesson schedule.
-- [ ] **CAL-02**: Instructor can create a one-off scheduled lesson for an existing student.
-- [ ] **CAL-03**: Instructor can create a recurring lesson template that expands into individual upcoming lesson occurrences.
-- [ ] **CAL-04**: Instructor can edit or delete a Drum Lesson OS lesson occurrence.
-- [ ] **CAL-05**: Instructor can start the existing lesson-flow workspace from a scheduled calendar occurrence.
-- [ ] **CAL-06**: Drum Lesson OS syncs app-owned occurrence creates, updates, and deletes to Apple Calendar.
-- [ ] **CAL-07**: Instructor can see whether an occurrence is Apple-synced, pending, failed, or disconnected.
-- [ ] **CAL-08**: Instructor can manually retry Apple Calendar sync.
-- [ ] **CAL-09**: Apple Calendar credential failures do not corrupt app-owned schedule data.
+- [x] **CAL-01**: Instructor can view today and the current week as a calendar-first lesson schedule.
+- [x] **CAL-02**: Instructor can create a one-off scheduled lesson for an existing student.
+- [x] **CAL-03**: Instructor can create a recurring lesson template that expands into individual upcoming lesson occurrences.
+- [x] **CAL-04**: Instructor can edit or delete a Drum Lesson OS lesson occurrence.
+- [x] **CAL-05**: Instructor can start the existing lesson-flow workspace from a scheduled calendar occurrence.
+- [x] **CAL-06**: Drum Lesson OS syncs app-owned occurrence creates, updates, and deletes to Apple Calendar.
+- [x] **CAL-07**: Instructor can see whether an occurrence is Apple-synced, pending, failed, or disconnected.
+- [x] **CAL-08**: Instructor can manually retry Apple Calendar sync.
+- [x] **CAL-09**: Apple Calendar credential failures do not corrupt app-owned schedule data.
 - [ ] **CAL-10**: Optional reverse sync imports Apple-side changes only for events originally created by Drum Lesson OS.
+
+### Native macOS Migration
+
+- [x] **NATIVE-01**: Instructor can build and launch a macOS SwiftUI implementation of the current Drum Lesson OS workflow.
+- [x] **NATIVE-02**: Native screens cover auth, calendar-first dashboard, roster, student detail, editing workflows, lesson flow, scheduling, settings, and sync status.
+- [x] **NATIVE-03**: Native writes use authenticated Supabase RPCs and do not embed a service-role key.
+- [x] **NATIVE-04**: Native Apple Calendar integration uses EventKit instead of prompting for Apple ID or app-specific password credentials.
+- [x] **NATIVE-05**: EventKit failures are visible and retryable without corrupting Supabase lesson occurrence data.
+- [ ] **NATIVE-06**: Native production use is verified with live Supabase sign-in, real EventKit create/edit/cancel, iPhone iCloud propagation, and daily-use confidence.
+- [x] **NATIVE-07**: Repo structure is native-primary, with SwiftUI app source at root and the legacy web runtime removed from active development.
 
 ## Not Planned
 
@@ -94,7 +104,7 @@ The following are not part of the current product direction:
 
 ## Release Gate
 
-Real instructor authentication and production RLS cleanup remain required before sharing real student data outside the demo environment. This is a release gate, not a new user-facing product phase.
+Real instructor authentication and production RLS cleanup remain required before sharing real student data outside the demo environment. For the native app, live Supabase/EventKit/iPhone UAT and daily-use confidence remain required before relying on it for real teaching records.
 
 ## Traceability
 
@@ -134,18 +144,25 @@ Traceability maps every v1 requirement to exactly one phase.
 | FLOW-03 | Phase 5 | Complete |
 | FLOW-04 | Phase 5 | Complete |
 | FLOW-05 | Phase 5 | Complete |
-| CAL-01 | Phase 6 | Planned |
-| CAL-02 | Phase 6 | Planned |
-| CAL-03 | Phase 6 | Planned |
-| CAL-04 | Phase 6 | Planned |
-| CAL-05 | Phase 6 | Planned |
-| CAL-06 | Phase 6 | Planned |
-| CAL-07 | Phase 6 | Planned |
-| CAL-08 | Phase 6 | Planned |
-| CAL-09 | Phase 6 | Planned |
-| CAL-10 | Phase 6 | Planned |
+| CAL-01 | Phase 6 | Complete |
+| CAL-02 | Phase 6 | Complete |
+| CAL-03 | Phase 6 | Complete |
+| CAL-04 | Phase 6 | Complete |
+| CAL-05 | Phase 6 | Complete |
+| CAL-06 | Phase 6 | Complete |
+| CAL-07 | Phase 6 | Complete |
+| CAL-08 | Phase 6 | Complete |
+| CAL-09 | Phase 6 | Complete |
+| CAL-10 | Phase 6B | Deferred |
+| NATIVE-01 | Phase 7 | Implementation candidate complete |
+| NATIVE-02 | Phase 7 | Implementation candidate complete |
+| NATIVE-03 | Phase 7 | Complete |
+| NATIVE-04 | Phase 7 | Complete |
+| NATIVE-05 | Phase 7 | Complete |
+| NATIVE-06 | Phase 7 release gate | Pending live UAT |
+| NATIVE-07 | Phase 7 native-primary reorg | Complete |
 
 **Coverage:**
-- tracked requirements: 42 total
-- Mapped to phases: 42
+- tracked requirements: 49 total
+- Mapped to phases: 49
 - Unmapped: 0

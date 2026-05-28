@@ -4,7 +4,7 @@
 
 Drum Lesson OS is a mini CRM for drum instructors who teach multiple students and need one place to remember each student's progress, habits, and lesson context. It helps an instructor see where every student is, what each person struggles with, and what should happen next in the lesson.
 
-The MVP focuses on instructor-side student management: a clear student list, per-student progress tracking, lesson notes, student traits, weaknesses, practice patterns, and next-lesson preparation.
+The MVP focuses on instructor-side student management in a macOS native app: a calendar-first schedule, clear student list, per-student progress tracking, lesson notes, student traits, weaknesses, practice patterns, and next-lesson preparation.
 
 ## Core Value
 
@@ -38,7 +38,7 @@ The project started from the need for a drum teacher to manage several students'
 
 Useful progress dimensions include books, songs, rudiments, genres, techniques, lesson sessions, and assignments. Useful student-detail dimensions include rhythmic strengths, weak fill patterns, practice consistency, whether a student responds better to verbal explanation or demonstration, and musical taste.
 
-The first screen should feel like a working instructor dashboard, not a marketing page. The most important student detail view should surface current progress, recent lesson notes, next lesson plan, weak points or cautions, and assignment follow-through.
+The first screen should feel like a working native instructor dashboard. The most important student detail view should surface current progress, recent lesson notes, next lesson plan, weak points or cautions, and assignment follow-through.
 
 ## Constraints
 
@@ -56,6 +56,8 @@ The first screen should feel like a working instructor dashboard, not a marketin
 | Defer payments, scheduling automation, student accounts, and audio analysis | These add complexity before validating the core lesson-management workflow. | - Pending |
 | Exclude student portal, payments, attendance, calendar automation, AI summaries, and audio/video analysis from the next roadmap | The next useful work was finishing instructor-side editing, closeout, filters, and small drum-specific checkpoints. Superseded in part by the later Phase 6 Apple Calendar decision. | 2026-05-26 |
 | Add calendar-first scheduling and Apple Calendar sync as Phase 6 | The instructor already uses Apple Calendar, and the lesson operating board can become more useful when schedule changes from Drum Lesson OS write through to Apple Calendar. Drum Lesson OS remains the schedule source of truth. | 2026-05-28 |
+| Promote the macOS SwiftUI app to the primary project shape | Phase 7 passed independent implementation review, and keeping the native app nested inside a removed web runtime confused follow-up agents. | 2026-05-28 |
+| Remove the legacy Next.js runtime from the working tree | The current product direction is macOS native plus Supabase migrations/RPCs. Historical web evidence remains in planning docs only. | 2026-05-28 |
 
 ## Evolution
 
@@ -75,4 +77,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-05-28 after Phase 6 calendar scheduling planning*
+*Last updated: 2026-05-28 after Phase 7 native-primary reorganization*

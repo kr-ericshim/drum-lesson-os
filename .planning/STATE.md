@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: instructor-side MVP
-status: phase-6-planned
-stopped_at: Phase 6 Calendar-First Scheduling And Apple Calendar Sync is planned; implementation has not started.
-last_updated: "2026-05-28T13:44:37+09:00"
-last_activity: 2026-05-28 -- Phase 6 was planned as app-owned lesson scheduling with a calendar-first dashboard, app-expanded recurring occurrences, and outbox-based Apple Calendar sync through iCloud CalDAV.
+status: native-primary-reorganized
+stopped_at: Phase 7 SwiftUI Native Migration was approved; the macOS app now lives at repo root, the legacy web runtime has been removed, and native-first verification passed.
+last_updated: "2026-05-28T17:17:00+09:00"
+last_activity: 2026-05-28 -- Phase 7 native implementation candidate passed independent review, then the project was reorganized around the root SwiftUI app. Legacy web runtime and old web env aliases were removed. SQL guard, XcodeGen, root xcodebuild tests, Supabase dry-run, and diff check passed.
 progress:
-  total_phases: 6
-  completed_phases: 5
-  total_plans: 17
-  completed_plans: 16
-  percent: 94
+  total_phases: 7
+  completed_phases: 7
+  total_plans: 18
+  completed_plans: 18
+  percent: 100
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-28)
 
 **Core value:** An instructor can quickly understand a student's current progress and personal characteristics before or during a lesson.
-**Current focus:** Phase 6 is planned but not implemented. The next planned work is calendar-first scheduling with Drum Lesson OS as the source of truth and Apple Calendar as the sync target.
+**Current focus:** Drum Lesson OS is now a macOS SwiftUI app at the repo root. Supabase authenticated RPC writes, EventKit calendar write-through, retry visibility, and native parity tests remain the active implementation surface. The legacy Next.js runtime has been removed after Phase 7 approval.
 
 ## Current Position
 
-Phase: 6 (Calendar-First Scheduling And Apple Calendar Sync) — PLANNED
-Plan: 0 of 1 implemented in Phase 6
-Status: Phase 1 through Phase 5 complete; Phase 6 plan is documented and awaiting review before implementation.
-Last activity: 2026-05-28 -- Phase 6 plan created for calendar-first scheduling and Apple Calendar outbox sync.
+Phase: 7 (SwiftUI Native Migration) — APPROVED AND REORGANIZED AS NATIVE PRIMARY
+Plan: 1 of 1 implemented and verified for Phase 7 code-level gates
+Status: Phase 1 through Phase 7 implementation candidate complete; root project shape is now native-first and verified. Live Supabase/EventKit/iPhone UAT remains before real daily production use.
+Last activity: 2026-05-28 -- Phase 7 verified with XcodeGen, native xcodebuild tests, Supabase dry-run, source/binary secret scans, Computer Use preview smoke, independent agent approval, native-primary repository cleanup, and post-cleanup root verification.
 
-Progress: █████████░ 94%
+Progress: ██████████ 100%
 
 ## Performance Metrics
 
@@ -49,12 +49,13 @@ Progress: █████████░ 94%
 | 03 | 6 | 6 | Complete |
 | 04 | 3 | 3 | Complete |
 | 05 | 1 | 1 | Complete |
-| 06 | 1 | 0 | Planned |
+| 06 | 1 | 1 | Phase 6A complete; Phase 6B deferred |
+| 07 | 1 | 1 | Implementation candidate verified; release cutover pending live UAT |
 
 **Recent Trend:**
 
-- Last 5 plans: 03F, 04A, 04B, 04C, 05
-- Next 5 plans: 06
+- Last 5 plans: 04B, 04C, 05, 06, 07
+- Next 5 plans: live Phase 7 UAT, native packaging/signing, and daily-use hardening if issues appear
 
 ## Accumulated Context
 
@@ -86,15 +87,19 @@ Recent decisions affecting current work:
 - Phase 6: Recurring lessons expand into app-owned individual occurrences before Apple sync.
 - Phase 6: Use an outbox for Apple Calendar create/update/delete so app schedule saves are durable even when CalDAV sync fails.
 - Phase 6: Optional reverse sync should only inspect app-created Apple events and should keep Drum Lesson OS canonical on conflicts.
+- Phase 7: The native macOS app is a SwiftUI implementation candidate at repo root; Supabase remains canonical.
+- Phase 7: Native write paths use authenticated Supabase RPCs and reject service-role keys in app configuration.
+- Phase 7: Native Apple Calendar writes use EventKit and additive native sync metadata.
+- Phase 7: The legacy Next.js runtime was removed after independent implementation approval to keep future work native-centered.
 - Demo maintenance: Keep seeded demo content Korean and expose short student slugs in routes while preserving UUID primary keys for writes and relations.
 
 ### Pending Todos
 
-Phase 6 implementation not started.
+No Phase 7 code-level todos remain from this implementation pass. Live use still needs real Supabase credentials, EventKit permission/write/delete proof, iPhone iCloud propagation proof, and daily-use confidence.
 
 ### Blockers/Concerns
 
-None.
+Native production confidence is blocked on external live UAT inputs: instructor credentials, real macOS Calendar permission/write/delete, and an iPhone on the same iCloud account. Phase 6B reverse sync remains intentionally deferred.
 
 ## Deferred Or Excluded Items
 
@@ -108,6 +113,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-05-28T13:44:37+09:00
-Stopped at: Phase 6 plan documented; implementation not started
-Resume file: .planning/phases/06-calendar-apple-sync/06-PLAN.md
+Last session: 2026-05-28T17:17:00+09:00
+Stopped at: Native-primary repo reorganization completed and verified after Phase 7 approval
+Resume file: .planning/phases/07-swiftui-native-migration/07-NATIVE-PRIMARY-REORG.md

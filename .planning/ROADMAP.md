@@ -2,7 +2,9 @@
 
 ## Overview
 
-Drum Lesson OS v1 stays focused on the instructor-side memory loop: know the student before the lesson, update the teaching record quickly, and leave the next lesson action visible. Phase 5 connects dashboard triage, in-lesson checks, and closeout drafting so the MVP stays centered on the 30-second pre-lesson and 2-minute post-lesson routine. Phase 6 now adds a calendar-first schedule surface and Apple Calendar write-through sync because the instructor already uses Apple Calendar day to day.
+Drum Lesson OS v1 stays focused on the instructor-side memory loop: know the student before the lesson, update the teaching record quickly, and leave the next lesson action visible. Phase 5 connects dashboard triage, in-lesson checks, and closeout drafting so the MVP stays centered on the 30-second pre-lesson and 2-minute post-lesson routine. Phase 6 adds a calendar-first schedule surface and Apple Calendar write-through sync because the instructor already uses Apple Calendar day to day. Phase 7 moved the same MVP workflow into a macOS SwiftUI app with EventKit replacing Apple credential storage.
+
+The current repo is native-first: `project.yml`, `DrumLessonOS/`, `DrumLessonOSTests/`, `supabase/`, and `tests/` are the active implementation surfaces. The legacy Next.js runtime has been removed after Phase 7 approval.
 
 The next phases intentionally exclude student portals, payments, attendance, reminders, AI summaries, and audio/video analysis. Real instructor authentication is implemented as a release gate; live deployment still requires applying the auth migration and binding the single Supabase Auth user to the existing instructor row.
 
@@ -19,7 +21,8 @@ The next phases intentionally exclude student portals, payments, attendance, rem
 - [x] **Phase 3: Teaching Workflow Editing** - Finish student/profile, trait, assignment, lesson-note, next-plan, progress, and closeout editing. (completed 2026-05-26)
 - [x] **Phase 4: Instructor Workbench Polish** - Add filters, faster progress status updates, small tempo checkpoints, dashboard quick-add actions, and action-first brief/closeout tightening. (completed 2026-05-26)
 - [x] **Phase 5: Lesson Flow Operating Board** - Connect dashboard triage, in-lesson checks, and closeout drafting into one lesson-flow surface. (completed 2026-05-28)
-- [ ] **Phase 6: Calendar-First Scheduling And Apple Calendar Sync** - Add app-owned lesson schedules, a calendar-first dashboard, recurring occurrence expansion, and outbox-based Apple Calendar sync.
+- [x] **Phase 6A: Calendar-First Scheduling And Apple Calendar Sync** - Add app-owned lesson schedules, a calendar-first dashboard, recurring occurrence expansion, and outbox-based Apple Calendar sync. Optional reverse sync remains Phase 6B.
+- [x] **Phase 7: SwiftUI Native Migration** - Add a macOS SwiftUI app with Supabase authenticated RPC writes, EventKit calendar write-through, retry visibility, native parity tests, and native-primary repo layout. Live use still needs real Supabase/EventKit/iPhone UAT.
 
 ## Phase Details
 
@@ -172,11 +175,40 @@ Plan files:
 
 Plans:
 
-- [ ] 06: Add calendar-first scheduling and Apple Calendar sync.
+- [x] 06A: Add calendar-first scheduling and Apple Calendar one-way sync.
+- [ ] 06B: Optional reverse sync for app-created Apple events after one-way sync is stable.
 
 Plan files:
 
 - [06-PLAN.md](phases/06-calendar-apple-sync/06-PLAN.md)
+
+### Phase 7: SwiftUI Native Migration
+
+**Goal**: The instructor can run Drum Lesson OS as a macOS SwiftUI app while Supabase remains canonical and EventKit handles native Apple Calendar writes.
+**Mode:** native-migration
+**UI hint**: yes
+**Depends on**: Phase 6A
+**Requirements**: Existing instructor-side MVP requirements plus Phase 7 parity/release gates
+**Success Criteria**:
+
+  1. Native macOS app builds, launches, and passes its Swift test suite.
+  2. Native screens cover dashboard, roster, student detail, editing workflows, lesson flow, scheduling, settings, and sync status.
+  3. Native writes use authenticated Supabase RPCs and never embed the service-role key.
+  4. Native Apple Calendar access uses EventKit and stores only recoverable calendar identifiers.
+  5. EventKit failures are visible and retryable without corrupting Supabase schedule data.
+  6. The legacy Next.js runtime has been removed after Phase 7 approval so future work starts from the native app.
+
+Plans:
+
+- [x] 07: Add SwiftUI native implementation candidate and release-gate evidence. (implemented 2026-05-28; independent review approved)
+- [x] 07R: Reorganize repo as native-primary and remove legacy web runtime. (completed 2026-05-28)
+
+Plan files:
+
+- [07-PLAN.md](phases/07-swiftui-native-migration/07-PLAN.md)
+- [07-CHECKPOINT.md](phases/07-swiftui-native-migration/07-CHECKPOINT.md)
+- [07-RELEASE-GATE.md](phases/07-swiftui-native-migration/07-RELEASE-GATE.md)
+- [07-NATIVE-PRIMARY-REORG.md](phases/07-swiftui-native-migration/07-NATIVE-PRIMARY-REORG.md)
 
 ## Explicitly Not Planned
 
@@ -193,7 +225,7 @@ These items should not be revived as near-term phases without a new product deci
 ## Progress
 
 **Execution Order:**
-Phases execute in this order: 1 -> 2 -> 3A -> 3B -> 3C -> 3D -> 3E -> 3F -> 4A -> 4B -> 4C -> 5 -> 6
+Phases execute in this order: 1 -> 2 -> 3A -> 3B -> 3C -> 3D -> 3E -> 3F -> 4A -> 4B -> 4C -> 5 -> 6 -> 7
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -202,4 +234,5 @@ Phases execute in this order: 1 -> 2 -> 3A -> 3B -> 3C -> 3D -> 3E -> 3F -> 4A -
 | 3. Teaching Workflow Editing | 6/6 | Complete | 2026-05-26 |
 | 4. Instructor Workbench Polish | 3/3 | Complete | 2026-05-26 |
 | 5. Lesson Flow Operating Board | 1/1 | Complete | 2026-05-28 |
-| 6. Calendar-First Scheduling And Apple Calendar Sync | 0/1 | Planned | - |
+| 6. Calendar-First Scheduling And Apple Calendar Sync | 1/1 | Phase 6A verification | 2026-05-28 |
+| 7. SwiftUI Native Migration | 1/1 | Native-primary repo layout; live UAT pending | 2026-05-28 |
