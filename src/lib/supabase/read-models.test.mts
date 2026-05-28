@@ -676,3 +676,96 @@ test("mapLessonQueue sorts dated plans by date priority and name", () => {
   assert.equal(queue[1]?.dateState, "today");
   assert.equal(queue[4]?.dateState, "upcoming");
 });
+
+test("mapLessonQueue exposes first check and attention flags", () => {
+  const [student] = mapStudentRoster(
+    [
+      {
+        id: "student-1",
+        slug: "kim-daniel",
+        name: "Kim Daniel",
+        profile_cue: "Needs demonstration before notation.",
+        primary_weak_point: "Rushing fills",
+        progress_items: [],
+        assignments: [
+          {
+            id: "assignment-1",
+            status: "needs_review",
+            created_at: "2026-05-20T00:00:00Z",
+            title: "Paradiddle grid",
+            due_date: null,
+            detail: "Check accents slowly.",
+          },
+        ],
+        lesson_notes: [],
+        next_lesson_plans: [
+          {
+            id: "plan-1",
+            next_action: "Check paradiddle accents first",
+            priority: "high",
+            created_at: "2026-05-20T00:00:00Z",
+            updated_at: "2026-05-20T00:00:00Z",
+            planned_for: "2026-05-27",
+            detail: "Start at 72 bpm.",
+          },
+        ],
+      },
+    ],
+    "2026-05-28",
+  );
+
+  const [queueItem] = mapLessonQueue([student], "2026-05-28");
+
+  assert.equal(queueItem.firstCheck, "Check paradiddle accents first");
+  assert.deepEqual(queueItem.attentionFlags, [
+    "assignment_needs_review",
+    "missing_current_focus",
+    "missing_recent_note",
+    "overdue_plan",
+  ]);
+});
+
+test("mapLessonQueue flags stale current focus after two weeks", () => {
+  const [student] = mapStudentRoster(
+    [
+      {
+        id: "student-2",
+        slug: "park-minjun",
+        name: "Park Minjun",
+        profile_cue: "Learns by call and response.",
+        primary_weak_point: "Ghost notes disappear in grooves",
+        progress_items: [
+          {
+            id: "progress-1",
+            category: "rudiment",
+            status: "in_progress",
+            title: "Ghost note control",
+            current_focus: true,
+            observed_on: "2026-05-01",
+            detail: "Keep taps low under backbeat.",
+            tempo_note: "Clean at 70.",
+          },
+        ],
+        assignments: [],
+        lesson_notes: [{ lesson_date: "2026-05-20" }],
+        next_lesson_plans: [
+          {
+            id: "plan-2",
+            next_action: "Listen for ghost notes under groove",
+            priority: "normal",
+            created_at: "2026-05-20T00:00:00Z",
+            updated_at: "2026-05-20T00:00:00Z",
+            planned_for: "2026-05-28",
+            detail: "Use 8th-note groove.",
+          },
+        ],
+      },
+    ],
+    "2026-05-28",
+  );
+
+  const [queueItem] = mapLessonQueue([student], "2026-05-28");
+
+  assert.equal(queueItem.firstCheck, "Listen for ghost notes under groove");
+  assert.deepEqual(queueItem.attentionFlags, ["stale_focus"]);
+});

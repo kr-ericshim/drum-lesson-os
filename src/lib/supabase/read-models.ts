@@ -156,6 +156,13 @@ export type StudentDetail = StudentRosterItem & {
   lessonBrief: LessonBrief;
 };
 
+export type LessonAttentionFlag =
+  | "assignment_needs_review"
+  | "missing_current_focus"
+  | "missing_recent_note"
+  | "overdue_plan"
+  | "stale_focus";
+
 export type LessonQueueItem = {
   studentId: string;
   studentSlug?: string;
@@ -166,6 +173,8 @@ export type LessonQueueItem = {
   priority: string;
   plannedFor: string;
   dateState: "overdue" | "today" | "upcoming";
+  firstCheck: string;
+  attentionFlags: LessonAttentionFlag[];
 };
 
 const priorityRank: Record<string, number> = {
@@ -175,6 +184,7 @@ const priorityRank: Record<string, number> = {
 };
 
 const recentNoteWindowDays = 14;
+const staleFocusWindowDays = 14;
 
 export function pickLatestAssignment(assignments: AssignmentContextRow[]) {
   return [...assignments].sort((a, b) => b.created_at.localeCompare(a.created_at))[0];
@@ -413,6 +423,8 @@ export function mapLessonQueue(
         priority: student.nextPlan?.priority ?? "normal",
         plannedFor,
         dateState: getDateState(plannedFor, todayDate),
+        firstCheck: buildLessonQueueFirstCheck(student),
+        attentionFlags: buildAttentionFlags(student, plannedFor, todayDate),
       };
     })
     .sort(
@@ -422,6 +434,40 @@ export function mapLessonQueue(
           (priorityRank[b.priority] ?? priorityRank.normal) ||
         a.studentName.localeCompare(b.studentName),
     );
+}
+
+function buildLessonQueueFirstCheck(student: StudentRosterItem) {
+  return student.nextAction || student.currentFocus?.title || "Set next lesson action";
+}
+
+function buildAttentionFlags(
+  student: StudentRosterItem,
+  plannedFor: string,
+  todayDate: string,
+): LessonAttentionFlag[] {
+  const flags: LessonAttentionFlag[] = [];
+
+  if (student.assignmentStatus === "needs_review") {
+    flags.push("assignment_needs_review");
+  }
+
+  if (!student.currentFocus) {
+    flags.push("missing_current_focus");
+  }
+
+  if (!student.hasRecentNote) {
+    flags.push("missing_recent_note");
+  }
+
+  if (plannedFor < todayDate) {
+    flags.push("overdue_plan");
+  }
+
+  if (student.currentFocus && isStaleLessonDate(student.currentFocus.observedOn, todayDate)) {
+    flags.push("stale_focus");
+  }
+
+  return flags;
 }
 
 function getDateState(plannedFor: string, todayDate: string): LessonQueueItem["dateState"] {
@@ -451,6 +497,19 @@ function isRecentLessonDate(lessonDate: string, todayDate: string) {
   const dayDifference = Math.floor((todayTime - lessonTime) / 86_400_000);
 
   return dayDifference >= 0 && dayDifference <= recentNoteWindowDays;
+}
+
+function isStaleLessonDate(lessonDate: string, todayDate: string) {
+  const lessonTime = Date.parse(`${lessonDate}T00:00:00Z`);
+  const todayTime = Date.parse(`${todayDate}T00:00:00Z`);
+
+  if (Number.isNaN(lessonTime) || Number.isNaN(todayTime)) {
+    return false;
+  }
+
+  const dayDifference = Math.floor((todayTime - lessonTime) / 86_400_000);
+
+  return dayDifference > staleFocusWindowDays;
 }
 
 function getTodayDateInputValue() {
