@@ -1,4 +1,4 @@
-import { LessonQueue } from "@/components/dashboard/lesson-queue";
+import { LessonOperatingBoard } from "@/components/dashboard/lesson-operating-board";
 import { SetupStatusPanel } from "@/components/dashboard/setup-status-panel";
 import { StudentRosterPreview } from "@/components/dashboard/student-roster-preview";
 import { SignOutButton } from "@/components/auth/sign-out-button";
@@ -31,7 +31,7 @@ export default async function Home() {
             </p>
           </div>
 
-          <LessonQueue items={lessonQueue} />
+          <LessonOperatingBoard items={lessonQueue} />
 
           <StudentRosterPreview
             students={rosterResult.data}
