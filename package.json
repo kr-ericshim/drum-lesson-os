@@ -5,8 +5,8 @@
   "type": "module",
   "scripts": {
     "generate": "xcodegen generate",
-    "test": "node --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types --test tests/native-rpc-security.test.mts",
+    "test": "npm run test:native",
     "test:native": "xcodebuild -quiet -project DrumLessonOS.xcodeproj -scheme DrumLessonOS -destination 'platform=macOS' test",
-    "verify": "npm test && xcodegen generate && xcodebuild -quiet -project DrumLessonOS.xcodeproj -scheme DrumLessonOS -destination 'platform=macOS' test && supabase db push --dry-run"
+    "verify": "xcodegen generate && npm run test:native"
   }
 }

@@ -1,11 +1,80 @@
 import Foundation
 import Observation
+import SwiftUI
+
+enum AppAppearance: String, CaseIterable, Identifiable {
+    case system
+    case light
+    case dark
+
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .system: "시스템"
+        case .light: "라이트"
+        case .dark: "다크"
+        }
+    }
+
+    var colorScheme: ColorScheme? {
+        switch self {
+        case .system: nil
+        case .light: .light
+        case .dark: .dark
+        }
+    }
+}
+
+@Observable
+@MainActor
+final class AppPreferences {
+    static let lessonDurationOptions = [30, 45, 50, 60, 90]
+    static let calendarReminderOptions: [Int?] = [nil, 10, 15, 30, 60]
+
+    var appearance: AppAppearance {
+        didSet { defaults.set(appearance.rawValue, forKey: Keys.appearance) }
+    }
+    var defaultLessonDurationMinutes: Int {
+        didSet { defaults.set(defaultLessonDurationMinutes, forKey: Keys.defaultLessonDurationMinutes) }
+    }
+    var calendarReminderMinutes: Int? {
+        didSet {
+            if let calendarReminderMinutes {
+                defaults.set(calendarReminderMinutes, forKey: Keys.calendarReminderMinutes)
+            } else {
+                defaults.removeObject(forKey: Keys.calendarReminderMinutes)
+            }
+        }
+    }
+
+    private let defaults: UserDefaults
+
+    init(defaults: UserDefaults = .standard) {
+        self.defaults = defaults
+
+        let storedAppearance = defaults.string(forKey: Keys.appearance)
+            .flatMap(AppAppearance.init(rawValue:))
+        appearance = storedAppearance ?? .system
+
+        let storedDuration = defaults.integer(forKey: Keys.defaultLessonDurationMinutes)
+        defaultLessonDurationMinutes = Self.lessonDurationOptions.contains(storedDuration) ? storedDuration : 50
+
+        let storedReminder = defaults.object(forKey: Keys.calendarReminderMinutes) as? Int
+        calendarReminderMinutes = Self.calendarReminderOptions.contains(storedReminder) ? storedReminder : nil
+    }
+
+    private enum Keys {
+        static let appearance = "DrumLessonOS.appearance"
+        static let defaultLessonDurationMinutes = "DrumLessonOS.defaultLessonDurationMinutes"
+        static let calendarReminderMinutes = "DrumLessonOS.calendarReminderMinutes"
+    }
+}
 
 @Observable
 @MainActor
 final class AppEnvironment {
     var route: AppRoute = .dashboard
-    var auth: AuthViewModel
     var dashboard: DashboardViewModel
     var syncStatus: SyncStatusViewModel
 
@@ -13,23 +82,27 @@ final class AppEnvironment {
     let calendar: CalendarRepository
     let writes: StudentWriteRepository
     let schedules: ScheduleRepository
+    let preferences: AppPreferences
+    let localDataDirectoryURL: URL?
 
     init(
-        auth: AuthViewModel,
         dashboard: DashboardViewModel,
         syncStatus: SyncStatusViewModel,
         students: StudentRepository,
         calendar: CalendarRepository,
         writes: StudentWriteRepository,
-        schedules: ScheduleRepository
+        schedules: ScheduleRepository,
+        preferences: AppPreferences = AppPreferences(),
+        localDataDirectoryURL: URL? = nil
     ) {
-        self.auth = auth
         self.dashboard = dashboard
         self.syncStatus = syncStatus
         self.students = students
         self.calendar = calendar
         self.writes = writes
         self.schedules = schedules
+        self.preferences = preferences
+        self.localDataDirectoryURL = localDataDirectoryURL
     }
 
     static func preview() -> AppEnvironment {
@@ -41,7 +114,6 @@ final class AppEnvironment {
         let sync = SyncStatusViewModel(queue: queue, retry: retry, schedules: schedules)
 
         return AppEnvironment(
-            auth: AuthViewModel(repository: store),
             dashboard: DashboardViewModel(repository: store, scheduleRepository: schedules),
             syncStatus: sync,
             students: store,
@@ -51,44 +123,61 @@ final class AppEnvironment {
         )
     }
 
-    static func liveOrPreview(
-        environment: [String: String] = ProcessInfo.processInfo.environment,
-        bundle: Bundle? = .main
+    static func local(
+        databaseURL: URL? = nil,
+        calendar: CalendarRepository? = nil,
+        preferences: AppPreferences = AppPreferences()
     ) -> AppEnvironment {
-        guard let supabase = try? SupabaseEnvironment.load(environment: environment, bundle: bundle) else {
-            return preview()
+        let store: LocalSQLiteRepository
+        let queue: LocalWriteQueue
+        let resolvedDatabaseURL: URL
+        do {
+            resolvedDatabaseURL = try databaseURL ?? LocalSQLiteRepository.defaultDatabaseURL()
+            store = try LocalSQLiteRepository(databaseURL: resolvedDatabaseURL)
+            queue = try LocalWriteQueue(storageURL: writeQueueURL(for: resolvedDatabaseURL))
+        } catch {
+            preconditionFailure("Local store failed: \(error.localizedDescription)")
         }
 
-        let rest = SupabaseRESTClient(environment: supabase)
-        let sessionStore = AuthSessionStore()
-        let rpc = SupabaseRPCClient(rest: rest, sessionStore: sessionStore)
-        let studentCache = LocalCacheStore()
-        let students = CachedStudentRepository(
-            base: SupabaseStudentRepository(rest: rest, sessionStore: sessionStore),
-            cache: studentCache
-        )
-        let writes = SupabaseStudentWriteRepository(rpc: rpc)
-        let schedules = SupabaseScheduleRepository(rpc: rpc, rest: rest, sessionStore: sessionStore)
-        let calendar = EventKitCalendarRepository()
-        let queue = LocalWriteQueue()
+        let calendar = calendar ?? EventKitCalendarRepository {
+            preferences.calendarReminderMinutes
+        }
         let retry = RetryScheduler(writeQueue: queue)
-        let calendarBackedSchedules = CalendarBackedScheduleRepository(schedules: schedules, calendar: calendar, queue: queue)
-        let sync = SyncStatusViewModel(queue: queue, retry: retry, schedules: calendarBackedSchedules)
+        let schedules = CalendarBackedScheduleRepository(schedules: store, calendar: calendar, queue: queue)
+        let sync = SyncStatusViewModel(queue: queue, retry: retry, schedules: schedules)
 
         return AppEnvironment(
-            auth: AuthViewModel(repository: SupabaseAuthRepository(rest: rest, sessionStore: sessionStore)),
-            dashboard: DashboardViewModel(repository: students, scheduleRepository: calendarBackedSchedules),
+            dashboard: DashboardViewModel(repository: store, scheduleRepository: schedules),
             syncStatus: sync,
-            students: students,
+            students: store,
             calendar: calendar,
-            writes: writes,
-            schedules: calendarBackedSchedules
+            writes: store,
+            schedules: schedules,
+            preferences: preferences,
+            localDataDirectoryURL: resolvedDatabaseURL.deletingLastPathComponent()
         )
+    }
+
+    static func liveOrPreview(
+        environment: [String: String] = ProcessInfo.processInfo.environment,
+        bundle: Bundle? = .main,
+        databaseURL: URL? = nil,
+        calendar: CalendarRepository? = nil,
+        preferences: AppPreferences = AppPreferences()
+    ) -> AppEnvironment {
+        _ = environment
+        _ = bundle
+        return local(databaseURL: databaseURL, calendar: calendar, preferences: preferences)
     }
 
     @MainActor
     func refresh() async {
+        await syncStatus.retryNow()
         await dashboard.load()
         syncStatus.refresh()
+    }
+
+    private static func writeQueueURL(for databaseURL: URL) -> URL {
+        databaseURL.appendingPathExtension("calendar-write-queue.json")
     }
 }

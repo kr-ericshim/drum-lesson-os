@@ -120,6 +120,7 @@ struct CalendarLessonEvent: Identifiable, Hashable {
     var durationMinutes: Int
     var startsAt: String
     var endsAt: String
+    var timezone: String
     var status: LessonOccurrenceStatus
     var syncStatus: NativeCalendarSyncStatus
     var syncError: String?

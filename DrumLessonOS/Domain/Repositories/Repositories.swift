@@ -1,14 +1,6 @@
 import Foundation
 
 @MainActor
-protocol AuthRepository {
-    func restoreSession() async throws -> Instructor?
-    func signIn(email: String, password: String) async throws -> Instructor
-    func signOut() async throws
-    func openPasswordRecovery(email: String) async throws
-}
-
-@MainActor
 protocol StudentRepository {
     func loadCurrentInstructor() async throws -> Instructor
     func loadRoster() async throws -> [StudentRosterItem]
@@ -36,7 +28,15 @@ protocol ScheduleRepository {
     func editOccurrence(_ input: EditOccurrenceInput) async throws -> LessonOccurrence
     func cancelOccurrence(id: EntityID) async throws -> LessonOccurrence
     func retryNativeCalendarSync(occurrenceId: EntityID) async throws
+    func loadPendingNativeCalendarOccurrences() async throws -> [LessonOccurrence]
+    func reconcilePendingNativeCalendarSync() async throws -> Int
+    func loadOccurrence(id: EntityID) async throws -> LessonOccurrence
     func updateNativeCalendarSync(_ input: NativeCalendarSyncUpdateInput) async throws
+}
+
+extension ScheduleRepository {
+    func loadPendingNativeCalendarOccurrences() async throws -> [LessonOccurrence] { [] }
+    func reconcilePendingNativeCalendarSync() async throws -> Int { 0 }
 }
 
 @MainActor
@@ -47,8 +47,15 @@ protocol CalendarRepository {
     func selectCalendar(_ calendar: WritableCalendar) async throws
     func selectedCalendar() -> WritableCalendar?
     func createLessonEvent(_ event: LessonCalendarEventDraft) async throws -> CalendarWriteResult
-    func updateLessonEvent(_ event: LessonCalendarEventDraft, existingEventIdentifier: String?) async throws -> CalendarWriteResult
-    func deleteLessonEvent(eventIdentifier: String) async throws
+    func recoverOrCreateLessonEvent(_ event: LessonCalendarEventDraft) async throws -> CalendarWriteResult
+    func updateLessonEvent(_ event: LessonCalendarEventDraft, existingIdentity: CalendarEventIdentity) async throws -> CalendarWriteResult
+    func deleteLessonEvent(_ event: LessonCalendarEventDraft, existingIdentity: CalendarEventIdentity) async throws
+}
+
+extension CalendarRepository {
+    func recoverOrCreateLessonEvent(_ event: LessonCalendarEventDraft) async throws -> CalendarWriteResult {
+        try await createLessonEvent(event)
+    }
 }
 
 struct RepositoryError: LocalizedError, Equatable {
@@ -56,11 +63,16 @@ struct RepositoryError: LocalizedError, Equatable {
 
     var errorDescription: String? { message }
 
-    static let signedOut = RepositoryError(message: "Sign in is required.")
-    static let notFound = RepositoryError(message: "The requested record was not found.")
+    static let notFound = RepositoryError(message: "요청한 기록을 찾을 수 없습니다.")
 }
 
-struct NativeCalendarSyncUpdateInput: Equatable {
+struct CalendarEventIdentity: Codable, Equatable {
+    var eventIdentifier: String?
+    var calendarIdentifier: String?
+    var externalIdentifier: String?
+}
+
+struct NativeCalendarSyncUpdateInput: Codable, Equatable {
     var occurrenceId: EntityID
     var status: NativeCalendarSyncStatus
     var eventIdentifier: String?

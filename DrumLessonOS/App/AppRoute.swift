@@ -2,6 +2,7 @@ import Foundation
 
 enum AppRoute: Hashable, CustomStringConvertible {
     case dashboard
+    case calendar
     case student(UUID)
     case lesson(CalendarLessonEvent)
     case settings
@@ -10,6 +11,8 @@ enum AppRoute: Hashable, CustomStringConvertible {
         switch self {
         case .dashboard:
             "dashboard"
+        case .calendar:
+            "calendar"
         case .student(let id):
             "student:\(id.uuidString)"
         case .lesson(let event):

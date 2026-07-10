@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: instructor-side MVP
-status: native-primary-reorganized
-stopped_at: Phase 7 SwiftUI Native Migration was approved; the macOS app now lives at repo root, the legacy web runtime has been removed, and native-first verification passed.
-last_updated: "2026-05-28T17:17:00+09:00"
-last_activity: 2026-05-28 -- Phase 7 native implementation candidate passed independent review, then the project was reorganized around the root SwiftUI app. Legacy web runtime and old web env aliases were removed. SQL guard, XcodeGen, root xcodebuild tests, Supabase dry-run, and diff check passed.
+status: phase-10-in-lesson-workspace-redesign-verified
+stopped_at: Phase 10 active lesson workspace redesign completed and verified; direct compact/light/VoiceOver and live EventKit checks remain release UAT.
+last_updated: "2026-07-11T04:37:27+09:00"
+last_activity: 2026-07-11 -- Completed the focused active lesson console, passed 92 tests and Release build/run verification, and captured the wide dark running UI.
 progress:
-  total_phases: 7
-  completed_phases: 7
-  total_plans: 18
-  completed_plans: 18
+  total_phases: 10
+  completed_phases: 10
+  total_plans: 21
+  completed_plans: 21
   percent: 100
 ---
 
@@ -18,17 +18,17 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-05-28)
+See: .planning/PROJECT.md (updated 2026-07-10)
 
 **Core value:** An instructor can quickly understand a student's current progress and personal characteristics before or during a lesson.
-**Current focus:** Drum Lesson OS is now a macOS SwiftUI app at the repo root. Supabase authenticated RPC writes, EventKit calendar write-through, retry visibility, and native parity tests remain the active implementation surface. The legacy Next.js runtime has been removed after Phase 7 approval.
+**Current focus:** Phase 10 implementation is complete. Remaining work is release confidence UAT for compact/light/VoiceOver and real EventKit/iCloud behavior.
 
 ## Current Position
 
-Phase: 7 (SwiftUI Native Migration) — APPROVED AND REORGANIZED AS NATIVE PRIMARY
-Plan: 1 of 1 implemented and verified for Phase 7 code-level gates
-Status: Phase 1 through Phase 7 implementation candidate complete; root project shape is now native-first and verified. Live Supabase/EventKit/iPhone UAT remains before real daily production use.
-Last activity: 2026-05-28 -- Phase 7 verified with XcodeGen, native xcodebuild tests, Supabase dry-run, source/binary secret scans, Computer Use preview smoke, independent agent approval, native-primary repository cleanup, and post-cleanup root verification.
+Phase: 10 (In-Lesson Workspace Redesign) - COMPLETE
+Plan: 1 of 1 implemented and verified
+Status: The active lesson route now uses a focused, responsive console with on-demand history, stable capture fields, progressive closeout, and preserved occurrence-backed writes.
+Last activity: 2026-07-11 -- Release build/run, 92 tests, diff check, wide dark visual check, and final P0/P1 audit passed.
 
 Progress: ██████████ 100%
 
@@ -36,7 +36,7 @@ Progress: ██████████ 100%
 
 **Velocity:**
 
-- Total plans completed: 16
+- Total plans completed: 21
 - Average duration: N/A
 - Total execution time: N/A
 
@@ -51,11 +51,14 @@ Progress: ██████████ 100%
 | 05 | 1 | 1 | Complete |
 | 06 | 1 | 1 | Phase 6A complete; Phase 6B deferred |
 | 07 | 1 | 1 | Implementation candidate verified; release cutover pending live UAT |
+| 08 | 1 | 1 | Complete; independent design verification OK |
+| 09 | 1 | 1 | Implementation complete; direct visual and live EventKit UAT pending |
+| 10 | 1 | 1 | Complete; direct compact/light/VoiceOver UAT remains |
 
 **Recent Trend:**
 
-- Last 5 plans: 04B, 04C, 05, 06, 07
-- Next 5 plans: live Phase 7 UAT, native packaging/signing, and daily-use hardening if issues appear
+- Last 5 plans: 06, 07, 08, 09, 10
+- Next work: perform direct compact/light/keyboard/VoiceOver UAT, then EventKit/iCloud live UAT and native packaging.
 
 ## Accumulated Context
 
@@ -63,6 +66,9 @@ Progress: ██████████ 100%
 
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
+
+- 2026-07-10 local-first cutover: SQLite is canonical and the app runs without login; older Supabase/Auth decisions below are historical context.
+- 2026-07-10 durability hardening: Student/lesson writes use a single SQLite immediate transaction, recurring templates persist in the local snapshot, and EventKit work uses a durable local outbox with stable-identity recovery.
 
 - Initialization: Build instructor-side MVP first.
 - Initialization: Center v1 on progress tracking and student traits.
@@ -91,15 +97,20 @@ Recent decisions affecting current work:
 - Phase 7: Native write paths use authenticated Supabase RPCs and reject service-role keys in app configuration.
 - Phase 7: Native Apple Calendar writes use EventKit and additive native sync metadata.
 - Phase 7: The legacy Next.js runtime was removed after independent implementation approval to keep future work native-centered.
+- Phase 8 planning: Treat the current UI problem as visual hierarchy and native workbench ergonomics work, not a rewrite of data, sync, auth, or app architecture.
+- Phase 8 planning: Use a native studio workbench direction: system-adaptive macOS shell, toolbar-first actions, selected-context inspector, clear teaching-first student detail hierarchy, and restrained warm teaching accent.
+- Phase 8 implementation: Keep selected lesson and First Check as the strongest visual decisions; demote week grid, roster, and maintenance editors into supporting surfaces.
+- Phase 8 implementation: Preserve existing write paths and data semantics; this phase only changes SwiftUI hierarchy, copy, shared design-system presentation, and the native auth entry gate.
+- Phase 8 auth-entry follow-up: The daily app launch should restore the Supabase session from Keychain before rendering the main shell, including Debug builds. The account form is a first-run or expired-session connection surface, not the normal app entry.
 - Demo maintenance: Keep seeded demo content Korean and expose short student slugs in routes while preserving UUID primary keys for writes and relations.
 
 ### Pending Todos
 
-No Phase 7 code-level todos remain from this implementation pass. Live use still needs real Supabase credentials, EventKit permission/write/delete proof, iPhone iCloud propagation proof, and daily-use confidence.
+Live use still needs direct compact/light/keyboard/VoiceOver proof, real EventKit permission/create/edit/delete proof, iPhone iCloud propagation proof, and daily-use confidence.
 
 ### Blockers/Concerns
 
-Native production confidence is blocked on external live UAT inputs: instructor credentials, real macOS Calendar permission/write/delete, and an iPhone on the same iCloud account. Phase 6B reverse sync remains intentionally deferred.
+Native production confidence still needs external live UAT with real macOS Calendar permission/write/delete and an iPhone on the same iCloud account. Phase 6B reverse sync remains intentionally deferred.
 
 ## Deferred Or Excluded Items
 
@@ -113,6 +124,6 @@ Native production confidence is blocked on external live UAT inputs: instructor 
 
 ## Session Continuity
 
-Last session: 2026-05-28T17:17:00+09:00
-Stopped at: Native-primary repo reorganization completed and verified after Phase 7 approval
-Resume file: .planning/phases/07-swiftui-native-migration/07-NATIVE-PRIMARY-REORG.md
+Last session: 2026-07-11T04:37:27+09:00
+Stopped at: Phase 10 implementation and code-level verification complete; release UAT remains
+Resume file: .planning/phases/10-in-lesson-workspace-redesign/10-CHECKPOINT.md

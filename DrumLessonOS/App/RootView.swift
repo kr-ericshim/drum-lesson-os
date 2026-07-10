@@ -6,22 +6,36 @@ struct RootView: View {
     var body: some View {
         @Bindable var environment = environment
 
-        Group {
-            if environment.auth.isAuthenticated {
-                NavigationSplitView {
-                    SidebarView(route: $environment.route)
-                } detail: {
-                    RouteContent(route: environment.route)
-                }
-            } else {
-                LoginView(viewModel: environment.auth)
-            }
+        NavigationSplitView {
+            SidebarView(route: $environment.route)
+        } detail: {
+            RouteContent(route: environment.route)
         }
-        .task {
-            await environment.auth.restoreSession()
-            if environment.auth.isAuthenticated {
-                await environment.dashboard.load()
-            }
+        .tint(AppTheme.Accent.teaching)
+        .preferredColorScheme(environment.preferences.appearance.colorScheme)
+    }
+}
+
+enum SidebarDestination: Hashable {
+    case dashboard
+    case calendar
+    case settings
+
+    var route: AppRoute {
+        switch self {
+        case .dashboard: .dashboard
+        case .calendar: .calendar
+        case .settings: .settings
+        }
+    }
+}
+
+extension AppRoute {
+    var sidebarDestination: SidebarDestination {
+        switch self {
+        case .settings: .settings
+        case .calendar: .calendar
+        case .dashboard, .student, .lesson: .dashboard
         }
     }
 }
@@ -30,14 +44,23 @@ private struct SidebarView: View {
     @Binding var route: AppRoute
 
     var body: some View {
-        List(selection: $route) {
-            Label("Dashboard", systemImage: "calendar")
-                .tag(AppRoute.dashboard)
-            Label("Settings", systemImage: "gearshape")
-                .tag(AppRoute.settings)
+        List(selection: sidebarSelection) {
+            Label("대시보드", systemImage: "rectangle.grid.2x2")
+                .tag(SidebarDestination.dashboard)
+            Label("캘린더", systemImage: "calendar")
+                .tag(SidebarDestination.calendar)
+            Label("설정", systemImage: "gearshape")
+                .tag(SidebarDestination.settings)
         }
-        .navigationTitle("Drum Lesson OS")
-        .accessibilityLabel("Main navigation")
+        .navigationTitle("드럼 레슨 OS")
+        .accessibilityLabel("주요 내비게이션")
+    }
+
+    private var sidebarSelection: Binding<SidebarDestination> {
+        Binding(
+            get: { route.sidebarDestination },
+            set: { route = $0.route }
+        )
     }
 }
 
@@ -49,12 +72,19 @@ private struct RouteContent: View {
         switch route {
         case .dashboard:
             DashboardView(viewModel: environment.dashboard)
+        case .calendar:
+            CalendarView(viewModel: environment.dashboard)
         case .student(let id):
             StudentDetailRoute(studentId: id, lessonContext: nil)
         case .lesson(let event):
             StudentDetailRoute(studentId: event.studentId, lessonContext: event)
         case .settings:
-            SettingsView(syncStatus: environment.syncStatus, calendar: environment.calendar)
+            SettingsView(
+                syncStatus: environment.syncStatus,
+                calendar: environment.calendar,
+                preferences: environment.preferences,
+                localDataDirectoryURL: environment.localDataDirectoryURL
+            )
         }
     }
 }
@@ -71,5 +101,16 @@ private struct StudentDetailRoute: View {
             repository: environment.students,
             writes: environment.writes
         ))
+        .toolbar {
+            ToolbarItem(placement: .navigation) {
+                Button {
+                    environment.route = .dashboard
+                } label: {
+                    Label("대시보드", systemImage: "chevron.backward")
+                }
+                .keyboardShortcut("[", modifiers: .command)
+                .help("대시보드로 돌아가기 (⌘[)")
+            }
+        }
     }
 }

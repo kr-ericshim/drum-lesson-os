@@ -25,11 +25,11 @@ enum ProgressStatus: String, Codable, CaseIterable, Identifiable {
 
     var label: String {
         switch self {
-        case .new: "New"
-        case .inProgress: "In progress"
-        case .needsReview: "Needs review"
-        case .steady: "Steady"
-        case .complete: "Complete"
+        case .new: "새 항목"
+        case .inProgress: "진행 중"
+        case .needsReview: "확인 필요"
+        case .steady: "안정화"
+        case .complete: "완료"
         }
     }
 }
@@ -43,6 +43,17 @@ enum StudentTraitType: String, Codable, CaseIterable, Identifiable {
     case caution
 
     var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .strength: "강점"
+        case .weakPoint: "약점"
+        case .practiceHabit: "연습 습관"
+        case .learningStyle: "학습 스타일"
+        case .musicalPreference: "음악 취향"
+        case .caution: "주의점"
+        }
+    }
 }
 
 enum AssignmentStatus: String, Codable, CaseIterable, Identifiable {
@@ -53,6 +64,16 @@ enum AssignmentStatus: String, Codable, CaseIterable, Identifiable {
     case paused
 
     var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .notStarted: "시작 전"
+        case .inProgress: "진행 중"
+        case .needsReview: "확인 필요"
+        case .complete: "완료"
+        case .paused: "보류"
+        }
+    }
 }
 
 enum NextLessonPriority: String, Codable, CaseIterable, Identifiable {
@@ -61,6 +82,14 @@ enum NextLessonPriority: String, Codable, CaseIterable, Identifiable {
     case high
 
     var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .low: "낮음"
+        case .normal: "보통"
+        case .high: "높음"
+        }
+    }
 }
 
 enum LessonOccurrenceStatus: String, Codable, CaseIterable, Identifiable {
@@ -82,11 +111,25 @@ enum NativeCalendarSyncStatus: String, Codable, CaseIterable, Identifiable {
 
     var label: String {
         switch self {
-        case .notConnected: "Calendar not connected"
-        case .pending: "Calendar pending"
-        case .synced: "Calendar synced"
-        case .failed: "Calendar failed"
-        case .disabled: "Calendar disabled"
+        case .notConnected: "캘린더 미연결"
+        case .pending: "캘린더 대기 중"
+        case .synced: "캘린더 동기화됨"
+        case .failed: "캘린더 실패"
+        case .disabled: "캘린더 꺼짐"
+        }
+    }
+}
+
+extension ProgressCategory {
+    var label: String {
+        switch self {
+        case .book: "교재"
+        case .song: "곡"
+        case .rudiment: "루디먼트"
+        case .genre: "장르"
+        case .technique: "테크닉"
+        case .session: "레슨"
+        case .assignment: "과제"
         }
     }
 }
@@ -280,6 +323,7 @@ struct LessonOccurrence: Codable, Identifiable, Hashable {
     var instructorId: EntityID
     var studentId: EntityID
     var scheduleTemplateId: EntityID?
+    var recurrenceSlotDate: String?
     var startsAt: String
     var endsAt: String
     var timezone: String
@@ -297,6 +341,7 @@ struct LessonOccurrence: Codable, Identifiable, Hashable {
         case instructorId = "instructor_id"
         case studentId = "student_id"
         case scheduleTemplateId = "schedule_template_id"
+        case recurrenceSlotDate = "recurrence_slot_date"
         case startsAt = "starts_at"
         case endsAt = "ends_at"
         case timezone
@@ -308,5 +353,88 @@ struct LessonOccurrence: Codable, Identifiable, Hashable {
         case nativeCalendarSyncStatus = "native_calendar_sync_status"
         case nativeCalendarSyncError = "native_calendar_sync_error"
         case nativeCalendarSyncedAt = "native_calendar_synced_at"
+        case legacyAppleSyncStatus = "apple_sync_status"
+        case legacyAppleSyncError = "apple_sync_error"
+        case legacyAppleSyncedAt = "apple_synced_at"
+    }
+
+    init(
+        id: EntityID,
+        instructorId: EntityID,
+        studentId: EntityID,
+        scheduleTemplateId: EntityID?,
+        startsAt: String,
+        endsAt: String,
+        timezone: String,
+        status: LessonOccurrenceStatus,
+        title: String,
+        nativeCalendarEventIdentifier: String?,
+        nativeCalendarIdentifier: String?,
+        nativeCalendarExternalIdentifier: String?,
+        nativeCalendarSyncStatus: NativeCalendarSyncStatus,
+        nativeCalendarSyncError: String?,
+        nativeCalendarSyncedAt: String?,
+        recurrenceSlotDate: String? = nil
+    ) {
+        self.id = id
+        self.instructorId = instructorId
+        self.studentId = studentId
+        self.scheduleTemplateId = scheduleTemplateId
+        self.recurrenceSlotDate = recurrenceSlotDate
+        self.startsAt = startsAt
+        self.endsAt = endsAt
+        self.timezone = timezone
+        self.status = status
+        self.title = title
+        self.nativeCalendarEventIdentifier = nativeCalendarEventIdentifier
+        self.nativeCalendarIdentifier = nativeCalendarIdentifier
+        self.nativeCalendarExternalIdentifier = nativeCalendarExternalIdentifier
+        self.nativeCalendarSyncStatus = nativeCalendarSyncStatus
+        self.nativeCalendarSyncError = nativeCalendarSyncError
+        self.nativeCalendarSyncedAt = nativeCalendarSyncedAt
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(EntityID.self, forKey: .id)
+        instructorId = try container.decode(EntityID.self, forKey: .instructorId)
+        studentId = try container.decode(EntityID.self, forKey: .studentId)
+        scheduleTemplateId = try container.decodeIfPresent(EntityID.self, forKey: .scheduleTemplateId)
+        recurrenceSlotDate = try container.decodeIfPresent(String.self, forKey: .recurrenceSlotDate)
+        startsAt = try container.decode(String.self, forKey: .startsAt)
+        endsAt = try container.decode(String.self, forKey: .endsAt)
+        timezone = try container.decode(String.self, forKey: .timezone)
+        status = try container.decode(LessonOccurrenceStatus.self, forKey: .status)
+        title = try container.decode(String.self, forKey: .title)
+        nativeCalendarEventIdentifier = try container.decodeIfPresent(String.self, forKey: .nativeCalendarEventIdentifier)
+        nativeCalendarIdentifier = try container.decodeIfPresent(String.self, forKey: .nativeCalendarIdentifier)
+        nativeCalendarExternalIdentifier = try container.decodeIfPresent(String.self, forKey: .nativeCalendarExternalIdentifier)
+        nativeCalendarSyncStatus = try container.decodeIfPresent(NativeCalendarSyncStatus.self, forKey: .nativeCalendarSyncStatus)
+            ?? container.decodeIfPresent(NativeCalendarSyncStatus.self, forKey: .legacyAppleSyncStatus)
+            ?? .notConnected
+        nativeCalendarSyncError = try container.decodeIfPresent(String.self, forKey: .nativeCalendarSyncError)
+            ?? container.decodeIfPresent(String.self, forKey: .legacyAppleSyncError)
+        nativeCalendarSyncedAt = try container.decodeIfPresent(String.self, forKey: .nativeCalendarSyncedAt)
+            ?? container.decodeIfPresent(String.self, forKey: .legacyAppleSyncedAt)
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(instructorId, forKey: .instructorId)
+        try container.encode(studentId, forKey: .studentId)
+        try container.encodeIfPresent(scheduleTemplateId, forKey: .scheduleTemplateId)
+        try container.encodeIfPresent(recurrenceSlotDate, forKey: .recurrenceSlotDate)
+        try container.encode(startsAt, forKey: .startsAt)
+        try container.encode(endsAt, forKey: .endsAt)
+        try container.encode(timezone, forKey: .timezone)
+        try container.encode(status, forKey: .status)
+        try container.encode(title, forKey: .title)
+        try container.encodeIfPresent(nativeCalendarEventIdentifier, forKey: .nativeCalendarEventIdentifier)
+        try container.encodeIfPresent(nativeCalendarIdentifier, forKey: .nativeCalendarIdentifier)
+        try container.encodeIfPresent(nativeCalendarExternalIdentifier, forKey: .nativeCalendarExternalIdentifier)
+        try container.encode(nativeCalendarSyncStatus, forKey: .nativeCalendarSyncStatus)
+        try container.encodeIfPresent(nativeCalendarSyncError, forKey: .nativeCalendarSyncError)
+        try container.encodeIfPresent(nativeCalendarSyncedAt, forKey: .nativeCalendarSyncedAt)
     }
 }

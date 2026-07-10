@@ -12,6 +12,7 @@ final class StudentDetailViewModel {
     var runPractice = ""
     var runNextHint = ""
     var closeoutDraft: LessonCloseoutDraft?
+    var closeoutStatusMessage: String?
     var isSaving = false
 
     let studentId: EntityID
@@ -45,18 +46,19 @@ final class StudentDetailViewModel {
             primaryWeakPoint: primaryWeakPoint,
             active: active
         )
-        await saveAndReload {
+        _ = await saveAndReload {
             try StudentEditingValidation.validate(input)
             try await writes.updateStudentProfile(input)
         }
     }
 
-    func saveTrait(traitId: EntityID?, type: StudentTraitType, label: String, detail: String) async {
+    @discardableResult
+    func saveTrait(traitId: EntityID?, type: StudentTraitType, label: String, detail: String) async -> Bool {
         let trimmedLabel = label.trimmingCharacters(in: .whitespacesAndNewlines)
         let trimmedDetail = detail.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedLabel.isEmpty, !trimmedDetail.isEmpty else {
-            errorMessage = "Trait label and detail are required."
-            return
+            errorMessage = "특성 라벨과 상세 내용을 입력하세요."
+            return false
         }
         let input = StudentTraitInput(
             studentId: studentId,
@@ -65,7 +67,7 @@ final class StudentDetailViewModel {
             label: trimmedLabel,
             detail: trimmedDetail
         )
-        await saveAndReload {
+        return await saveAndReload {
             _ = try await writes.upsertTrait(input)
         }
     }
@@ -79,7 +81,7 @@ final class StudentDetailViewModel {
         tempoNote: String?,
         observedOn: String,
         currentFocus: Bool
-    ) async {
+    ) async -> Bool {
         let input = ProgressItemInput(
             studentId: studentId,
             progressItemId: progressItemId,
@@ -91,7 +93,7 @@ final class StudentDetailViewModel {
             observedOn: observedOn,
             currentFocus: currentFocus
         )
-        await saveAndReload {
+        return await saveAndReload {
             try StudentEditingValidation.validate(input)
             _ = try await writes.upsertProgressItem(input)
         }
@@ -103,7 +105,7 @@ final class StudentDetailViewModel {
             progressItemId: progressItemId,
             nextStatus: nextStatus
         )
-        await saveAndReload {
+        _ = await saveAndReload {
             try await writes.updateProgressStatus(input)
         }
     }
@@ -117,7 +119,7 @@ final class StudentDetailViewModel {
             dueDate: dueDate,
             detail: detail
         )
-        await saveAndReload {
+        _ = await saveAndReload {
             try StudentEditingValidation.validate(input)
             _ = try await writes.upsertAssignment(input)
         }
@@ -129,7 +131,7 @@ final class StudentDetailViewModel {
         observations: String,
         practiceAssigned: String,
         nextStepHint: String
-    ) async {
+    ) async -> Bool {
         let input = LessonNoteInput(
             studentId: studentId,
             lessonDate: lessonDate,
@@ -138,7 +140,7 @@ final class StudentDetailViewModel {
             practiceAssigned: practiceAssigned,
             nextStepHint: nextStepHint
         )
-        await saveAndReload {
+        return await saveAndReload {
             try StudentEditingValidation.validate(input)
             _ = try await writes.createLessonNote(input)
         }
@@ -153,7 +155,7 @@ final class StudentDetailViewModel {
             nextAction: nextAction,
             detail: detail
         )
-        await saveAndReload {
+        _ = await saveAndReload {
             try StudentEditingValidation.validate(input)
             _ = try await writes.upsertNextPlan(input)
         }
@@ -161,6 +163,7 @@ final class StudentDetailViewModel {
 
     func useRunNotesInCloseout(selectedChecklistLabels: [String] = []) {
         let firstCheck = detail?.lessonBrief.firstCheck ?? ""
+        closeoutStatusMessage = nil
         closeoutDraft = LessonCloseoutDraftBuilder.build(
             coveredMaterial: runCovered,
             observations: runObservation,
@@ -172,11 +175,19 @@ final class StudentDetailViewModel {
     }
 
     func saveCloseout() async {
+        guard !isSaving else { return }
+        guard let lessonContext else {
+            closeoutStatusMessage = nil
+            errorMessage = "예약된 레슨에서만 마무리 기록을 저장할 수 있습니다."
+            return
+        }
         guard let detail, let draft = closeoutDraft else { return }
+        isSaving = true
+        defer { isSaving = false }
         do {
             try await writes.closeoutLesson(LessonCloseoutInput(
                 studentId: detail.id,
-                lessonDate: DateOnly.today(in: .current),
+                lessonDate: lessonContext.dateKey,
                 coveredMaterial: draft.coveredMaterial,
                 observations: draft.observations,
                 practiceAssigned: draft.practiceAssigned,
@@ -193,22 +204,34 @@ final class StudentDetailViewModel {
                 assignmentDetail: detail.assignment?.detail,
                 progressItemId: detail.currentFocus?.id,
                 progressStatus: detail.currentFocus?.status,
-                progressCurrentFocus: true
+                progressCurrentFocus: detail.currentFocus != nil,
+                occurrenceId: lessonContext.id
             ))
             await load()
+            runCovered = ""
+            runObservation = ""
+            runPractice = ""
+            runNextHint = ""
+            closeoutDraft = nil
+            closeoutStatusMessage = "마무리 기록을 저장했습니다."
         } catch {
+            closeoutStatusMessage = nil
             errorMessage = error.localizedDescription
         }
     }
 
-    private func saveAndReload(_ operation: () async throws -> Void) async {
+    @discardableResult
+    private func saveAndReload(_ operation: () async throws -> Void) async -> Bool {
+        guard !isSaving else { return false }
         isSaving = true
         defer { isSaving = false }
         do {
             try await operation()
             await load()
+            return true
         } catch {
             errorMessage = error.localizedDescription
+            return false
         }
     }
 }

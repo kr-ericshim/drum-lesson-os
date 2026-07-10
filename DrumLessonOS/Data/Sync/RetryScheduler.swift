@@ -12,9 +12,9 @@ final class RetryScheduler {
         for write in writeQueue.writes {
             do {
                 try await handler(write)
-                writeQueue.remove(id: write.id)
+                try writeQueue.remove(id: write.id)
             } catch {
-                writeQueue.markAttempted(id: write.id, error: error.localizedDescription)
+                try? writeQueue.markAttempted(id: write.id, error: error.localizedDescription)
             }
         }
     }

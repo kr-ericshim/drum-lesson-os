@@ -2,11 +2,11 @@
 
 ## Overview
 
-Drum Lesson OS v1 stays focused on the instructor-side memory loop: know the student before the lesson, update the teaching record quickly, and leave the next lesson action visible. Phase 5 connects dashboard triage, in-lesson checks, and closeout drafting so the MVP stays centered on the 30-second pre-lesson and 2-minute post-lesson routine. Phase 6 adds a calendar-first schedule surface and Apple Calendar write-through sync because the instructor already uses Apple Calendar day to day. Phase 7 moved the same MVP workflow into a macOS SwiftUI app with EventKit replacing Apple credential storage.
+Drum Lesson OS v1 stays focused on the instructor-side memory loop: know the student before the lesson, update the teaching record quickly, and leave the next lesson action visible. Phase 5 connects dashboard triage, in-lesson checks, and closeout drafting so the MVP stays centered on the 30-second pre-lesson and 2-minute post-lesson routine. Phase 6 adds a calendar-first schedule surface and Apple Calendar write-through sync because the instructor already uses Apple Calendar day to day. Phase 7 moved the same MVP workflow into a macOS SwiftUI app with EventKit replacing Apple credential storage. Phase 8 redesigned the native workbench shell so the implementation-candidate UI now has clearer schedule, lesson, student-memory, and settings hierarchy without changing the core product scope.
 
-The current repo is native-first: `project.yml`, `DrumLessonOS/`, `DrumLessonOSTests/`, `supabase/`, and `tests/` are the active implementation surfaces. The legacy Next.js runtime has been removed after Phase 7 approval.
+The current repo is native-first and local-first: `project.yml`, `DrumLessonOS/`, and `DrumLessonOSTests/` are the active implementation surfaces. SQLite is canonical, the app runs without login, and EventKit writes use a durable local retry queue. Supabase/Auth references in completed phase history describe the superseded hosted implementation.
 
-The next phases intentionally exclude student portals, payments, attendance, reminders, AI summaries, and audio/video analysis. Real instructor authentication is implemented as a release gate; live deployment still requires applying the auth migration and binding the single Supabase Auth user to the existing instructor row.
+The next phases intentionally exclude student portals, payments, attendance, reminders, AI summaries, and audio/video analysis. Live deployment still requires real EventKit create/edit/delete testing and iPhone iCloud propagation verification.
 
 ## Phases
 
@@ -23,6 +23,9 @@ The next phases intentionally exclude student portals, payments, attendance, rem
 - [x] **Phase 5: Lesson Flow Operating Board** - Connect dashboard triage, in-lesson checks, and closeout drafting into one lesson-flow surface. (completed 2026-05-28)
 - [x] **Phase 6A: Calendar-First Scheduling And Apple Calendar Sync** - Add app-owned lesson schedules, a calendar-first dashboard, recurring occurrence expansion, and outbox-based Apple Calendar sync. Optional reverse sync remains Phase 6B.
 - [x] **Phase 7: SwiftUI Native Migration** - Add a macOS SwiftUI app with Supabase authenticated RPC writes, EventKit calendar write-through, retry visibility, native parity tests, and native-primary repo layout. Live use still needs real Supabase/EventKit/iPhone UAT.
+- [x] **Phase 8: Native Workbench Design Overhaul** - Improve the macOS app's visual hierarchy, native shell ergonomics, dashboard first impression, student-detail lesson flow, maintenance editor density, settings clarity, and shared component vocabulary. (completed 2026-05-28)
+- [x] **Phase 9: Native UI/UX Hardening** - Fix lesson-context safety, Mac sheet ergonomics, navigation continuity, compact-window priority, calendar feedback, and systemic accessibility gaps. (completed 2026-07-11)
+- [x] **Phase 10: In-Lesson Workspace Redesign** - Recompose the active lesson route around one focused, responsive session workspace with on-demand student history and lower rendering cost. (completed 2026-07-11)
 
 ## Phase Details
 
@@ -210,6 +213,88 @@ Plan files:
 - [07-RELEASE-GATE.md](phases/07-swiftui-native-migration/07-RELEASE-GATE.md)
 - [07-NATIVE-PRIMARY-REORG.md](phases/07-swiftui-native-migration/07-NATIVE-PRIMARY-REORG.md)
 
+### Phase 8: Native Workbench Design Overhaul
+
+**Goal**: The native macOS app feels like a polished daily teaching workbench, with clear next-action hierarchy and a consistent SwiftUI design system.
+**Mode:** native-polish
+**UI hint**: yes
+**Depends on**: Phase 7
+**Requirements**: Existing instructor-side MVP requirements plus Phase 8 visual hierarchy and usability gates
+**Success Criteria**:
+
+  1. Dashboard shows the current or selected lesson as the primary decision point, with native-feeling schedule controls and a clearer selected lesson action area.
+  2. Student detail shows the student cue, first check, run notes, closeout, teaching memory, and maintenance editors in a priority order that supports pre-lesson and in-lesson use.
+  3. Broad maintenance editing no longer appears as a six-section form wall above the read-only teaching context.
+  4. Settings clearly separates Calendar permission, writable calendar, sync queue, retry, and account actions.
+  5. Shared SwiftUI design components define surface roles, status states, section headers, and action grouping without overbuilding a large design-system layer.
+  6. Light and dark appearance remain readable, and compact/wide windows avoid text overlap.
+  7. The native entry flow restores a saved Keychain session before rendering the app shell, and only shows account connection when no usable session remains.
+  8. Existing native tests, SQL guard tests, and Computer Use smoke checks pass after the visual changes.
+
+Plans:
+
+- [x] 08: Redesign native workbench surfaces and shared visual system. (implemented 2026-05-28; independent design verification OK)
+
+Plan files:
+
+- [08-PLAN.md](phases/08-native-workbench-design-overhaul/08-PLAN.md)
+- [08-RESEARCH.md](phases/08-native-workbench-design-overhaul/08-RESEARCH.md)
+- [08-UI-SPEC.md](phases/08-native-workbench-design-overhaul/08-UI-SPEC.md)
+- [08-CHECKPOINT.md](phases/08-native-workbench-design-overhaul/08-CHECKPOINT.md)
+
+### Phase 9: Native UI/UX Hardening
+
+**Goal**: The local macOS app supports fast, safe daily teaching work with compact native forms, consistent navigation context, explicit calendar state, and accessible lesson cues.
+**Mode:** native-ux-hardening
+**UI hint**: yes
+**Depends on**: Phase 8
+**Requirements**: Existing instructor-side MVP requirements plus the Phase 9 audit findings
+**Success Criteria**:
+
+  1. Student browsing cannot accidentally create a lesson closeout without an explicit lesson occurrence.
+  2. Add Lesson, Edit Lesson Time, and Add Student sheets are content-sized, keyboard-friendly, consistently labeled, and readable in Korean.
+  3. Student and lesson detail routes preserve visible top-level navigation context and a clear return path.
+  4. Compact dashboards prioritize today's lessons and the selected lesson before whole-week supporting context.
+  5. Calendar permission, writable-calendar selection, errors, loading, and queue-empty states are visible and recoverable.
+  6. Core first-check, attention, selection, error, and success meaning remains available to VoiceOver and does not rely on color alone.
+  7. Wide/compact and light/dark checks pass with no clipping or text overlap.
+  8. The native build, full test suite, and diff check pass after the changes.
+
+Plans:
+
+- [x] 09: Execute the native UI/UX audit backlog and document the verification checkpoint. (implemented and verified 2026-07-11; live EventKit and direct compact/light UAT remain release checks)
+
+Plan files:
+
+- [09-AUDIT.md](phases/09-native-ui-ux-hardening/09-AUDIT.md)
+- [09-PLAN.md](phases/09-native-ui-ux-hardening/09-PLAN.md)
+- [09-CHECKPOINT.md](phases/09-native-ui-ux-hardening/09-CHECKPOINT.md)
+
+### Phase 10: In-Lesson Workspace Redesign
+
+**Goal**: The active lesson route becomes a fast, legible teaching console that keeps the first check, live capture, and closeout action in view without mounting the full student-management surface.
+**Mode:** native-focused-redesign
+**UI hint**: yes
+**Depends on**: Phase 9
+**Requirements**: Existing lesson-flow and closeout requirements plus active-session rendering, hierarchy, and accessibility improvements
+**Success Criteria**:
+
+  1. Active lessons render a dedicated session header and workspace instead of the full student-detail management stack.
+  2. First check, live notes, readiness, review, and save form one clear progressive flow with no empty closeout card.
+  3. Student history remains available on demand in a focused side panel, while maintenance editors remain available from normal student detail.
+  4. Wide and compact layouts use a single adaptive content subtree, keep important teaching text untruncated, and preserve keyboard and VoiceOver meaning.
+  5. Run-note drafts and the existing occurrence-backed atomic closeout semantics remain unchanged.
+  6. The native build, full test suite, diff check, and direct running-app verification pass after the changes.
+
+Plans:
+
+- [x] 10: Redesign, optimize, and verify the active lesson workspace. (completed 2026-07-11)
+
+Plan files:
+
+- [10-PLAN.md](phases/10-in-lesson-workspace-redesign/10-PLAN.md)
+- [10-CHECKPOINT.md](phases/10-in-lesson-workspace-redesign/10-CHECKPOINT.md)
+
 ## Explicitly Not Planned
 
 These items should not be revived as near-term phases without a new product decision:
@@ -225,7 +310,7 @@ These items should not be revived as near-term phases without a new product deci
 ## Progress
 
 **Execution Order:**
-Phases execute in this order: 1 -> 2 -> 3A -> 3B -> 3C -> 3D -> 3E -> 3F -> 4A -> 4B -> 4C -> 5 -> 6 -> 7
+Phases execute in this order: 1 -> 2 -> 3A -> 3B -> 3C -> 3D -> 3E -> 3F -> 4A -> 4B -> 4C -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -236,3 +321,6 @@ Phases execute in this order: 1 -> 2 -> 3A -> 3B -> 3C -> 3D -> 3E -> 3F -> 4A -
 | 5. Lesson Flow Operating Board | 1/1 | Complete | 2026-05-28 |
 | 6. Calendar-First Scheduling And Apple Calendar Sync | 1/1 | Phase 6A verification | 2026-05-28 |
 | 7. SwiftUI Native Migration | 1/1 | Native-primary repo layout; live UAT pending | 2026-05-28 |
+| 8. Native Workbench Design Overhaul | 1/1 | Complete | 2026-05-28 |
+| 9. Native UI/UX Hardening | 1/1 | Implementation complete; live visual/EventKit UAT remains | 2026-07-11 |
+| 10. In-Lesson Workspace Redesign | 1/1 | Complete | 2026-07-11 |

@@ -14,14 +14,14 @@ final class CalendarSyncCoordinator {
 
     func createOrUpdateEvent(for event: CalendarLessonEvent, existingEventIdentifier: String?) async {
         let formatter = ISO8601DateFormatter.plain
-        guard let startsAt = formatter.date(from: event.startsAt),
-              let endsAt = formatter.date(from: event.endsAt) else {
-            queue.enqueue(QueuedWrite(
+        guard let startsAt = ISO8601DateFormatter.withFractions.date(from: event.startsAt) ?? formatter.date(from: event.startsAt),
+              let endsAt = ISO8601DateFormatter.withFractions.date(from: event.endsAt) ?? formatter.date(from: event.endsAt) else {
+            _ = try? queue.enqueue(QueuedWrite(
                 kind: .calendar,
-                operation: "eventkit_invalid_date",
+                operation: CalendarQueueOperation.invalidDate.rawValue,
                 recordId: event.id,
                 payloadSummary: event.title,
-                lastError: "Invalid occurrence date."
+                lastError: "일정 날짜를 확인할 수 없습니다."
             ))
             return
         }
@@ -33,33 +33,49 @@ final class CalendarSyncCoordinator {
             studentName: event.studentName,
             startsAt: startsAt,
             endsAt: endsAt,
-            timezone: TimeZone.current.identifier,
+            timezone: event.timezone,
             currentFocus: nil,
             firstCheck: event.firstCheck
         )
+        let operation: CalendarQueueOperation = existingEventIdentifier == nil ? .create : .update
 
         do {
+            let queued = try queue.enqueue(QueuedWrite(
+                kind: .calendar,
+                operation: operation.rawValue,
+                recordId: event.id,
+                payloadSummary: event.title
+            ))
             let result: CalendarWriteResult
-            if existingEventIdentifier == nil {
+            switch operation {
+            case .create:
                 result = try await calendar.createLessonEvent(draft)
-            } else {
-                result = try await calendar.updateLessonEvent(draft, existingEventIdentifier: existingEventIdentifier)
+            case .update:
+                result = try await calendar.updateLessonEvent(
+                    draft,
+                    existingIdentity: CalendarEventIdentity(
+                        eventIdentifier: existingEventIdentifier,
+                        calendarIdentifier: nil,
+                        externalIdentifier: nil
+                    )
+                )
+            default:
+                return
             }
-            try await schedules.updateNativeCalendarSync(.synced(occurrenceId: event.id, result: result))
+            let update = NativeCalendarSyncUpdateInput.synced(occurrenceId: event.id, result: result)
+            try queue.markEventKitCompleted(id: queued.id, syncUpdate: update)
+            try await schedules.updateNativeCalendarSync(update)
+            try queue.remove(id: queued.id)
         } catch {
+            if let queued = queue.writes(for: event.id).first {
+                try? queue.markAttempted(id: queued.id, error: error.localizedDescription)
+            }
             try? await schedules.updateNativeCalendarSync(.failed(
                 occurrenceId: event.id,
                 eventIdentifier: existingEventIdentifier,
                 calendarIdentifier: nil,
                 externalIdentifier: nil,
                 error: error.localizedDescription
-            ))
-            queue.enqueue(QueuedWrite(
-                kind: .calendar,
-                operation: "eventkit_write",
-                recordId: event.id,
-                payloadSummary: event.title,
-                lastError: error.localizedDescription
             ))
         }
     }
@@ -70,7 +86,6 @@ final class CalendarBackedScheduleRepository: ScheduleRepository {
     private let schedules: ScheduleRepository
     private let calendar: CalendarRepository
     private let queue: LocalWriteQueue
-    private var failedCalendarWrites: [EntityID: PendingCalendarWrite] = [:]
 
     init(schedules: ScheduleRepository, calendar: CalendarRepository, queue: LocalWriteQueue) {
         self.schedules = schedules
@@ -80,160 +95,302 @@ final class CalendarBackedScheduleRepository: ScheduleRepository {
 
     func createOneOffOccurrence(_ input: ScheduleLessonInput) async throws -> LessonOccurrence {
         let occurrence = try await schedules.createOneOffOccurrence(input)
-        return await writeToCalendar(occurrence, operation: .create)
+        return await beginCalendarWrite(for: occurrence, operation: .create)
     }
 
     func createWeeklySchedule(_ input: WeeklyScheduleInput) async throws -> [LessonOccurrence] {
         let occurrences = try await schedules.createWeeklySchedule(input)
-        var synced: [LessonOccurrence] = []
+        var results: [LessonOccurrence] = []
         for occurrence in occurrences {
-            synced.append(await writeToCalendar(occurrence, operation: .create))
+            results.append(await beginCalendarWrite(for: occurrence, operation: .create))
         }
-        return synced
+        return results
     }
 
     func editOccurrence(_ input: EditOccurrenceInput) async throws -> LessonOccurrence {
         let occurrence = try await schedules.editOccurrence(input)
-        return await writeToCalendar(occurrence, operation: .update)
+        return await beginCalendarWrite(for: occurrence, operation: operationForRetrying(occurrence))
     }
 
     func cancelOccurrence(id: EntityID) async throws -> LessonOccurrence {
+        let previous = try await schedules.loadOccurrence(id: id)
+        let pendingWrites = queue.writes(for: id)
         let occurrence = try await schedules.cancelOccurrence(id: id)
-        return await deleteCalendarEvent(for: occurrence)
+        if shouldCompleteCancellationLocally(previous: previous, pendingWrites: pendingWrites) {
+            return await beginMetadataCompletion(
+                for: occurrence,
+                update: .deleted(occurrenceId: occurrence.id)
+            )
+        }
+        return await beginCalendarWrite(for: occurrence, operation: .delete)
     }
 
     func retryNativeCalendarSync(occurrenceId: EntityID) async throws {
-        guard let pending = failedCalendarWrites[occurrenceId] else {
-            try await schedules.retryNativeCalendarSync(occurrenceId: occurrenceId)
-            return
+        var pendingWrites = queue.writes(for: occurrenceId)
+        var loadedOccurrence: LessonOccurrence?
+        if pendingWrites.isEmpty {
+            let occurrence = try await schedules.loadOccurrence(id: occurrenceId)
+            guard occurrence.nativeCalendarSyncStatus != .synced else { return }
+            let queued: QueuedWrite
+            if occurrence.status == .canceled,
+               !hasStableCalendarIdentity(occurrence) {
+                queued = try queue.enqueue(makeMetadataWrite(
+                    for: occurrence,
+                    update: .deleted(occurrenceId: occurrence.id)
+                ))
+            } else {
+                let operation = operationForRetrying(occurrence)
+                queued = try queue.enqueue(makeQueuedWrite(for: occurrence, operation: operation))
+            }
+            pendingWrites = [queued]
+            loadedOccurrence = occurrence
         }
 
-        let retried: LessonOccurrence
-        switch pending.operation {
-        case .create, .update:
-            retried = await writeToCalendar(pending.occurrence, operation: pending.operation, enqueueFailure: false)
-        case .delete:
-            retried = await deleteCalendarEvent(for: pending.occurrence, enqueueFailure: false)
+        for write in pendingWrites {
+            guard queue.writes.contains(where: { $0.id == write.id }) else { continue }
+            _ = try await execute(write, occurrence: loadedOccurrence)
+            loadedOccurrence = nil
         }
+    }
 
-        guard retried.nativeCalendarSyncStatus == .synced else {
-            throw RepositoryError(message: retried.nativeCalendarSyncError ?? "Calendar retry failed.")
+    func loadPendingNativeCalendarOccurrences() async throws -> [LessonOccurrence] {
+        try await schedules.loadPendingNativeCalendarOccurrences()
+    }
+
+    func reconcilePendingNativeCalendarSync() async throws -> Int {
+        let pending = try await schedules.loadPendingNativeCalendarOccurrences()
+        for occurrence in pending {
+            try? await retryNativeCalendarSync(occurrenceId: occurrence.id)
         }
-        failedCalendarWrites.removeValue(forKey: occurrenceId)
+        return pending.count
+    }
+
+    func loadOccurrence(id: EntityID) async throws -> LessonOccurrence {
+        try await schedules.loadOccurrence(id: id)
     }
 
     func updateNativeCalendarSync(_ input: NativeCalendarSyncUpdateInput) async throws {
         try await schedules.updateNativeCalendarSync(input)
     }
 
-    private func writeToCalendar(_ occurrence: LessonOccurrence, operation: CalendarWriteOperation, enqueueFailure: Bool = true) async -> LessonOccurrence {
+    private func beginCalendarWrite(
+        for occurrence: LessonOccurrence,
+        operation: CalendarQueueOperation
+    ) async -> LessonOccurrence {
+        let queued: QueuedWrite
         do {
-            let draft = try makeDraft(from: occurrence)
-            let result: CalendarWriteResult
-            switch operation {
-            case .create:
-                result = try await calendar.createLessonEvent(draft)
-            case .update:
-                result = try await calendar.updateLessonEvent(draft, existingEventIdentifier: occurrence.nativeCalendarEventIdentifier)
-            case .delete:
-                throw RepositoryError(message: "Calendar delete uses the delete flow.")
-            }
-            try await schedules.updateNativeCalendarSync(.synced(occurrenceId: occurrence.id, result: result))
-            failedCalendarWrites.removeValue(forKey: occurrence.id)
-            return synced(occurrence, with: result)
+            queued = try queue.enqueue(makeQueuedWrite(for: occurrence, operation: operation))
         } catch {
-            try? await schedules.updateNativeCalendarSync(.failed(
-                occurrenceId: occurrence.id,
-                eventIdentifier: occurrence.nativeCalendarEventIdentifier,
-                calendarIdentifier: occurrence.nativeCalendarIdentifier,
-                externalIdentifier: occurrence.nativeCalendarExternalIdentifier,
-                error: error.localizedDescription
-            ))
-            if enqueueFailure {
-                failedCalendarWrites[occurrence.id] = PendingCalendarWrite(occurrence: occurrence, operation: operation)
-                queue.enqueue(QueuedWrite(
-                    kind: .calendar,
-                    operation: operation.queueName,
-                    recordId: occurrence.id,
-                    payloadSummary: occurrence.title,
-                    lastError: error.localizedDescription
-                ))
-            }
-            return failed(occurrence, error: error)
+            try? await markScheduleFailed(occurrence, error: error)
+            return failedOccurrence(from: occurrence, error: error)
+        }
+        do {
+            return try await execute(queued, occurrence: occurrence)
+        } catch {
+            return failedOccurrence(
+                from: occurrence,
+                queuedWriteId: queued.id,
+                error: error
+            )
         }
     }
 
-    private func deleteCalendarEvent(for occurrence: LessonOccurrence, enqueueFailure: Bool = true) async -> LessonOccurrence {
-        guard let eventIdentifier = occurrence.nativeCalendarEventIdentifier else {
-            let syncedAt = ISO8601DateFormatter.plain.string(from: Date())
-            try? await schedules.updateNativeCalendarSync(NativeCalendarSyncUpdateInput(
-                occurrenceId: occurrence.id,
-                status: .synced,
-                eventIdentifier: nil,
-                calendarIdentifier: nil,
-                externalIdentifier: nil,
-                error: nil,
-                syncedAt: syncedAt
-            ))
-            var synced = occurrence
-            synced.nativeCalendarEventIdentifier = nil
-            synced.nativeCalendarIdentifier = nil
-            synced.nativeCalendarExternalIdentifier = nil
-            synced.nativeCalendarSyncStatus = .synced
-            synced.nativeCalendarSyncError = nil
-            synced.nativeCalendarSyncedAt = syncedAt
-            failedCalendarWrites.removeValue(forKey: occurrence.id)
-            return synced
+    private func beginMetadataCompletion(
+        for occurrence: LessonOccurrence,
+        update: NativeCalendarSyncUpdateInput
+    ) async -> LessonOccurrence {
+        let queued: QueuedWrite
+        do {
+            queued = try queue.enqueue(makeMetadataWrite(for: occurrence, update: update))
+        } catch {
+            try? await markScheduleFailed(occurrence, error: error)
+            return failedOccurrence(from: occurrence, error: error)
         }
 
         do {
-            try await calendar.deleteLessonEvent(eventIdentifier: eventIdentifier)
-            let syncedAt = ISO8601DateFormatter.plain.string(from: Date())
-            try await schedules.updateNativeCalendarSync(NativeCalendarSyncUpdateInput(
-                occurrenceId: occurrence.id,
-                status: .synced,
-                eventIdentifier: nil,
-                calendarIdentifier: nil,
-                externalIdentifier: nil,
-                error: nil,
-                syncedAt: syncedAt
-            ))
-            var synced = occurrence
-            synced.nativeCalendarEventIdentifier = nil
-            synced.nativeCalendarIdentifier = nil
-            synced.nativeCalendarExternalIdentifier = nil
-            synced.nativeCalendarSyncStatus = .synced
-            synced.nativeCalendarSyncError = nil
-            synced.nativeCalendarSyncedAt = syncedAt
-            failedCalendarWrites.removeValue(forKey: occurrence.id)
-            return synced
+            return try await execute(queued, occurrence: occurrence)
         } catch {
-            try? await schedules.updateNativeCalendarSync(.failed(
-                occurrenceId: occurrence.id,
-                eventIdentifier: occurrence.nativeCalendarEventIdentifier,
-                calendarIdentifier: occurrence.nativeCalendarIdentifier,
-                externalIdentifier: occurrence.nativeCalendarExternalIdentifier,
-                error: error.localizedDescription
-            ))
-            if enqueueFailure {
-                failedCalendarWrites[occurrence.id] = PendingCalendarWrite(occurrence: occurrence, operation: .delete)
-                queue.enqueue(QueuedWrite(
-                    kind: .calendar,
-                    operation: "eventkit_delete",
-                    recordId: occurrence.id,
-                    payloadSummary: occurrence.title,
-                    lastError: error.localizedDescription
-                ))
-            }
-            return failed(occurrence, error: error)
+            return failedOccurrence(from: occurrence, queuedWriteId: queued.id, error: error)
         }
+    }
+
+    private func execute(
+        _ queued: QueuedWrite,
+        occurrence suppliedOccurrence: LessonOccurrence? = nil
+    ) async throws -> LessonOccurrence {
+        let occurrence = if let suppliedOccurrence {
+            suppliedOccurrence
+        } else {
+            try await schedules.loadOccurrence(id: queued.recordId ?? UUID())
+        }
+
+        if queued.operation == CalendarQueueOperation.metadataUpdate.rawValue {
+            guard let update = queued.syncUpdate else {
+                throw RepositoryError(message: "캘린더 완료 상태가 대기열에 없어 다시 처리할 수 없습니다.")
+            }
+            do {
+                try await schedules.updateNativeCalendarSync(update)
+                let updatedOccurrence = applying(update, to: occurrence)
+                if occurrence.status == .canceled,
+                   update.eventIdentifier != nil || update.externalIdentifier != nil {
+                    let deleteWrite = try queue.replaceWithCalendarOperation(
+                        id: queued.id,
+                        operation: .delete
+                    )
+                    return try await execute(deleteWrite, occurrence: updatedOccurrence)
+                }
+                try queue.remove(id: queued.id)
+                return updatedOccurrence
+            } catch {
+                try? queue.markAttempted(id: queued.id, error: error.localizedDescription)
+                throw error
+            }
+        }
+
+        let operation = normalizedOperation(for: queued, occurrence: occurrence)
+        let draft: LessonCalendarEventDraft
+        do {
+            draft = try makeDraft(from: occurrence)
+        } catch {
+            try? queue.markAttempted(id: queued.id, error: error.localizedDescription)
+            try? await markScheduleFailed(occurrence, error: error)
+            throw error
+        }
+
+        let syncUpdate: NativeCalendarSyncUpdateInput
+        let shouldRecoverExistingCreate = queued.attemptCount > 0
+        do {
+            try queue.markAttempted(id: queued.id, error: nil)
+            switch operation {
+            case .create:
+                let result = if shouldRecoverExistingCreate {
+                    try await calendar.recoverOrCreateLessonEvent(draft)
+                } else {
+                    try await calendar.createLessonEvent(draft)
+                }
+                syncUpdate = .synced(occurrenceId: occurrence.id, result: result)
+            case .update:
+                let result = try await calendar.updateLessonEvent(
+                    draft,
+                    existingIdentity: identity(for: occurrence)
+                )
+                syncUpdate = .synced(occurrenceId: occurrence.id, result: result)
+            case .delete:
+                try await calendar.deleteLessonEvent(
+                    draft,
+                    existingIdentity: identity(for: occurrence)
+                )
+                syncUpdate = .deleted(occurrenceId: occurrence.id)
+            default:
+                throw RepositoryError(message: "지원하지 않는 캘린더 대기 작업입니다.")
+            }
+        } catch {
+            try? queue.markAttempted(id: queued.id, error: error.localizedDescription)
+            try? await markScheduleFailed(occurrence, error: error)
+            throw error
+        }
+
+        do {
+            try queue.markEventKitCompleted(id: queued.id, syncUpdate: syncUpdate)
+        } catch {
+            // EventKit work is idempotent through the occurrence marker and stable identifiers.
+            // Keeping the original durable operation is safer than claiming completion.
+            try? queue.markAttempted(id: queued.id, error: error.localizedDescription)
+            throw error
+        }
+
+        do {
+            try await schedules.updateNativeCalendarSync(syncUpdate)
+            try queue.remove(id: queued.id)
+            return applying(syncUpdate, to: occurrence)
+        } catch {
+            try? queue.markAttempted(id: queued.id, error: error.localizedDescription)
+            throw error
+        }
+    }
+
+    private func makeQueuedWrite(
+        for occurrence: LessonOccurrence,
+        operation: CalendarQueueOperation
+    ) -> QueuedWrite {
+        QueuedWrite(
+            kind: .calendar,
+            operation: operation.rawValue,
+            recordId: occurrence.id,
+            payloadSummary: occurrence.title
+        )
+    }
+
+    private func makeMetadataWrite(
+        for occurrence: LessonOccurrence,
+        update: NativeCalendarSyncUpdateInput
+    ) -> QueuedWrite {
+        QueuedWrite(
+            kind: .calendar,
+            operation: CalendarQueueOperation.metadataUpdate.rawValue,
+            recordId: occurrence.id,
+            payloadSummary: occurrence.title,
+            syncUpdate: update
+        )
+    }
+
+    private func normalizedOperation(
+        for queued: QueuedWrite,
+        occurrence: LessonOccurrence
+    ) -> CalendarQueueOperation {
+        if occurrence.status == .canceled {
+            return .delete
+        }
+        guard let operation = CalendarQueueOperation(rawValue: queued.operation) else {
+            return operationForRetrying(occurrence)
+        }
+        switch operation {
+        case .legacyWrite, .invalidDate, .metadataUpdate:
+            return operationForRetrying(occurrence)
+        case .update where !hasStableCalendarIdentity(occurrence):
+            return .create
+        case .create, .update, .delete:
+            return operation
+        }
+    }
+
+    private func operationForRetrying(_ occurrence: LessonOccurrence) -> CalendarQueueOperation {
+        if occurrence.status == .canceled {
+            return .delete
+        }
+        if !hasStableCalendarIdentity(occurrence) {
+            return .create
+        }
+        return .update
+    }
+
+    private func hasStableCalendarIdentity(_ occurrence: LessonOccurrence) -> Bool {
+        occurrence.nativeCalendarEventIdentifier != nil ||
+            occurrence.nativeCalendarExternalIdentifier != nil
+    }
+
+    private func shouldCompleteCancellationLocally(
+        previous: LessonOccurrence,
+        pendingWrites: [QueuedWrite]
+    ) -> Bool {
+        previous.nativeCalendarSyncStatus == .notConnected &&
+            !hasStableCalendarIdentity(previous) &&
+            pendingWrites.isEmpty
+    }
+
+    private func identity(for occurrence: LessonOccurrence) -> CalendarEventIdentity {
+        CalendarEventIdentity(
+            eventIdentifier: occurrence.nativeCalendarEventIdentifier,
+            calendarIdentifier: occurrence.nativeCalendarIdentifier,
+            externalIdentifier: occurrence.nativeCalendarExternalIdentifier
+        )
     }
 
     private func makeDraft(from occurrence: LessonOccurrence) throws -> LessonCalendarEventDraft {
         let formatter = ISO8601DateFormatter.plain
-        guard let startsAt = formatter.date(from: occurrence.startsAt),
-              let endsAt = formatter.date(from: occurrence.endsAt) else {
-            throw RepositoryError(message: "Invalid occurrence date.")
+        guard let startsAt = ISO8601DateFormatter.withFractions.date(from: occurrence.startsAt) ?? formatter.date(from: occurrence.startsAt),
+              let endsAt = ISO8601DateFormatter.withFractions.date(from: occurrence.endsAt) ?? formatter.date(from: occurrence.endsAt) else {
+            throw RepositoryError(message: "일정 날짜를 확인할 수 없습니다.")
         }
 
         return LessonCalendarEventDraft(
@@ -245,22 +402,52 @@ final class CalendarBackedScheduleRepository: ScheduleRepository {
             endsAt: endsAt,
             timezone: occurrence.timezone,
             currentFocus: nil,
-            firstCheck: "Scheduled lesson"
+            firstCheck: "예정된 레슨"
         )
     }
 
-    private func synced(_ occurrence: LessonOccurrence, with result: CalendarWriteResult) -> LessonOccurrence {
-        var synced = occurrence
-        synced.nativeCalendarEventIdentifier = result.eventIdentifier
-        synced.nativeCalendarIdentifier = result.calendarIdentifier
-        synced.nativeCalendarExternalIdentifier = result.externalIdentifier
-        synced.nativeCalendarSyncStatus = .synced
-        synced.nativeCalendarSyncError = nil
-        synced.nativeCalendarSyncedAt = ISO8601DateFormatter.plain.string(from: result.syncedAt)
-        return synced
+    private func markScheduleFailed(_ occurrence: LessonOccurrence, error: Error) async throws {
+        try await schedules.updateNativeCalendarSync(.failed(
+            occurrenceId: occurrence.id,
+            eventIdentifier: occurrence.nativeCalendarEventIdentifier,
+            calendarIdentifier: occurrence.nativeCalendarIdentifier,
+            externalIdentifier: occurrence.nativeCalendarExternalIdentifier,
+            error: error.localizedDescription
+        ))
     }
 
-    private func failed(_ occurrence: LessonOccurrence, error: Error) -> LessonOccurrence {
+    private func applying(
+        _ update: NativeCalendarSyncUpdateInput,
+        to occurrence: LessonOccurrence
+    ) -> LessonOccurrence {
+        var updated = occurrence
+        updated.nativeCalendarEventIdentifier = update.eventIdentifier
+        updated.nativeCalendarIdentifier = update.calendarIdentifier
+        updated.nativeCalendarExternalIdentifier = update.externalIdentifier
+        updated.nativeCalendarSyncStatus = update.status
+        updated.nativeCalendarSyncError = update.error
+        updated.nativeCalendarSyncedAt = update.syncedAt
+        return updated
+    }
+
+    private func failedOccurrence(
+        from occurrence: LessonOccurrence,
+        queuedWriteId: UUID,
+        error: Error
+    ) -> LessonOccurrence {
+        var failed = occurrence
+        if let update = queue.writes.first(where: { $0.id == queuedWriteId })?.syncUpdate {
+            failed = applying(update, to: failed)
+        }
+        failed.nativeCalendarSyncStatus = .failed
+        failed.nativeCalendarSyncError = error.localizedDescription
+        return failed
+    }
+
+    private func failedOccurrence(
+        from occurrence: LessonOccurrence,
+        error: Error
+    ) -> LessonOccurrence {
         var failed = occurrence
         failed.nativeCalendarSyncStatus = .failed
         failed.nativeCalendarSyncError = error.localizedDescription
@@ -268,26 +455,7 @@ final class CalendarBackedScheduleRepository: ScheduleRepository {
     }
 }
 
-private struct PendingCalendarWrite {
-    var occurrence: LessonOccurrence
-    var operation: CalendarWriteOperation
-}
-
-private enum CalendarWriteOperation {
-    case create
-    case update
-    case delete
-
-    var queueName: String {
-        switch self {
-        case .create: "eventkit_create"
-        case .update: "eventkit_update"
-        case .delete: "eventkit_delete"
-        }
-    }
-}
-
-private extension NativeCalendarSyncUpdateInput {
+extension NativeCalendarSyncUpdateInput {
     static func synced(occurrenceId: EntityID, result: CalendarWriteResult) -> NativeCalendarSyncUpdateInput {
         NativeCalendarSyncUpdateInput(
             occurrenceId: occurrenceId,
@@ -297,6 +465,18 @@ private extension NativeCalendarSyncUpdateInput {
             externalIdentifier: result.externalIdentifier,
             error: nil,
             syncedAt: ISO8601DateFormatter.plain.string(from: result.syncedAt)
+        )
+    }
+
+    static func deleted(occurrenceId: EntityID) -> NativeCalendarSyncUpdateInput {
+        NativeCalendarSyncUpdateInput(
+            occurrenceId: occurrenceId,
+            status: .synced,
+            eventIdentifier: nil,
+            calendarIdentifier: nil,
+            externalIdentifier: nil,
+            error: nil,
+            syncedAt: ISO8601DateFormatter.plain.string(from: Date())
         )
     }
 

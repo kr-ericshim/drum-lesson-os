@@ -25,6 +25,17 @@ enum EventKitPermissionState: String, Equatable {
             self = .unknown
         }
     }
+
+    var label: String {
+        switch self {
+        case .notDetermined: "확인 전"
+        case .authorized: "허용됨"
+        case .denied: "거부됨"
+        case .restricted: "제한됨"
+        case .writeOnly: "쓰기 전용"
+        case .unknown: "알 수 없음"
+        }
+    }
 }
 
 struct WritableCalendar: Identifiable, Hashable {

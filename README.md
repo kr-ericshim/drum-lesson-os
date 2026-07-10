@@ -1,8 +1,8 @@
 # Drum Lesson OS
 
-Drum Lesson OS is a macOS SwiftUI workbench for drum instructors. It keeps the instructor-side lesson memory loop in one native app: calendar-first schedule, student roster, student detail, lesson notes, progress, traits, assignments, next lesson planning, in-lesson run notes, closeout, and Apple Calendar write-through.
+Drum Lesson OS is a local macOS SwiftUI workbench for drum instructors. It keeps the instructor-side lesson memory loop in one native app: calendar-first schedule, student roster, student detail, lesson notes, progress, traits, assignments, next lesson planning, in-lesson run notes, closeout, and Apple Calendar write-through.
 
-Supabase remains the canonical data store. The native app reads instructor-owned data through authenticated Supabase access, writes through authenticated RPCs, and uses EventKit for Apple Calendar instead of storing Apple credentials.
+SQLite is the canonical data store. The app runs without login, stores lesson data on this Mac, and uses EventKit for Apple Calendar instead of storing Apple credentials. SQLite updates are transactional, recurring lesson templates are persisted, and pending EventKit work is kept in an atomic local outbox so retries survive app restarts.
 
 The legacy Next.js web app was removed after Phase 7 implementation approval so this repo now presents as a macOS native project.
 
@@ -13,8 +13,6 @@ DrumLessonOS.xcodeproj      Generated Xcode project
 project.yml                 XcodeGen source of truth
 DrumLessonOS/               SwiftUI app source
 DrumLessonOSTests/          Swift test suite
-supabase/                   Schema, RLS, RPC migrations, seed data
-tests/                      Node-based SQL/security guard tests
 .planning/                  Roadmap, requirements, and phase evidence
 ```
 
@@ -22,8 +20,7 @@ tests/                      Node-based SQL/security guard tests
 
 - Xcode 26.2 with Swift 6.2 support
 - XcodeGen
-- Supabase CLI for migration dry-runs and database setup
-- Node.js 22+ for the SQL guard test in `tests/`
+- Node.js 22+ only if you want to use the npm script wrappers
 
 ## Native Development
 
@@ -31,7 +28,7 @@ Generate the project and run the native tests:
 
 ```bash
 npm run generate
-npm run test:native
+npm test
 ```
 
 Open the app in Xcode:
@@ -40,47 +37,15 @@ Open the app in Xcode:
 open DrumLessonOS.xcodeproj
 ```
 
-For live Supabase data, provide these values through the app environment or bundle Info keys:
-
-```text
-DRUM_LESSON_OS_SUPABASE_URL=
-DRUM_LESSON_OS_SUPABASE_PUBLISHABLE_KEY=
-```
-
-The app rejects service-role-like keys. Without live Supabase config, it opens with preview data for local UI smoke checks.
-
-## Supabase Setup
-
-Create `.env.local` from `.env.example` for CLI/database work:
-
-```text
-DRUM_LESSON_OS_SUPABASE_URL=
-DRUM_LESSON_OS_SUPABASE_PUBLISHABLE_KEY=
-SUPABASE_DB_URL=
-```
-
-Apply migrations and seed data with the Supabase CLI:
+Run the local app from the command line:
 
 ```bash
-supabase db push
-supabase db execute --file supabase/seed.sql
+./script/build_and_run.sh
 ```
 
-For a local Supabase stack:
+The default SQLite file and EventKit retry outbox are created under the user's Application Support directory at launch. EventKit permissions and the selected Apple Calendar stay in the native macOS system flow.
 
-```bash
-supabase db reset
-```
-
-The seed data uses instructor id `11111111-1111-4111-8111-111111111111`. After creating the Supabase Auth user, bind it to the instructor row:
-
-```sql
-update public.instructors
-set auth_user_id = '<your-supabase-auth-user-id>'
-where id = '11111111-1111-4111-8111-111111111111';
-```
-
-Disable public signup in Supabase Auth settings before using real student data.
+Snapshots created by experimental local builds before recurring templates were persisted still open, but their lost repeat rule and end date cannot be reconstructed safely. If such a snapshot contains an old eight-week recurring series, recreate that recurring schedule once in the current build; current schedules persist the template and continue expanding on demand.
 
 ## Verification
 
@@ -92,9 +57,7 @@ npm run verify
 
 That runs:
 
-- `npm test` for native RPC security checks against SQL migrations
 - `xcodegen generate`
 - `xcodebuild -quiet -project DrumLessonOS.xcodeproj -scheme DrumLessonOS -destination 'platform=macOS' test`
-- `supabase db push --dry-run`
 
-Live release cutover still needs real Supabase sign-in, real EventKit create/edit/cancel, iPhone iCloud propagation, and daily-use confidence recorded in `.planning/phases/07-swiftui-native-migration/07-UAT.md`.
+Before relying on it for live teaching, verify real EventKit create/edit/cancel and iPhone iCloud propagation with your Apple Calendar account.

@@ -7,19 +7,16 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		0565C326979DA837C160004E /* SupabaseRPCClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6FD2EBBB01186A91F4FF9E6C /* SupabaseRPCClient.swift */; };
 		077CE1CC828C4E5E03151E25 /* StudentEditingValidation.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD3F39CD424290E9A79CCC6C /* StudentEditingValidation.swift */; };
 		08EC033C93BAFEDD18904695 /* StudentDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83B5B56041862DC329EF12EE /* StudentDetailView.swift */; };
 		15E55E8FC6380BC7BABA937E /* ScheduleValidation.swift in Sources */ = {isa = PBXBuildFile; fileRef = EFACADE36985DE4C6C4ED788 /* ScheduleValidation.swift */; };
-		17C4E38E0D1FF1D569A819EF /* AuthViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB32C0FAE28C93B05571751E /* AuthViewModel.swift */; };
 		18272C013F8E257324077373 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 801D89AF116C157E51C0F3C1 /* SettingsView.swift */; };
 		1EAF431A8C992C96A2B7E52A /* ScheduleLessonSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 669AB6F7F0C77E4038FB1024 /* ScheduleLessonSheet.swift */; };
-		1FFA6F69D64579085AECF3E5 /* SupabaseLiveWiringTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E35B8AD29EF68704726D104 /* SupabaseLiveWiringTests.swift */; };
+		2848960009D987E710FF4173 /* libsqlite3.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = A667F6682D48A592521C7F92 /* libsqlite3.tbd */; };
 		2F1EAA437049B2180389573B /* EventKitCalendarRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = CDC25BE7C7567B3E133873F8 /* EventKitCalendarRepository.swift */; };
 		35427226F6AE47ECCE105DD0 /* PreviewRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B08EF5F9B438E719863986E /* PreviewRepository.swift */; };
 		39E3A8A6FDF4352B0A463CCB /* RetrySchedulerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B4CE4F55EE22BBBD88E321D /* RetrySchedulerTests.swift */; };
-		3CDF4E302967E7B549F43667 /* SupabaseRPCClientTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46220D1C8D63733A75E0D22F /* SupabaseRPCClientTests.swift */; };
-		3DCDD8C2E4B1EEE3F509FB99 /* LocalCacheStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13B7C3DD5F1168EF4DFE148B /* LocalCacheStore.swift */; };
+		3CFE0159BAABC28720106B0B /* DashboardViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23604645731350AF3290BE53 /* DashboardViewModelTests.swift */; };
 		43829950600599FC9AB8FC96 /* LocalWriteQueue.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9678B250F29C45D81C24581 /* LocalWriteQueue.swift */; };
 		4546C6C523038AE724A697D9 /* ScheduleValidationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA22B70A9909F4F747662887 /* ScheduleValidationTests.swift */; };
 		48CFFD3E2FA86547CF5A3D7E /* ReadModelParityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D489B8BF0487EE677BBEBCF /* ReadModelParityTests.swift */; };
@@ -27,49 +24,43 @@
 		5483CC73EC2CECEBEA78F546 /* StudentHeaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 522BC11979E5B18606B3C3C6 /* StudentHeaderView.swift */; };
 		575CFB9D9CC22B23E5452CF3 /* LessonDateFormatters.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAC128167076B6FBE7E98312 /* LessonDateFormatters.swift */; };
 		5C924A3591272E7C7E2766C9 /* AddStudentSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A025F718CD1B847E31604D3 /* AddStudentSheet.swift */; };
+		5EFCCDE491F4752A56E39C9A /* CalendarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ECBE277FA90649F42F91B1BA /* CalendarView.swift */; };
 		60B261204F83E7E236C92319 /* LessonFlowWorkspace.swift in Sources */ = {isa = PBXBuildFile; fileRef = 431018D64DE0CF883ABA0346 /* LessonFlowWorkspace.swift */; };
 		67FD045F8DC13E5D7D3C90E3 /* ReadModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AA1419967799EFBFA2310EA /* ReadModels.swift */; };
-		695539F4ABB7F81D71BA4195 /* CachedStudentRepositoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B4425F31AD49B4E016D588E /* CachedStudentRepositoryTests.swift */; };
+		6A8EF80FE648F02610B0042E /* LocalSQLiteRepositoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00652A11A6B2B47955E6E8DB /* LocalSQLiteRepositoryTests.swift */; };
 		6BEA1EA343BCFD2E9347750D /* SelectedLessonPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C31D9AD37139204AB86D8DDC /* SelectedLessonPanel.swift */; };
 		747487C76452CF257974AE4F /* RetryScheduler.swift in Sources */ = {isa = PBXBuildFile; fileRef = B914D8006C5A6DF2C6592244 /* RetryScheduler.swift */; };
-		77C4CA9FF10CC0C16DD376E3 /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = 4928AFC4CBCC6171F27FE7DC /* Supabase */; };
 		7C567DA1408984A60F4F6D41 /* WeeklyOccurrenceExpander.swift in Sources */ = {isa = PBXBuildFile; fileRef = 250EFE5D266F726DFB765349 /* WeeklyOccurrenceExpander.swift */; };
 		87ED1A8999D314479CD5A569 /* CalendarSyncCoordinatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E44D4FA6C27D3A3E7AD72C3 /* CalendarSyncCoordinatorTests.swift */; };
-		8FC30D6DFE0B094CE643B669 /* SupabaseAuthRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 193C68E015A9BA9A9CA78E23 /* SupabaseAuthRepository.swift */; };
-		8FD74A00B6A2633FD08C243D /* AuthSessionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C3D169810C8CBB7D05B7EAE /* AuthSessionStore.swift */; };
 		92C41848E5CC9442B77CBEDA /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BFC8AFBFA9095C64936B2254 /* DashboardView.swift */; };
 		9430B666492D4DE6F3783E5D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C70800F76B7F073C6338204B /* Assets.xcassets */; };
 		9440FE9D8FE790D77001AD34 /* WeeklyOccurrenceExpanderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2DE1BD6B196FB7340CF48ECC /* WeeklyOccurrenceExpanderTests.swift */; };
 		95A32E4CDE11451EE1700BA1 /* AppRoute.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6CF6A045E6FE055F046781A3 /* AppRoute.swift */; };
+		95F4596B76EA972F941C4480 /* DesignSystemFormattingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7386C5D900F241050243B03D /* DesignSystemFormattingTests.swift */; };
 		97F96E34A044AB54CCC6C868 /* DomainModelDecodingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E597E678FA0ABF43DD73988 /* DomainModelDecodingTests.swift */; };
 		99CDDA79F7CC083B6E9FED58 /* StudentRosterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96FCD4F51AF029DE1A1C6C9D /* StudentRosterView.swift */; };
 		9B9961D6DB2B3BE1E515B5E9 /* EventKitLessonEventBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 954BC6C4A0920A14AF38C348 /* EventKitLessonEventBuilder.swift */; };
 		9D82C730F95446A62B62B8CB /* EventKitLessonEventBuilderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B2EEE350D1ADAEC2018E20C /* EventKitLessonEventBuilderTests.swift */; };
 		9DFC0BB702F0CDE89385D76F /* DashboardViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 388F05A058E7BAA1E1045C24 /* DashboardViewModel.swift */; };
-		9F50D02B6E8EF1D99A88CC5D /* SupabaseClientFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 130EF7AB51CECD53328C4BBC /* SupabaseClientFactory.swift */; };
+		A01558F6158D63670E49CA97 /* LocalAppEnvironmentTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D869784B9A46CB9B3EF71D9 /* LocalAppEnvironmentTests.swift */; };
 		A115898A714D67897131D7F9 /* StatusBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0A70FFC60ACC5DD86654ACC /* StatusBadge.swift */; };
 		A11C8FC1E3EB81DB8CD88F50 /* CalendarSyncCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F271AF7C2225F5DF70B5BCD /* CalendarSyncCoordinator.swift */; };
-		A1CF69D07B618A480F3B78E2 /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4759E8E648F7F15CE27DCF59 /* LoginView.swift */; };
-		A2E313D0104377E20C21005B /* SupabaseEnvironment.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8AAB9DA3D19D0259275CE84 /* SupabaseEnvironment.swift */; };
 		A6648724276FBA9C12F702E4 /* EventKitPermissionState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 036346372D86A6FE6AEF95D0 /* EventKitPermissionState.swift */; };
-		A81E774FCFC7E487DBE469A5 /* CachedStudentRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = E88723DB72361E05572D4369 /* CachedStudentRepository.swift */; };
 		AA3F457896C275C0CAA276A6 /* AppEnvironment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 509494A9469EAD129208BFC4 /* AppEnvironment.swift */; };
 		AA658E1CA3E10719EEE4B02C /* AppTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = D25B5EA96B3F8CE3D8818DEC /* AppTheme.swift */; };
 		B19441F9082991805C209E13 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20714602FE2A82B8EB0EC358 /* RootView.swift */; };
 		B3E826D2DAC9CB1E793D11F3 /* TodayLessonListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FAD1B3D3719B1F7F7EC35BC4 /* TodayLessonListView.swift */; };
 		BC6C74C994584D7023872858 /* StudentEditingValidationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 392021C9EF3C9584F5C65C41 /* StudentEditingValidationTests.swift */; };
 		C0BFFC1703670C762E2BE816 /* StudentDetailViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 970DA0F94F3435D620F3B7D4 /* StudentDetailViewModel.swift */; };
-		C86AEF891D3C81D8564BF0A2 /* SupabaseScheduleRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43CD617A5474FD8CFDF17CD3 /* SupabaseScheduleRepository.swift */; };
-		C9E43E8A4106B5D03742D070 /* SupabaseRESTClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D25422C4E5F184E5B9EEC01 /* SupabaseRESTClient.swift */; };
+		C9E497811AA9C625DF693D23 /* LocalSQLiteRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41469A6F4C76457E465260C3 /* LocalSQLiteRepository.swift */; };
 		CDDDDA205E0D6A99146B7370 /* NativeSmokeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8C6163928869002EFCB50D3 /* NativeSmokeTests.swift */; };
 		D8E8796BED66B64BDC453703 /* ReadModelMappers.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1F25F9FAF33FDA77ABAAF8D /* ReadModelMappers.swift */; };
+		DDE73F52B75449A9AE3F317F /* LessonEventInteractions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76D7B53555CAFFA147F4D852 /* LessonEventInteractions.swift */; };
 		DE4C0E7A920492AE3417CBB4 /* DomainModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E0B6E755A19F45DEB135439 /* DomainModels.swift */; };
-		DED197BEFCD3DC34FF78BD97 /* SupabaseStudentRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01B2A7FDC5269CD779DA07D3 /* SupabaseStudentRepository.swift */; };
 		E1238B125B985989F9D6F0CD /* LessonEventCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D32CCCB1E0220389C1A005F /* LessonEventCard.swift */; };
 		E2CE324E1800F1FCD3F25FEE /* LocalWriteQueueTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36C0255C2A584E24EC7E59F8 /* LocalWriteQueueTests.swift */; };
 		E2D83115AC62F9AF33C05A41 /* StudentDetailTabs.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBBE168991B3F317C676F8AB /* StudentDetailTabs.swift */; };
 		EB92C4B2C25369742633221A /* Repositories.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0383699EA030E5FAEBA8A385 /* Repositories.swift */; };
-		EC7CECE84BA130450854D21B /* SupabaseStudentWriteRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CE4976E4FD0D1424AF4B59F /* SupabaseStudentWriteRepository.swift */; };
 		F2DFB0CB0159998A79A31247 /* WeekCalendarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 38B9119CACA9BEFEB76ABC1E /* WeekCalendarView.swift */; };
 /* End PBXBuildFile section */
 
@@ -84,33 +75,26 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		01B2A7FDC5269CD779DA07D3 /* SupabaseStudentRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseStudentRepository.swift; sourceTree = "<group>"; };
+		00652A11A6B2B47955E6E8DB /* LocalSQLiteRepositoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalSQLiteRepositoryTests.swift; sourceTree = "<group>"; };
 		036346372D86A6FE6AEF95D0 /* EventKitPermissionState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventKitPermissionState.swift; sourceTree = "<group>"; };
 		0383699EA030E5FAEBA8A385 /* Repositories.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Repositories.swift; sourceTree = "<group>"; };
-		0D25422C4E5F184E5B9EEC01 /* SupabaseRESTClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseRESTClient.swift; sourceTree = "<group>"; };
-		130EF7AB51CECD53328C4BBC /* SupabaseClientFactory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseClientFactory.swift; sourceTree = "<group>"; };
-		13B7C3DD5F1168EF4DFE148B /* LocalCacheStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalCacheStore.swift; sourceTree = "<group>"; };
-		193C68E015A9BA9A9CA78E23 /* SupabaseAuthRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseAuthRepository.swift; sourceTree = "<group>"; };
 		1AA1419967799EFBFA2310EA /* ReadModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReadModels.swift; sourceTree = "<group>"; };
 		1B08EF5F9B438E719863986E /* PreviewRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewRepository.swift; sourceTree = "<group>"; };
-		1C3D169810C8CBB7D05B7EAE /* AuthSessionStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthSessionStore.swift; sourceTree = "<group>"; };
+		1D869784B9A46CB9B3EF71D9 /* LocalAppEnvironmentTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalAppEnvironmentTests.swift; sourceTree = "<group>"; };
 		1E44D4FA6C27D3A3E7AD72C3 /* CalendarSyncCoordinatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarSyncCoordinatorTests.swift; sourceTree = "<group>"; };
 		1F271AF7C2225F5DF70B5BCD /* CalendarSyncCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarSyncCoordinator.swift; sourceTree = "<group>"; };
 		20714602FE2A82B8EB0EC358 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
+		23604645731350AF3290BE53 /* DashboardViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardViewModelTests.swift; sourceTree = "<group>"; };
 		250EFE5D266F726DFB765349 /* WeeklyOccurrenceExpander.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeeklyOccurrenceExpander.swift; sourceTree = "<group>"; };
 		2DE1BD6B196FB7340CF48ECC /* WeeklyOccurrenceExpanderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeeklyOccurrenceExpanderTests.swift; sourceTree = "<group>"; };
-		2E35B8AD29EF68704726D104 /* SupabaseLiveWiringTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseLiveWiringTests.swift; sourceTree = "<group>"; };
 		31B1C05BC7ACFEC3D282156F /* DrumLessonOS.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = DrumLessonOS.entitlements; sourceTree = "<group>"; };
 		36C0255C2A584E24EC7E59F8 /* LocalWriteQueueTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalWriteQueueTests.swift; sourceTree = "<group>"; };
 		388F05A058E7BAA1E1045C24 /* DashboardViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardViewModel.swift; sourceTree = "<group>"; };
 		38B9119CACA9BEFEB76ABC1E /* WeekCalendarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeekCalendarView.swift; sourceTree = "<group>"; };
 		392021C9EF3C9584F5C65C41 /* StudentEditingValidationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StudentEditingValidationTests.swift; sourceTree = "<group>"; };
-		3CE4976E4FD0D1424AF4B59F /* SupabaseStudentWriteRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseStudentWriteRepository.swift; sourceTree = "<group>"; };
 		3E0B6E755A19F45DEB135439 /* DomainModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DomainModels.swift; sourceTree = "<group>"; };
+		41469A6F4C76457E465260C3 /* LocalSQLiteRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalSQLiteRepository.swift; sourceTree = "<group>"; };
 		431018D64DE0CF883ABA0346 /* LessonFlowWorkspace.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LessonFlowWorkspace.swift; sourceTree = "<group>"; };
-		43CD617A5474FD8CFDF17CD3 /* SupabaseScheduleRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseScheduleRepository.swift; sourceTree = "<group>"; };
-		46220D1C8D63733A75E0D22F /* SupabaseRPCClientTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseRPCClientTests.swift; sourceTree = "<group>"; };
-		4759E8E648F7F15CE27DCF59 /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
 		4D489B8BF0487EE677BBEBCF /* ReadModelParityTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReadModelParityTests.swift; sourceTree = "<group>"; };
 		509494A9469EAD129208BFC4 /* AppEnvironment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppEnvironment.swift; sourceTree = "<group>"; };
 		522BC11979E5B18606B3C3C6 /* StudentHeaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StudentHeaderView.swift; sourceTree = "<group>"; };
@@ -120,7 +104,8 @@
 		669AB6F7F0C77E4038FB1024 /* ScheduleLessonSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleLessonSheet.swift; sourceTree = "<group>"; };
 		6CF6A045E6FE055F046781A3 /* AppRoute.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppRoute.swift; sourceTree = "<group>"; };
 		6E597E678FA0ABF43DD73988 /* DomainModelDecodingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DomainModelDecodingTests.swift; sourceTree = "<group>"; };
-		6FD2EBBB01186A91F4FF9E6C /* SupabaseRPCClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseRPCClient.swift; sourceTree = "<group>"; };
+		7386C5D900F241050243B03D /* DesignSystemFormattingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignSystemFormattingTests.swift; sourceTree = "<group>"; };
+		76D7B53555CAFFA147F4D852 /* LessonEventInteractions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LessonEventInteractions.swift; sourceTree = "<group>"; };
 		7B4CE4F55EE22BBBD88E321D /* RetrySchedulerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RetrySchedulerTests.swift; sourceTree = "<group>"; };
 		801D89AF116C157E51C0F3C1 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		839864D16A3484DCEF8E2AF8 /* DrumLessonOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DrumLessonOS.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -128,8 +113,8 @@
 		954BC6C4A0920A14AF38C348 /* EventKitLessonEventBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventKitLessonEventBuilder.swift; sourceTree = "<group>"; };
 		96FCD4F51AF029DE1A1C6C9D /* StudentRosterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StudentRosterView.swift; sourceTree = "<group>"; };
 		970DA0F94F3435D620F3B7D4 /* StudentDetailViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StudentDetailViewModel.swift; sourceTree = "<group>"; };
-		9B4425F31AD49B4E016D588E /* CachedStudentRepositoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CachedStudentRepositoryTests.swift; sourceTree = "<group>"; };
 		A444005149FC4BA8B854CCFD /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		A667F6682D48A592521C7F92 /* libsqlite3.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libsqlite3.tbd; path = usr/lib/libsqlite3.tbd; sourceTree = SDKROOT; };
 		A8C6163928869002EFCB50D3 /* NativeSmokeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeSmokeTests.swift; sourceTree = "<group>"; };
 		A9678B250F29C45D81C24581 /* LocalWriteQueue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalWriteQueue.swift; sourceTree = "<group>"; };
 		AC05CF996AED8A5427C42D46 /* DrumLessonOSApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DrumLessonOSApp.swift; sourceTree = "<group>"; };
@@ -139,15 +124,13 @@
 		BFC8AFBFA9095C64936B2254 /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
 		C31D9AD37139204AB86D8DDC /* SelectedLessonPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelectedLessonPanel.swift; sourceTree = "<group>"; };
 		C70800F76B7F073C6338204B /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		C8AAB9DA3D19D0259275CE84 /* SupabaseEnvironment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseEnvironment.swift; sourceTree = "<group>"; };
 		CA22B70A9909F4F747662887 /* ScheduleValidationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleValidationTests.swift; sourceTree = "<group>"; };
-		CB32C0FAE28C93B05571751E /* AuthViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthViewModel.swift; sourceTree = "<group>"; };
 		CD3F39CD424290E9A79CCC6C /* StudentEditingValidation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StudentEditingValidation.swift; sourceTree = "<group>"; };
 		CDC25BE7C7567B3E133873F8 /* EventKitCalendarRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventKitCalendarRepository.swift; sourceTree = "<group>"; };
 		D0A70FFC60ACC5DD86654ACC /* StatusBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusBadge.swift; sourceTree = "<group>"; };
 		D25B5EA96B3F8CE3D8818DEC /* AppTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppTheme.swift; sourceTree = "<group>"; };
-		E88723DB72361E05572D4369 /* CachedStudentRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CachedStudentRepository.swift; sourceTree = "<group>"; };
 		EAC128167076B6FBE7E98312 /* LessonDateFormatters.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LessonDateFormatters.swift; sourceTree = "<group>"; };
+		ECBE277FA90649F42F91B1BA /* CalendarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarView.swift; sourceTree = "<group>"; };
 		EFACADE36985DE4C6C4ED788 /* ScheduleValidation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleValidation.swift; sourceTree = "<group>"; };
 		FAD1B3D3719B1F7F7EC35BC4 /* TodayLessonListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodayLessonListView.swift; sourceTree = "<group>"; };
 		FBBE168991B3F317C676F8AB /* StudentDetailTabs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StudentDetailTabs.swift; sourceTree = "<group>"; };
@@ -158,7 +141,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				77C4CA9FF10CC0C16DD376E3 /* Supabase in Frameworks */,
+				2848960009D987E710FF4173 /* libsqlite3.tbd in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -178,18 +161,19 @@
 		21A20395FA90BE48BED1C477 /* DrumLessonOSTests */ = {
 			isa = PBXGroup;
 			children = (
-				9B4425F31AD49B4E016D588E /* CachedStudentRepositoryTests.swift */,
 				1E44D4FA6C27D3A3E7AD72C3 /* CalendarSyncCoordinatorTests.swift */,
+				23604645731350AF3290BE53 /* DashboardViewModelTests.swift */,
+				7386C5D900F241050243B03D /* DesignSystemFormattingTests.swift */,
 				6E597E678FA0ABF43DD73988 /* DomainModelDecodingTests.swift */,
 				5B2EEE350D1ADAEC2018E20C /* EventKitLessonEventBuilderTests.swift */,
+				1D869784B9A46CB9B3EF71D9 /* LocalAppEnvironmentTests.swift */,
+				00652A11A6B2B47955E6E8DB /* LocalSQLiteRepositoryTests.swift */,
 				36C0255C2A584E24EC7E59F8 /* LocalWriteQueueTests.swift */,
 				A8C6163928869002EFCB50D3 /* NativeSmokeTests.swift */,
 				4D489B8BF0487EE677BBEBCF /* ReadModelParityTests.swift */,
 				7B4CE4F55EE22BBBD88E321D /* RetrySchedulerTests.swift */,
 				CA22B70A9909F4F747662887 /* ScheduleValidationTests.swift */,
 				392021C9EF3C9584F5C65C41 /* StudentEditingValidationTests.swift */,
-				2E35B8AD29EF68704726D104 /* SupabaseLiveWiringTests.swift */,
-				46220D1C8D63733A75E0D22F /* SupabaseRPCClientTests.swift */,
 				2DE1BD6B196FB7340CF48ECC /* WeeklyOccurrenceExpanderTests.swift */,
 			);
 			path = DrumLessonOSTests;
@@ -219,28 +203,12 @@
 			path = Repositories;
 			sourceTree = "<group>";
 		};
-		34F3429BDAA1491D00A087AD /* Supabase */ = {
-			isa = PBXGroup;
-			children = (
-				1C3D169810C8CBB7D05B7EAE /* AuthSessionStore.swift */,
-				193C68E015A9BA9A9CA78E23 /* SupabaseAuthRepository.swift */,
-				130EF7AB51CECD53328C4BBC /* SupabaseClientFactory.swift */,
-				C8AAB9DA3D19D0259275CE84 /* SupabaseEnvironment.swift */,
-				0D25422C4E5F184E5B9EEC01 /* SupabaseRESTClient.swift */,
-				6FD2EBBB01186A91F4FF9E6C /* SupabaseRPCClient.swift */,
-				43CD617A5474FD8CFDF17CD3 /* SupabaseScheduleRepository.swift */,
-				01B2A7FDC5269CD779DA07D3 /* SupabaseStudentRepository.swift */,
-				3CE4976E4FD0D1424AF4B59F /* SupabaseStudentWriteRepository.swift */,
-			);
-			path = Supabase;
-			sourceTree = "<group>";
-		};
 		587D5B5AAEA224AA0F8D5AEA /* Data */ = {
 			isa = PBXGroup;
 			children = (
 				83E9A9A65F2FDB360AFCE070 /* Calendar */,
+				9588D27D34787A96B9EF9140 /* Local */,
 				CD44D276A5693D208C0824E6 /* Persistence */,
-				34F3429BDAA1491D00A087AD /* Supabase */,
 				A475AE38BE7C3662B4F62D6E /* Sync */,
 			);
 			path = Data;
@@ -279,6 +247,7 @@
 			children = (
 				EBA2D890C403C6D90A790CDA /* DrumLessonOS */,
 				21A20395FA90BE48BED1C477 /* DrumLessonOSTests */,
+				C8EA1FAB6EFA3966E3F56C96 /* Frameworks */,
 				5C6311C3B501C6532DD33FC0 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -300,6 +269,14 @@
 				AA6BC398EB304A24990DB4CE /* PreviewData */,
 			);
 			path = Resources;
+			sourceTree = "<group>";
+		};
+		9588D27D34787A96B9EF9140 /* Local */ = {
+			isa = PBXGroup;
+			children = (
+				41469A6F4C76457E465260C3 /* LocalSQLiteRepository.swift */,
+			);
+			path = Local;
 			sourceTree = "<group>";
 		};
 		A10EB867A72D71E0FE68EB81 /* DesignSystem */ = {
@@ -357,7 +334,6 @@
 		B7A70DDF76FD072CD1D79300 /* Features */ = {
 			isa = PBXGroup;
 			children = (
-				CE6477BB1B2896946A0B8BEB /* Auth */,
 				E9BA0BA22968E6A88C030758 /* Dashboard */,
 				D2F7EED8C71AF664C8265292 /* LessonFlow */,
 				EF50AD70E58533C2C262CCB6 /* Scheduling */,
@@ -367,23 +343,20 @@
 			path = Features;
 			sourceTree = "<group>";
 		};
+		C8EA1FAB6EFA3966E3F56C96 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				A667F6682D48A592521C7F92 /* libsqlite3.tbd */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		CD44D276A5693D208C0824E6 /* Persistence */ = {
 			isa = PBXGroup;
 			children = (
-				E88723DB72361E05572D4369 /* CachedStudentRepository.swift */,
-				13B7C3DD5F1168EF4DFE148B /* LocalCacheStore.swift */,
 				A9678B250F29C45D81C24581 /* LocalWriteQueue.swift */,
 			);
 			path = Persistence;
-			sourceTree = "<group>";
-		};
-		CE6477BB1B2896946A0B8BEB /* Auth */ = {
-			isa = PBXGroup;
-			children = (
-				CB32C0FAE28C93B05571751E /* AuthViewModel.swift */,
-				4759E8E648F7F15CE27DCF59 /* LoginView.swift */,
-			);
-			path = Auth;
 			sourceTree = "<group>";
 		};
 		D2F7EED8C71AF664C8265292 /* LessonFlow */ = {
@@ -436,6 +409,8 @@
 		EF50AD70E58533C2C262CCB6 /* Scheduling */ = {
 			isa = PBXGroup;
 			children = (
+				ECBE277FA90649F42F91B1BA /* CalendarView.swift */,
+				76D7B53555CAFFA147F4D852 /* LessonEventInteractions.swift */,
 				669AB6F7F0C77E4038FB1024 /* ScheduleLessonSheet.swift */,
 			);
 			path = Scheduling;
@@ -489,7 +464,6 @@
 			);
 			name = DrumLessonOS;
 			packageProductDependencies = (
-				4928AFC4CBCC6171F27FE7DC /* Supabase */,
 			);
 			productName = DrumLessonOS;
 			productReference = 839864D16A3484DCEF8E2AF8 /* DrumLessonOS.app */;
@@ -518,9 +492,6 @@
 			);
 			mainGroup = 77C7E0D9FE0A66B2BDCCD290;
 			minimizedProjectReferenceProxies = 1;
-			packageReferences = (
-				C808CC4E456F22BCDE31A0ED /* XCRemoteSwiftPackageReference "supabase-swift" */,
-			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 5C6311C3B501C6532DD33FC0 /* Products */;
 			projectDirPath = "";
@@ -552,10 +523,8 @@
 				AA3F457896C275C0CAA276A6 /* AppEnvironment.swift in Sources */,
 				95A32E4CDE11451EE1700BA1 /* AppRoute.swift in Sources */,
 				AA658E1CA3E10719EEE4B02C /* AppTheme.swift in Sources */,
-				8FD74A00B6A2633FD08C243D /* AuthSessionStore.swift in Sources */,
-				17C4E38E0D1FF1D569A819EF /* AuthViewModel.swift in Sources */,
-				A81E774FCFC7E487DBE469A5 /* CachedStudentRepository.swift in Sources */,
 				A11C8FC1E3EB81DB8CD88F50 /* CalendarSyncCoordinator.swift in Sources */,
+				5EFCCDE491F4752A56E39C9A /* CalendarView.swift in Sources */,
 				92C41848E5CC9442B77CBEDA /* DashboardView.swift in Sources */,
 				9DFC0BB702F0CDE89385D76F /* DashboardViewModel.swift in Sources */,
 				DE4C0E7A920492AE3417CBB4 /* DomainModels.swift in Sources */,
@@ -565,10 +534,10 @@
 				A6648724276FBA9C12F702E4 /* EventKitPermissionState.swift in Sources */,
 				575CFB9D9CC22B23E5452CF3 /* LessonDateFormatters.swift in Sources */,
 				E1238B125B985989F9D6F0CD /* LessonEventCard.swift in Sources */,
+				DDE73F52B75449A9AE3F317F /* LessonEventInteractions.swift in Sources */,
 				60B261204F83E7E236C92319 /* LessonFlowWorkspace.swift in Sources */,
-				3DCDD8C2E4B1EEE3F509FB99 /* LocalCacheStore.swift in Sources */,
+				C9E497811AA9C625DF693D23 /* LocalSQLiteRepository.swift in Sources */,
 				43829950600599FC9AB8FC96 /* LocalWriteQueue.swift in Sources */,
-				A1CF69D07B618A480F3B78E2 /* LoginView.swift in Sources */,
 				35427226F6AE47ECCE105DD0 /* PreviewRepository.swift in Sources */,
 				D8E8796BED66B64BDC453703 /* ReadModelMappers.swift in Sources */,
 				67FD045F8DC13E5D7D3C90E3 /* ReadModels.swift in Sources */,
@@ -586,14 +555,6 @@
 				077CE1CC828C4E5E03151E25 /* StudentEditingValidation.swift in Sources */,
 				5483CC73EC2CECEBEA78F546 /* StudentHeaderView.swift in Sources */,
 				99CDDA79F7CC083B6E9FED58 /* StudentRosterView.swift in Sources */,
-				8FC30D6DFE0B094CE643B669 /* SupabaseAuthRepository.swift in Sources */,
-				9F50D02B6E8EF1D99A88CC5D /* SupabaseClientFactory.swift in Sources */,
-				A2E313D0104377E20C21005B /* SupabaseEnvironment.swift in Sources */,
-				C9E43E8A4106B5D03742D070 /* SupabaseRESTClient.swift in Sources */,
-				0565C326979DA837C160004E /* SupabaseRPCClient.swift in Sources */,
-				C86AEF891D3C81D8564BF0A2 /* SupabaseScheduleRepository.swift in Sources */,
-				DED197BEFCD3DC34FF78BD97 /* SupabaseStudentRepository.swift in Sources */,
-				EC7CECE84BA130450854D21B /* SupabaseStudentWriteRepository.swift in Sources */,
 				B3E826D2DAC9CB1E793D11F3 /* TodayLessonListView.swift in Sources */,
 				F2DFB0CB0159998A79A31247 /* WeekCalendarView.swift in Sources */,
 				7C567DA1408984A60F4F6D41 /* WeeklyOccurrenceExpander.swift in Sources */,
@@ -604,18 +565,19 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				695539F4ABB7F81D71BA4195 /* CachedStudentRepositoryTests.swift in Sources */,
 				87ED1A8999D314479CD5A569 /* CalendarSyncCoordinatorTests.swift in Sources */,
+				3CFE0159BAABC28720106B0B /* DashboardViewModelTests.swift in Sources */,
+				95F4596B76EA972F941C4480 /* DesignSystemFormattingTests.swift in Sources */,
 				97F96E34A044AB54CCC6C868 /* DomainModelDecodingTests.swift in Sources */,
 				9D82C730F95446A62B62B8CB /* EventKitLessonEventBuilderTests.swift in Sources */,
+				A01558F6158D63670E49CA97 /* LocalAppEnvironmentTests.swift in Sources */,
+				6A8EF80FE648F02610B0042E /* LocalSQLiteRepositoryTests.swift in Sources */,
 				E2CE324E1800F1FCD3F25FEE /* LocalWriteQueueTests.swift in Sources */,
 				CDDDDA205E0D6A99146B7370 /* NativeSmokeTests.swift in Sources */,
 				48CFFD3E2FA86547CF5A3D7E /* ReadModelParityTests.swift in Sources */,
 				39E3A8A6FDF4352B0A463CCB /* RetrySchedulerTests.swift in Sources */,
 				4546C6C523038AE724A697D9 /* ScheduleValidationTests.swift in Sources */,
 				BC6C74C994584D7023872858 /* StudentEditingValidationTests.swift in Sources */,
-				1FFA6F69D64579085AECF3E5 /* SupabaseLiveWiringTests.swift in Sources */,
-				3CDF4E302967E7B549F43667 /* SupabaseRPCClientTests.swift in Sources */,
 				9440FE9D8FE790D77001AD34 /* WeeklyOccurrenceExpanderTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -855,25 +817,6 @@
 			defaultConfigurationName = Debug;
 		};
 /* End XCConfigurationList section */
-
-/* Begin XCRemoteSwiftPackageReference section */
-		C808CC4E456F22BCDE31A0ED /* XCRemoteSwiftPackageReference "supabase-swift" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/supabase/supabase-swift.git";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 2.0.0;
-			};
-		};
-/* End XCRemoteSwiftPackageReference section */
-
-/* Begin XCSwiftPackageProductDependency section */
-		4928AFC4CBCC6171F27FE7DC /* Supabase */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = C808CC4E456F22BCDE31A0ED /* XCRemoteSwiftPackageReference "supabase-swift" */;
-			productName = Supabase;
-		};
-/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 29786DABFC4E717964AA57A2 /* Project object */;
 }

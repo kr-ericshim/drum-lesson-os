@@ -23,23 +23,22 @@ The MVP focuses on instructor-side student management: a clear student list, per
 ## Recommendation
 - **App framework**: macOS SwiftUI with Swift 6.2
 - **Project generation**: XcodeGen (`project.yml`)
-- **Native integrations**: EventKit for Apple Calendar writes and Keychain/local storage for native state
-- **Data access**: Supabase Swift client plus authenticated SQL RPCs
-- **Database**: Supabase Postgres with RLS and migrations under `supabase/`
-- **SQL/security guards**: Node test runner for migration checks under `tests/`
+- **Native integrations**: EventKit for Apple Calendar writes and local Application Support storage
+- **Data access**: Repository protocols backed by `LocalSQLiteRepository` and `CalendarBackedScheduleRepository`
+- **Database**: Local SQLite with transactional snapshot updates and persisted recurring templates
+- **Sync durability**: Atomic local JSON outbox for EventKit create, update, delete, and metadata completion
+- **Verification**: Swift Testing under `DrumLessonOSTests/`
 ## Rationale
-Phase 7 moved the product to a native macOS app as the primary implementation. The legacy Next.js web runtime has been removed from the working tree to keep the project shape clear for future agents.
+The active product is a single-instructor, login-free macOS app. SQLite is canonical, EventKit is the connected calendar target, and the durable local outbox preserves retryable calendar work across launches. Older Supabase and Keychain references under `.planning/` are historical unless a later current-state note explicitly reactivates them.
 ## What Not To Use Yet
 - **Student portal stack**: Defer until student-facing accounts are in scope.
 - **Realtime sync**: Defer until there is a real multi-device or collaborative need.
 - **Audio/video analysis**: Defer; it distracts from the CRM memory/progress workflow.
-- **Full separate API service**: Defer; keep native writes behind Supabase RPCs until a server boundary becomes necessary.
+- **Hosted auth/API service**: Defer until local single-instructor use proves a multi-device or account requirement.
 ## Sources
 - SwiftUI docs: https://developer.apple.com/documentation/swiftui
 - EventKit docs: https://developer.apple.com/documentation/eventkit
 - XcodeGen docs: https://github.com/yonaskolb/XcodeGen
-- Supabase Swift docs: https://supabase.com/docs/reference/swift/introduction
-- Supabase RLS docs for future hosted auth/data boundary: https://supabase.com/docs/guides/database/postgres/row-level-security
 <!-- GSD:stack-end -->
 
 <!-- GSD:conventions-start source:CONVENTIONS.md -->
@@ -69,7 +68,7 @@ Use these standalone entry points:
 - For small fixes, state the goal, touched files, and verification command.
 - For investigation and bug fixing, write down the observed symptom, root cause, fix, and verification.
 - For planned phase work, read `.planning/ROADMAP.md`, `.planning/STATE.md`, and the target phase folder before editing.
-- For native app work, treat `project.yml`, `DrumLessonOS/`, `DrumLessonOSTests/`, `supabase/`, and `tests/` as the active surfaces.
+- For native app work, treat `project.yml`, `DrumLessonOS/`, and `DrumLessonOSTests/` as the active surfaces.
 
 Do not make broad direct repo edits without a concrete phase/task goal and verification loop.
 <!-- GSD:workflow-end -->

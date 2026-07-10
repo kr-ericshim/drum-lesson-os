@@ -1,6 +1,6 @@
 import Foundation
 
-final class PreviewRepository: AuthRepository, StudentRepository, StudentWriteRepository, ScheduleRepository {
+final class PreviewRepository: StudentRepository, StudentWriteRepository, ScheduleRepository {
     private var instructor = PreviewData.instructor
     private var students = PreviewData.students
     private var progressItems = PreviewData.progressItems
@@ -9,21 +9,6 @@ final class PreviewRepository: AuthRepository, StudentRepository, StudentWriteRe
     private var notes = PreviewData.notes
     private var plans = PreviewData.nextPlans
     private var occurrences = PreviewData.occurrences
-
-    func restoreSession() async throws -> Instructor? {
-        instructor
-    }
-
-    func signIn(email: String, password: String) async throws -> Instructor {
-        guard email.contains("@"), !password.isEmpty else {
-            throw RepositoryError(message: "Email and password are required.")
-        }
-        return instructor
-    }
-
-    func signOut() async throws {}
-
-    func openPasswordRecovery(email: String) async throws {}
 
     func loadCurrentInstructor() async throws -> Instructor {
         instructor
@@ -233,6 +218,13 @@ final class PreviewRepository: AuthRepository, StudentRepository, StudentWriteRe
 
     func retryNativeCalendarSync(occurrenceId: EntityID) async throws {}
 
+    func loadOccurrence(id: EntityID) async throws -> LessonOccurrence {
+        guard let occurrence = occurrences.first(where: { $0.id == id }) else {
+            throw RepositoryError.notFound
+        }
+        return occurrence
+    }
+
     func updateNativeCalendarSync(_ input: NativeCalendarSyncUpdateInput) async throws {
         guard let index = occurrences.firstIndex(where: { $0.id == input.occurrenceId }) else {
             throw RepositoryError.notFound
@@ -254,7 +246,7 @@ enum PreviewData {
     static let instructor = Instructor(
         id: instructorId,
         displayName: "Eric Shim",
-        studioName: "Drum Lesson OS",
+        studioName: "드럼 레슨 OS",
         authUserId: UUID(uuidString: "dddddddd-dddd-dddd-dddd-dddddddddddd")
     )
 
@@ -265,7 +257,7 @@ enum PreviewData {
 
     static let progressItems = [
         ProgressItem(id: UUID(uuidString: "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee")!, instructorId: instructorId, studentId: minjiId, category: .song, status: .inProgress, title: "좋은 밤 좋은 꿈 8비트", currentFocus: true, observedOn: "2026-05-28", detail: "코러스 전 필인에서 오른발이 앞선다.", tempoNote: "82 -> 88 BPM", updatedAt: "2026-05-28T08:00:00Z"),
-        ProgressItem(id: UUID(uuidString: "ffffffff-ffff-ffff-ffff-ffffffffffff")!, instructorId: instructorId, studentId: joonId, category: .rudiment, status: .needsReview, title: "Paradiddle accent", currentFocus: true, observedOn: "2026-05-27", detail: "왼손 악센트가 작아진다.", tempoNote: "70 BPM", updatedAt: "2026-05-27T08:00:00Z")
+        ProgressItem(id: UUID(uuidString: "ffffffff-ffff-ffff-ffff-ffffffffffff")!, instructorId: instructorId, studentId: joonId, category: .rudiment, status: .needsReview, title: "파라디들 악센트", currentFocus: true, observedOn: "2026-05-27", detail: "왼손 악센트가 작아진다.", tempoNote: "70 BPM", updatedAt: "2026-05-27T08:00:00Z")
     ]
 
     static let traits = [
@@ -286,7 +278,7 @@ enum PreviewData {
     ]
 
     static let occurrences = [
-        LessonOccurrence(id: UUID(), instructorId: instructorId, studentId: minjiId, scheduleTemplateId: nil, startsAt: "2026-05-28T10:00:00Z", endsAt: "2026-05-28T10:50:00Z", timezone: TimeZone.current.identifier, status: .scheduled, title: "김민지 drum lesson", nativeCalendarEventIdentifier: nil, nativeCalendarIdentifier: nil, nativeCalendarExternalIdentifier: nil, nativeCalendarSyncStatus: .pending, nativeCalendarSyncError: nil, nativeCalendarSyncedAt: nil),
-        LessonOccurrence(id: UUID(), instructorId: instructorId, studentId: joonId, scheduleTemplateId: nil, startsAt: "2026-05-28T12:00:00Z", endsAt: "2026-05-28T12:50:00Z", timezone: TimeZone.current.identifier, status: .scheduled, title: "박준 drum lesson", nativeCalendarEventIdentifier: nil, nativeCalendarIdentifier: nil, nativeCalendarExternalIdentifier: nil, nativeCalendarSyncStatus: .notConnected, nativeCalendarSyncError: nil, nativeCalendarSyncedAt: nil)
+        LessonOccurrence(id: UUID(), instructorId: instructorId, studentId: minjiId, scheduleTemplateId: nil, startsAt: "2026-05-28T10:00:00Z", endsAt: "2026-05-28T10:50:00Z", timezone: TimeZone.current.identifier, status: .scheduled, title: "김민지 드럼 레슨", nativeCalendarEventIdentifier: nil, nativeCalendarIdentifier: nil, nativeCalendarExternalIdentifier: nil, nativeCalendarSyncStatus: .pending, nativeCalendarSyncError: nil, nativeCalendarSyncedAt: nil),
+        LessonOccurrence(id: UUID(), instructorId: instructorId, studentId: joonId, scheduleTemplateId: nil, startsAt: "2026-05-28T12:00:00Z", endsAt: "2026-05-28T12:50:00Z", timezone: TimeZone.current.identifier, status: .scheduled, title: "박준 드럼 레슨", nativeCalendarEventIdentifier: nil, nativeCalendarIdentifier: nil, nativeCalendarExternalIdentifier: nil, nativeCalendarSyncStatus: .notConnected, nativeCalendarSyncError: nil, nativeCalendarSyncedAt: nil)
     ]
 }

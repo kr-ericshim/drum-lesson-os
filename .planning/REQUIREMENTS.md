@@ -1,7 +1,7 @@
 # Requirements: Drum Lesson OS
 
 **Defined:** 2026-05-22
-**Last updated:** 2026-05-28
+**Last updated:** 2026-07-10
 **Core Value:** An instructor can quickly understand a student's current progress and personal characteristics before or during a lesson.
 
 ## v1 Requirements
@@ -81,11 +81,11 @@
 ### Native macOS Migration
 
 - [x] **NATIVE-01**: Instructor can build and launch a macOS SwiftUI implementation of the current Drum Lesson OS workflow.
-- [x] **NATIVE-02**: Native screens cover auth, calendar-first dashboard, roster, student detail, editing workflows, lesson flow, scheduling, settings, and sync status.
-- [x] **NATIVE-03**: Native writes use authenticated Supabase RPCs and do not embed a service-role key.
+- [x] **NATIVE-02**: Native screens cover the calendar-first dashboard, roster, student detail, editing workflows, lesson flow, scheduling, settings, and sync status.
+- [x] **NATIVE-03**: Native writes use transactional local SQLite persistence without requiring hosted authentication.
 - [x] **NATIVE-04**: Native Apple Calendar integration uses EventKit instead of prompting for Apple ID or app-specific password credentials.
-- [x] **NATIVE-05**: EventKit failures are visible and retryable without corrupting Supabase lesson occurrence data.
-- [ ] **NATIVE-06**: Native production use is verified with live Supabase sign-in, real EventKit create/edit/cancel, iPhone iCloud propagation, and daily-use confidence.
+- [x] **NATIVE-05**: EventKit failures are visible and retryable through a durable local outbox without corrupting local lesson occurrence data.
+- [ ] **NATIVE-06**: Native production use is verified with real EventKit create/edit/cancel, iPhone iCloud propagation, and daily-use confidence.
 - [x] **NATIVE-07**: Repo structure is native-primary, with SwiftUI app source at root and the legacy web runtime removed from active development.
 
 ## Not Planned
@@ -104,7 +104,7 @@ The following are not part of the current product direction:
 
 ## Release Gate
 
-Real instructor authentication and production RLS cleanup remain required before sharing real student data outside the demo environment. For the native app, live Supabase/EventKit/iPhone UAT and daily-use confidence remain required before relying on it for real teaching records.
+The active app keeps teaching records on this Mac and does not expose a hosted account boundary. Live EventKit/iPhone UAT, local backup confidence, and daily-use confidence remain required before relying on it for real teaching records.
 
 ## Traceability
 

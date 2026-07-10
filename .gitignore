@@ -16,3 +16,4 @@ build/
 .build/
 xcuserdata/
 *.xcuserstate
+*.profraw

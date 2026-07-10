@@ -13,31 +13,48 @@ enum StudentRosterMapper {
             .filter(\.active)
             .sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
             .map { student in
-                let studentProgress = progressItems.filter { $0.studentId == student.id }
-                let currentFocus = pickCurrentFocus(progressItems: studentProgress).map(mapFocus)
-                let latestAssignment = pickLatestAssignment(assignments.filter { $0.studentId == student.id })
-                let currentPlan = pickCurrentNextPlan(nextPlans.filter { $0.studentId == student.id }).map(mapNextPlan)
-                let latestNote = pickLatestLessonNote(notes.filter { $0.studentId == student.id })
-
-                return StudentRosterItem(
-                    id: student.id,
-                    name: student.name,
-                    profileCue: student.profileCue,
-                    primaryWeakPoint: student.primaryWeakPoint,
-                    active: student.active,
-                    currentFocus: currentFocus,
-                    assignmentStatus: latestAssignment?.status,
-                    nextPlan: currentPlan,
-                    lastLessonDate: latestNote?.lessonDate,
-                    attentionFlags: buildAttentionFlags(
-                        currentFocus: currentFocus,
-                        assignment: latestAssignment,
-                        latestNote: latestNote,
-                        nextPlan: currentPlan,
-                        todayDate: todayDate
-                    )
+                mapStudent(
+                    student,
+                    progressItems: progressItems.filter { $0.studentId == student.id },
+                    assignments: assignments.filter { $0.studentId == student.id },
+                    nextPlans: nextPlans.filter { $0.studentId == student.id },
+                    notes: notes.filter { $0.studentId == student.id },
+                    todayDate: todayDate
                 )
             }
+    }
+
+    static func mapStudent(
+        _ student: Student,
+        progressItems: [ProgressItem],
+        assignments: [Assignment],
+        nextPlans: [NextLessonPlan],
+        notes: [LessonNote],
+        todayDate: String
+    ) -> StudentRosterItem {
+        let currentFocus = pickCurrentFocus(progressItems: progressItems).map(mapFocus)
+        let latestAssignment = pickLatestAssignment(assignments)
+        let currentPlan = pickCurrentNextPlan(nextPlans).map(mapNextPlan)
+        let latestNote = pickLatestLessonNote(notes)
+
+        return StudentRosterItem(
+            id: student.id,
+            name: student.name,
+            profileCue: student.profileCue,
+            primaryWeakPoint: student.primaryWeakPoint,
+            active: student.active,
+            currentFocus: currentFocus,
+            assignmentStatus: latestAssignment?.status,
+            nextPlan: currentPlan,
+            lastLessonDate: latestNote?.lessonDate,
+            attentionFlags: buildAttentionFlags(
+                currentFocus: currentFocus,
+                assignment: latestAssignment,
+                latestNote: latestNote,
+                nextPlan: currentPlan,
+                todayDate: todayDate
+            )
+        )
     }
 
     static func pickCurrentFocus(progressItems: [ProgressItem]) -> ProgressItem? {
@@ -46,7 +63,7 @@ enum StudentRosterMapper {
             .sorted { ($0.updatedAt ?? $0.observedOn) > ($1.updatedAt ?? $1.observedOn) }
             .first
 
-        return focused ?? progressItems.sorted { $0.observedOn > $1.observedOn }.first
+        return focused
     }
 
     static func pickLatestAssignment(_ assignments: [Assignment]) -> Assignment? {
@@ -98,19 +115,19 @@ enum StudentRosterMapper {
         var flags: [LessonAttentionFlag] = []
 
         if currentFocus == nil {
-            flags.append(LessonAttentionFlag(kind: .noCurrentFocus, label: "No focus"))
+            flags.append(LessonAttentionFlag(kind: .noCurrentFocus, label: "초점 없음"))
         }
 
         if assignment?.status == .needsReview {
-            flags.append(LessonAttentionFlag(kind: .needsAssignmentReview, label: "Review homework"))
+            flags.append(LessonAttentionFlag(kind: .needsAssignmentReview, label: "과제 확인"))
         }
 
         if let lessonDate = latestNote?.lessonDate, DateOnly.days(from: lessonDate, to: todayDate) >= 14 {
-            flags.append(LessonAttentionFlag(kind: .staleLesson, label: "Stale notes"))
+            flags.append(LessonAttentionFlag(kind: .staleLesson, label: "노트 오래됨"))
         }
 
         if let plannedFor = nextPlan?.plannedFor, plannedFor <= todayDate {
-            flags.append(LessonAttentionFlag(kind: .upcomingPlan, label: "Plan due"))
+            flags.append(LessonAttentionFlag(kind: .upcomingPlan, label: "계획 확인"))
         }
 
         return flags
@@ -127,14 +144,14 @@ enum StudentDetailMapper {
         nextPlans: [NextLessonPlan],
         todayDate: String
     ) -> StudentDetail {
-        let roster = StudentRosterMapper.map(
-            students: [student],
+        let roster = StudentRosterMapper.mapStudent(
+            student,
             progressItems: progressItems,
             assignments: assignments,
             nextPlans: nextPlans,
             notes: notes,
             todayDate: todayDate
-        )[0]
+        )
 
         let mappedProgress = progressItems
             .sorted { $0.observedOn > $1.observedOn }
@@ -205,7 +222,7 @@ enum LessonBriefBuilder {
     ) -> LessonBrief {
         let weakPoint = traits.first { $0.type == .weakPoint }?.detail ?? primaryWeakPoint
         let firstCheck = nextPlan?.nextAction ?? currentFocus?.title ?? weakPoint
-        let assignmentCue = assignment.map { "\($0.title) · \($0.status.rawValue)" }
+        let assignmentCue = assignment.map { "\($0.title) · \($0.status.label)" }
 
         return LessonBrief(
             firstCheck: firstCheck,
@@ -243,13 +260,16 @@ enum CalendarWorkbenchMapper {
         occurrences: [LessonOccurrence],
         students: [StudentRosterItem],
         weekContaining date: Date,
-        timezone: String
+        timezone: String,
+        today referenceDate: Date = Date()
     ) -> CalendarWorkbench {
         let calendar = Calendar.iso8601SeoulCompatible
-        let today = DateOnly.string(from: date, timeZone: TimeZone(identifier: timezone) ?? .current)
+        let resolvedTimeZone = TimeZone(identifier: timezone) ?? .current
+        let today = DateOnly.string(from: referenceDate, timeZone: resolvedTimeZone)
         let weekStart = calendar.dateInterval(of: .weekOfYear, for: date)?.start ?? date
+        let weekEnd = calendar.date(byAdding: .day, value: 6, to: weekStart) ?? weekStart
         let studentsById = Dictionary(uniqueKeysWithValues: students.map { ($0.id, $0) })
-        let events = occurrences.compactMap { occurrence -> CalendarLessonEvent? in
+        let events = occurrences.filter { $0.status == .scheduled }.compactMap { occurrence -> CalendarLessonEvent? in
             guard let student = studentsById[occurrence.studentId] else { return nil }
             let dateKey = DateOnly.string(fromISOInstant: occurrence.startsAt, timeZoneIdentifier: occurrence.timezone)
             return CalendarLessonEvent(
@@ -262,6 +282,7 @@ enum CalendarWorkbenchMapper {
                 durationMinutes: DateOnly.minutes(from: occurrence.startsAt, to: occurrence.endsAt),
                 startsAt: occurrence.startsAt,
                 endsAt: occurrence.endsAt,
+                timezone: occurrence.timezone,
                 status: occurrence.status,
                 syncStatus: occurrence.nativeCalendarSyncStatus,
                 syncError: occurrence.nativeCalendarSyncError,
@@ -272,7 +293,7 @@ enum CalendarWorkbenchMapper {
 
         let days = (0..<7).map { offset in
             let day = calendar.date(byAdding: .day, value: offset, to: weekStart) ?? weekStart
-            let dateKey = DateOnly.string(from: day, timeZone: TimeZone(identifier: timezone) ?? .current)
+            let dateKey = DateOnly.string(from: day, timeZone: resolvedTimeZone)
             return CalendarDay(
                 dateKey: dateKey,
                 label: DateOnly.weekdayLabel(from: day),
@@ -280,14 +301,16 @@ enum CalendarWorkbenchMapper {
                 events: events.filter { $0.dateKey == dateKey }.sorted { $0.startsAt < $1.startsAt }
             )
         }
+        let weekEvents = days.flatMap(\.events).sorted { $0.startsAt < $1.startsAt }
+        let todayEvents = weekEvents.filter { $0.dateKey == today }
 
         return CalendarWorkbench(
-            weekTitle: "\(days.first?.dateKey ?? today) - \(days.last?.dateKey ?? today)",
+            weekTitle: DateOnly.weekTitle(from: weekStart, to: weekEnd, timeZone: resolvedTimeZone),
             todayDateKey: today,
             days: days,
-            todayEvents: events.filter { $0.dateKey == today }.sorted { $0.startsAt < $1.startsAt },
+            todayEvents: todayEvents,
             roster: students,
-            selectedEvent: events.sorted { $0.startsAt < $1.startsAt }.first
+            selectedEvent: todayEvents.first ?? weekEvents.first
         )
     }
 }
@@ -295,6 +318,27 @@ enum CalendarWorkbenchMapper {
 enum DateOnly {
     static func today(in timeZone: TimeZone) -> String {
         string(from: Date(), timeZone: timeZone)
+    }
+
+    static func weekTitle(from start: Date, to end: Date, timeZone: TimeZone) -> String {
+        var calendar = Calendar.iso8601SeoulCompatible
+        calendar.timeZone = timeZone
+        let startParts = calendar.dateComponents([.year, .month, .day], from: start)
+        let endParts = calendar.dateComponents([.year, .month, .day], from: end)
+        let startYear = startParts.year ?? 0
+        let startMonth = startParts.month ?? 0
+        let startDay = startParts.day ?? 0
+        let endYear = endParts.year ?? startYear
+        let endMonth = endParts.month ?? startMonth
+        let endDay = endParts.day ?? startDay
+
+        if startYear != endYear {
+            return "\(startYear)년 \(startMonth)월 \(startDay)일 – \(endYear)년 \(endMonth)월 \(endDay)일"
+        }
+        if startMonth != endMonth {
+            return "\(startYear)년 \(startMonth)월 \(startDay)일 – \(endMonth)월 \(endDay)일"
+        }
+        return "\(startYear)년 \(startMonth)월 \(startDay)–\(endDay)일"
     }
 
     static func string(from date: Date, timeZone: TimeZone) -> String {
@@ -342,7 +386,7 @@ enum DateOnly {
 
     static func weekdayLabel(from date: Date) -> String {
         let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.locale = Locale(identifier: "ko_KR")
         formatter.dateFormat = "EEE d"
         return formatter.string(from: date)
     }

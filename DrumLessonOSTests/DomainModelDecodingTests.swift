@@ -46,3 +46,28 @@ import Testing
         try JSONDecoder().decode(ProgressItem.self, from: json)
     }
 }
+
+@Test func decodesLessonOccurrenceWhenNativeCalendarColumnsAreMissing() throws {
+    let json = """
+    {
+      "id": "99999999-9999-9999-9999-999999999999",
+      "instructor_id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+      "student_id": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+      "schedule_template_id": null,
+      "starts_at": "2026-05-28T10:00:00Z",
+      "ends_at": "2026-05-28T10:50:00Z",
+      "timezone": "Asia/Seoul",
+      "status": "scheduled",
+      "title": "김민지 드럼 레슨",
+      "apple_sync_status": "failed",
+      "apple_sync_error": "legacy failure",
+      "apple_synced_at": "2026-05-28T10:01:00Z"
+    }
+    """.data(using: .utf8)!
+
+    let occurrence = try JSONDecoder().decode(LessonOccurrence.self, from: json)
+
+    #expect(occurrence.nativeCalendarSyncStatus == .failed)
+    #expect(occurrence.nativeCalendarSyncError == "legacy failure")
+    #expect(occurrence.nativeCalendarSyncedAt == "2026-05-28T10:01:00Z")
+}

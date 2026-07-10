@@ -8,21 +8,34 @@ struct DrumLessonOSApp: App {
         WindowGroup {
             RootView()
                 .environment(environment)
-                .frame(minWidth: 430, idealWidth: 1100, minHeight: 680)
+                .frame(minWidth: 430, idealWidth: 1_320, minHeight: 560)
         }
         .windowStyle(.titleBar)
+        .defaultSize(width: 1_360, height: 840)
         .commands {
-            CommandGroup(after: .newItem) {
-                Button("Add Lesson") {
+            CommandGroup(replacing: .newItem) {
+                Button("레슨 추가…") {
+                    environment.route = .dashboard
                     environment.dashboard.presentScheduleSheet()
                 }
                 .keyboardShortcut("n", modifiers: .command)
 
-                Button("Refresh") {
+                Button("새로고침") {
                     Task { await environment.refresh() }
                 }
                 .keyboardShortcut("r", modifiers: .command)
             }
+        }
+
+        Settings {
+            SettingsView(
+                syncStatus: environment.syncStatus,
+                calendar: environment.calendar,
+                preferences: environment.preferences,
+                localDataDirectoryURL: environment.localDataDirectoryURL
+            )
+                .frame(minWidth: 640, idealWidth: 900, minHeight: 560)
+                .preferredColorScheme(environment.preferences.appearance.colorScheme)
         }
     }
 }

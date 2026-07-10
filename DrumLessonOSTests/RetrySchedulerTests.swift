@@ -2,9 +2,9 @@ import Testing
 @testable import DrumLessonOS
 
 @MainActor
-@Test func retryRemovesSuccessfulWrites() async {
+@Test func retryRemovesSuccessfulWrites() async throws {
     let queue = LocalWriteQueue()
-    queue.enqueue(QueuedWrite(kind: .supabase, operation: "native_create_student", payloadSummary: "김민지"))
+    try queue.enqueue(QueuedWrite(kind: .calendar, operation: "eventkit_write", payloadSummary: "김민지"))
     let scheduler = RetryScheduler(writeQueue: queue)
 
     await scheduler.retryNow { _ in }

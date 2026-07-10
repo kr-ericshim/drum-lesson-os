@@ -1,59 +1,75 @@
 import SwiftUI
 
 struct LessonEventCard: View {
+    enum Density {
+        case regular
+        case compact
+    }
+
     var event: CalendarLessonEvent
     var isSelected: Bool
+    var density: Density = .regular
+    @State private var isHovering = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 7) {
+        VStack(alignment: .leading, spacing: density == .compact ? 5 : 7) {
             HStack {
                 Text(event.timeLabel)
                     .font(.caption.monospacedDigit().weight(.semibold))
                     .foregroundStyle(.secondary)
                 Spacer()
-                StatusBadge(label: event.syncStatus.label, systemImage: syncIcon, tint: syncColor)
+                if shouldShowSyncStatus {
+                    if density == .compact {
+                        Image(systemName: event.syncStatus.statusIcon)
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(event.syncStatus.statusTint)
+                            .help(event.syncStatus.label)
+                            .accessibilityLabel(event.syncStatus.label)
+                    } else {
+                        StatusBadge(label: event.syncStatus.label, systemImage: event.syncStatus.statusIcon, tint: event.syncStatus.statusTint)
+                    }
+                }
             }
 
             Text(event.studentName)
-                .font(.headline)
+                .font(density == .compact ? .subheadline.weight(.semibold) : .headline)
                 .lineLimit(1)
 
             Text(event.firstCheck)
                 .font(.caption)
                 .foregroundStyle(.secondary)
-                .lineLimit(2)
+                .lineLimit(density == .compact ? 1 : 2)
 
-            if !event.watchFlags.isEmpty {
-                HStack(spacing: 6) {
-                    ForEach(event.watchFlags.prefix(2)) { flag in
-                        StatusBadge(label: flag.label, tint: .orange)
-                    }
-                }
+            if let flag = event.watchFlags.first {
+                Label(flag.label, systemImage: "exclamationmark.circle.fill")
+                    .font(.caption2.weight(.medium))
+                    .foregroundStyle(AppTheme.Accent.teachingForeground)
+                    .lineLimit(1)
             }
         }
-        .padding(10)
-        .frame(maxWidth: .infinity, minHeight: 116, alignment: .topLeading)
-        .background(isSelected ? Color.accentColor.opacity(0.14) : Color.secondary.opacity(0.08), in: AppTheme.softPanel)
-        .overlay(AppTheme.softPanel.stroke(isSelected ? Color.accentColor : Color.clear, lineWidth: 1.5))
+        .padding(density == .compact ? AppTheme.Spacing.sm : AppTheme.Spacing.md)
+        .frame(maxWidth: .infinity, minHeight: density == .compact ? 84 : 104, alignment: .topLeading)
+        .background(cardBackground, in: AppTheme.softPanel)
+        .overlay(AppTheme.softPanel.stroke(isSelected ? AppTheme.Accent.teaching.opacity(0.48) : Color.clear, lineWidth: 1))
+        .overlay(alignment: .topLeading) {
+            if isSelected {
+                CountInMark()
+                    .padding(.leading, density == .compact ? AppTheme.Spacing.sm : AppTheme.Spacing.md)
+                    .offset(y: -1)
+            }
+        }
         .contentShape(Rectangle())
+        .onHover { isHovering = $0 }
     }
 
-    private var syncIcon: String {
-        switch event.syncStatus {
-        case .synced: "checkmark.circle"
-        case .failed: "exclamationmark.triangle"
-        case .pending: "arrow.triangle.2.circlepath"
-        case .disabled: "slash.circle"
-        case .notConnected: "calendar.badge.exclamationmark"
+    private var cardBackground: Color {
+        if isSelected {
+            return AppTheme.Accent.teaching.opacity(0.12)
         }
+        return Color.secondary.opacity(isHovering ? 0.10 : 0.055)
     }
 
-    private var syncColor: Color {
-        switch event.syncStatus {
-        case .synced: .green
-        case .failed: .red
-        case .pending: .orange
-        case .disabled, .notConnected: .secondary
-        }
+    private var shouldShowSyncStatus: Bool {
+        density == .regular || event.syncStatus.needsAttention
     }
 }

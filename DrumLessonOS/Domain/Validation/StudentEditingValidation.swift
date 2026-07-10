@@ -21,6 +21,11 @@ enum StudentEditingValidation {
         try optional(input.tempoNote, field: "tempoNote", max: 240)
     }
 
+    static func validate(_ input: StudentTraitInput) throws {
+        try require(input.label, field: "traitLabel", max: 160)
+        try require(input.detail, field: "traitDetail", max: 1_000)
+    }
+
     static func validate(_ input: AssignmentInput) throws {
         try require(input.title, field: "title", max: 160)
         try require(input.detail, field: "detail", max: 1_000)
@@ -42,6 +47,9 @@ enum StudentEditingValidation {
     }
 
     static func validate(_ input: LessonCloseoutInput) throws {
+        guard input.occurrenceId != nil else {
+            throw ValidationError(field: "occurrenceId", message: "예약된 레슨에서만 마무리 기록을 저장할 수 있습니다.")
+        }
         try validate(LessonNoteInput(
             studentId: input.studentId,
             lessonDate: input.lessonDate,
@@ -50,26 +58,51 @@ enum StudentEditingValidation {
             practiceAssigned: input.practiceAssigned,
             nextStepHint: input.nextStepHint
         ))
-        try require(input.nextAction, field: "nextAction", max: 240)
-        try optional(input.nextPlanDetail, field: "nextPlanDetail", max: 2_000)
-        try optionalDate(input.plannedFor, field: "plannedFor")
+        try validate(NextPlanInput(
+            studentId: input.studentId,
+            planId: input.nextPlanId,
+            plannedFor: input.plannedFor,
+            priority: input.priority,
+            nextAction: input.nextAction,
+            detail: input.nextPlanDetail ?? input.nextStepHint
+        ))
 
-        let hasAssignment = !(input.assignmentTitle ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
+        let hasAssignment = input.assignmentId != nil ||
+            !(input.assignmentTitle ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
             input.assignmentStatus != nil ||
             !(input.assignmentDetail ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
             input.assignmentDueDate != nil
 
         if hasAssignment {
-            try require(input.assignmentTitle ?? "", field: "assignmentTitle", max: 160)
-            guard input.assignmentStatus != nil else {
-                throw ValidationError(field: "assignmentStatus", message: "Assignment status is required when saving assignment review.")
+            guard let status = input.assignmentStatus else {
+                throw ValidationError(field: "assignmentStatus", message: "과제 확인을 저장하려면 과제 상태를 선택하세요.")
             }
-            try require(input.assignmentDetail ?? "", field: "assignmentDetail", max: 1_000)
+            try validate(AssignmentInput(
+                studentId: input.studentId,
+                assignmentId: input.assignmentId,
+                title: input.assignmentTitle ?? "",
+                status: status,
+                dueDate: input.assignmentDueDate,
+                detail: input.assignmentDetail ?? ""
+            ))
+        }
+
+        if (input.progressItemId == nil) != (input.progressStatus == nil) {
+            throw ValidationError(field: "progressItemId", message: "진도 항목과 상태를 함께 선택하세요.")
+        }
+        if input.progressCurrentFocus, input.progressItemId == nil {
+            throw ValidationError(field: "progressCurrentFocus", message: "현재 초점으로 지정할 진도 항목을 선택하세요.")
         }
     }
 
     static func isProgressStatusTransitionAllowed(currentStatus: ProgressStatus, nextStatus: ProgressStatus) -> Bool {
-        allowedTransitions[currentStatus, default: []].contains(nextStatus)
+        currentStatus == nextStatus || allowedTransitions[currentStatus, default: []].contains(nextStatus)
+    }
+
+    static func validateProgressStatusTransition(currentStatus: ProgressStatus, nextStatus: ProgressStatus) throws {
+        guard isProgressStatusTransitionAllowed(currentStatus: currentStatus, nextStatus: nextStatus) else {
+            throw ValidationError(field: "status", message: "현재 진도 상태에서 선택한 상태로 바로 변경할 수 없습니다.")
+        }
     }
 
     private static let allowedTransitions: [ProgressStatus: Set<ProgressStatus>] = [
@@ -83,17 +116,17 @@ enum StudentEditingValidation {
     private static func require(_ value: String, field: String, max: Int) throws {
         let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
         if trimmed.isEmpty {
-            throw ValidationError(field: field, message: "\(field) is required.")
+            throw ValidationError(field: field, message: "\(fieldLabel(field))을(를) 입력하세요.")
         }
         if trimmed.count > max {
-            throw ValidationError(field: field, message: "\(field) must be \(max) characters or less.")
+            throw ValidationError(field: field, message: "\(fieldLabel(field))은(는) \(max)자 이내로 입력하세요.")
         }
     }
 
     private static func optional(_ value: String?, field: String, max: Int) throws {
         guard let value else { return }
         if value.trimmingCharacters(in: .whitespacesAndNewlines).count > max {
-            throw ValidationError(field: field, message: "\(field) must be \(max) characters or less.")
+            throw ValidationError(field: field, message: "\(fieldLabel(field))은(는) \(max)자 이내로 입력하세요.")
         }
     }
 
@@ -110,7 +143,33 @@ enum StudentEditingValidation {
         formatter.isLenient = false
 
         guard value.count == 10, formatter.date(from: value) != nil else {
-            throw ValidationError(field: field, message: "Use a valid YYYY-MM-DD date.")
+            throw ValidationError(field: field, message: "날짜는 YYYY-MM-DD 형식으로 입력하세요.")
+        }
+    }
+
+    private static func fieldLabel(_ field: String) -> String {
+        switch field {
+        case "name": "이름"
+        case "profileCue": "프로필 단서"
+        case "primaryWeakPoint": "주요 약점"
+        case "title": "제목"
+        case "detail": "상세"
+        case "observedOn": "확인 날짜"
+        case "tempoNote": "템포 메모"
+        case "traitLabel": "특성 라벨"
+        case "traitDetail": "특성 상세"
+        case "dueDate": "마감일"
+        case "lessonDate": "레슨 날짜"
+        case "coveredMaterial": "진행한 내용"
+        case "observations": "관찰"
+        case "practiceAssigned": "연습 과제"
+        case "nextStepHint": "다음 힌트"
+        case "plannedFor": "예정일"
+        case "nextAction": "다음 행동"
+        case "nextPlanDetail": "다음 계획 상세"
+        case "assignmentTitle": "과제 제목"
+        case "assignmentDetail": "과제 상세"
+        default: field
         }
     }
 }
@@ -196,4 +255,5 @@ struct LessonCloseoutInput: Equatable {
     var progressItemId: EntityID?
     var progressStatus: ProgressStatus?
     var progressCurrentFocus: Bool
+    var occurrenceId: EntityID? = nil
 }
