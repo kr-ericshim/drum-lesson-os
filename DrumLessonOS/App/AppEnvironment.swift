@@ -82,6 +82,7 @@ final class AppEnvironment {
     let students: StudentRepository
     let calendar: CalendarRepository
     let writes: StudentWriteRepository
+    let lessonDrafts: LessonDraftRepository
     let schedules: ScheduleRepository
     let preferences: AppPreferences
     let localDataDirectoryURL: URL?
@@ -94,6 +95,7 @@ final class AppEnvironment {
         students: StudentRepository,
         calendar: CalendarRepository,
         writes: StudentWriteRepository,
+        lessonDrafts: LessonDraftRepository,
         schedules: ScheduleRepository,
         tuitionRepository: TuitionRepository,
         preferences: AppPreferences = AppPreferences(),
@@ -106,6 +108,7 @@ final class AppEnvironment {
         self.students = students
         self.calendar = calendar
         self.writes = writes
+        self.lessonDrafts = lessonDrafts
         self.schedules = schedules
         tuition = TuitionViewModel(repository: tuitionRepository)
         self.preferences = preferences
@@ -128,6 +131,7 @@ final class AppEnvironment {
             students: store,
             calendar: calendar,
             writes: store,
+            lessonDrafts: store,
             schedules: schedules,
             tuitionRepository: store
         )
@@ -157,6 +161,7 @@ final class AppEnvironment {
             students: store,
             calendar: calendar,
             writes: store,
+            lessonDrafts: store,
             schedules: schedules,
             tuitionRepository: store,
             preferences: preferences,

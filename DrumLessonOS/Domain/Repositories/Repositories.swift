@@ -31,6 +31,13 @@ protocol LocalDataBackupRepository {
 }
 
 @MainActor
+protocol LessonDraftRepository {
+    func loadLessonDraft(occurrenceId: EntityID) async throws -> LessonDraft?
+    func upsertLessonDraft(_ input: LessonDraftInput) async throws -> LessonDraft
+    func deleteLessonDraft(occurrenceId: EntityID) async throws
+}
+
+@MainActor
 protocol LocalDataResetRepository {
     func resetAllData() async throws
 }

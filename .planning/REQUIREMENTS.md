@@ -67,6 +67,11 @@
 - [x] **FLOW-03**: Instructor can record short in-lesson working notes before committing the final closeout.
 - [x] **FLOW-04**: Instructor can turn in-lesson working notes into a closeout draft without retyping.
 - [x] **FLOW-05**: Existing closeout remains the durable save path and keeps dashboard/detail state aligned after refresh.
+- [x] **DRAFT-01**: In-lesson working notes are saved automatically for the current lesson occurrence after a short typing delay.
+- [x] **DRAFT-02**: Reopening a lesson with an unfinished draft offers explicit continue and delete actions before editing resumes.
+- [x] **DRAFT-03**: The lesson workspace shows saving, saved-time, and save-failure feedback without interrupting the lesson.
+- [x] **DRAFT-04**: Successful lesson closeout removes its persisted draft in the same local transaction.
+- [x] **DRAFT-05**: Portable backups include unfinished drafts and older supported backups restore with an empty draft collection.
 
 ### Calendar Scheduling And Apple Sync
 
@@ -177,11 +182,16 @@ Traceability maps every v1 requirement to exactly one phase.
 | TUIT-02 | Phase 12 | Complete |
 | TUIT-03 | Phase 12 | Complete |
 | TUIT-04 | Phase 12 | Complete |
+| DRAFT-01 | Phase 13 | Complete |
+| DRAFT-02 | Phase 13 | Complete |
+| DRAFT-03 | Phase 13 | Complete |
+| DRAFT-04 | Phase 13 | Complete |
+| DRAFT-05 | Phase 13 | Complete |
 
 **Coverage:**
-- tracked requirements: 55 total
-- Mapped to phases: 55
+- tracked requirements: 60 total
+- Mapped to phases: 60
 - Unmapped: 0
-- Complete: 53
+- Complete: 58
 - Deferred: 1 (`CAL-10`)
 - Pending direct release UAT: 1 (`NATIVE-06`)

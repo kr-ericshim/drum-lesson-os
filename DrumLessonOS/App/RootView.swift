@@ -98,7 +98,8 @@ private struct StudentDetailRoute: View {
                 studentId: studentId,
                 lessonContext: lessonContext,
                 repository: environment.students,
-                writes: environment.writes
+                writes: environment.writes,
+                lessonDrafts: environment.lessonDrafts
             ),
             onStudentDeleted: {
                 await environment.refresh()

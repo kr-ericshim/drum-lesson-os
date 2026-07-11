@@ -264,6 +264,28 @@ struct LessonNote: Codable, Identifiable, Hashable {
     }
 }
 
+struct LessonDraft: Codable, Identifiable, Hashable {
+    var occurrenceId: EntityID
+    var studentId: EntityID
+    var coveredMaterial: String
+    var observations: String
+    var practiceAssigned: String
+    var nextStepHint: String
+    var updatedAt: String
+
+    var id: EntityID { occurrenceId }
+
+    enum CodingKeys: String, CodingKey {
+        case occurrenceId = "occurrence_id"
+        case studentId = "student_id"
+        case coveredMaterial = "covered_material"
+        case observations
+        case practiceAssigned = "practice_assigned"
+        case nextStepHint = "next_step_hint"
+        case updatedAt = "updated_at"
+    }
+}
+
 struct Assignment: Codable, Identifiable, Hashable {
     var id: EntityID
     var instructorId: EntityID

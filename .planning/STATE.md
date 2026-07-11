@@ -4,10 +4,10 @@ milestone_name: instructor-side MVP
 status: implementation-complete-release-uat-pending
 last_updated: "2026-07-11"
 progress:
-  implementation_phases: 12
-  completed_phases: 12
-  implementation_plans: 23
-  completed_plans: 23
+  implementation_phases: 13
+  completed_phases: 13
+  implementation_plans: 24
+  completed_plans: 24
   implementation_percent: 100
 ---
 
@@ -15,10 +15,10 @@ progress:
 
 ## Current Position
 
-The instructor-side v1 implementation is complete through Phase 12. Release confidence remains pending until direct native and real-calendar UAT is complete.
+The instructor-side implementation is complete through Phase 13. Release confidence remains pending until direct native and real-calendar UAT is complete.
 
 - **Active architecture:** macOS SwiftUI, local SQLite, EventKit, durable local calendar outbox
-- **Current checkpoint:** [Phase 12 checkpoint](phases/12-prepaid-tuition-management/12-CHECKPOINT.md)
+- **Current checkpoint:** [Phase 13 checkpoint](phases/13-in-lesson-draft-recovery/13-CHECKPOINT.md)
 - **Product definition:** [PROJECT.md](PROJECT.md)
 - **Requirement status:** [REQUIREMENTS.md](REQUIREMENTS.md)
 - **Phase history:** [ROADMAP.md](ROADMAP.md)
@@ -32,18 +32,19 @@ The instructor-side v1 implementation is complete through Phase 12. Release conf
 - Versioned local backup and restore with pre-restore safety backup
 - Append-only progress checkpoints
 - Manual prepaid four-lesson tuition-cycle tracking
+- Occurrence-scoped in-lesson draft autosave, recovery, and backup support
 - Native source and test trees organized by app layer, with code removed from bundle resources
 
 ## Latest Recorded Verification
 
-After the native repository layout cleanup on 2026-07-11:
+After Phase 13 on 2026-07-11:
 
-- `npm run verify`: 117 passed, 0 failed, 0 skipped
+- `npm run verify`: 130 passed, 0 failed, 0 skipped
 - `xcodebuild ... analyze`: passed
 - Release build and launch verification: passed
 - `git diff --check`: passed
 
-The [Phase 12 checkpoint](phases/12-prepaid-tuition-management/12-CHECKPOINT.md) retains the earlier feature-completion snapshot and visual verification evidence. Run the repository verification commands again after new implementation changes.
+The [Phase 13 checkpoint](phases/13-in-lesson-draft-recovery/13-CHECKPOINT.md) records the draft-recovery implementation and verification evidence. Run the repository verification commands again after new implementation changes.
 
 ## Release-Confidence Work Remaining
 
@@ -60,4 +61,4 @@ The [Phase 12 checkpoint](phases/12-prepaid-tuition-management/12-CHECKPOINT.md)
 
 ## Resume Point
 
-Start with the release-confidence checklist above. Implementation work should begin only after updating [ROADMAP.md](ROADMAP.md) and the relevant phase record.
+Return to the release-confidence checklist above, beginning with disposable-data backup panel UAT.

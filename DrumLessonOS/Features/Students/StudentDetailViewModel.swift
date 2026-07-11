@@ -16,17 +16,33 @@ final class StudentDetailViewModel {
     var closeoutStatusMessage: String?
     var checkpointStatusMessage: String?
     var isSaving = false
+    var recoveredLessonDraft: LessonDraft?
+    var draftStatusMessage: String?
+    var draftStatusIsError = false
 
     let studentId: EntityID
     let lessonContext: CalendarLessonEvent?
     private let repository: StudentRepository
     private let writes: StudentWriteRepository
+    private let lessonDrafts: LessonDraftRepository
+    private let draftAutosaveDelayNanoseconds: UInt64
+    @ObservationIgnored private var draftSaveTask: Task<Void, Never>?
+    @ObservationIgnored private var hasLoadedLessonDraft = false
 
-    init(studentId: EntityID, lessonContext: CalendarLessonEvent? = nil, repository: StudentRepository, writes: StudentWriteRepository) {
+    init(
+        studentId: EntityID,
+        lessonContext: CalendarLessonEvent? = nil,
+        repository: StudentRepository,
+        writes: StudentWriteRepository,
+        lessonDrafts: LessonDraftRepository,
+        draftAutosaveDelayNanoseconds: UInt64 = 750_000_000
+    ) {
         self.studentId = studentId
         self.lessonContext = lessonContext
         self.repository = repository
         self.writes = writes
+        self.lessonDrafts = lessonDrafts
+        self.draftAutosaveDelayNanoseconds = draftAutosaveDelayNanoseconds
     }
 
     func load(now: Date = Date()) async {
@@ -36,8 +52,87 @@ final class StudentDetailViewModel {
             detail = try await repository.loadStudentDetail(studentId: studentId)
             upcomingLessons = try await repository.loadUpcomingLessons(studentId: studentId, after: now, limit: 2)
             errorMessage = nil
+            await loadLessonDraftIfNeeded()
         } catch {
             errorMessage = error.localizedDescription
+        }
+    }
+
+    func scheduleLessonDraftAutosave() {
+        guard lessonContext != nil,
+              recoveredLessonDraft == nil,
+              closeoutStatusMessage == nil else { return }
+        draftSaveTask?.cancel()
+        draftStatusMessage = "자동 저장 대기 중…"
+        draftStatusIsError = false
+        draftSaveTask = Task { [self] in
+            do {
+                try await Task<Never, Never>.sleep(nanoseconds: draftAutosaveDelayNanoseconds)
+            } catch {
+                return
+            }
+            await persistLessonDraft()
+        }
+    }
+
+    func flushLessonDraftAutosave() async {
+        guard lessonContext != nil,
+              recoveredLessonDraft == nil,
+              closeoutStatusMessage == nil else { return }
+        draftSaveTask?.cancel()
+        draftSaveTask = nil
+        await persistLessonDraft()
+    }
+
+    func continueRecoveredLessonDraft() {
+        guard let draft = recoveredLessonDraft else { return }
+        runCovered = draft.coveredMaterial
+        runObservation = draft.observations
+        runPractice = draft.practiceAssigned
+        runNextHint = draft.nextStepHint
+        recoveredLessonDraft = nil
+        draftStatusMessage = "\(Self.autosaveTimeLabel(draft.updatedAt)) 자동 저장됨"
+        draftStatusIsError = false
+    }
+
+    func deleteRecoveredLessonDraft() async {
+        guard let occurrenceId = lessonContext?.id else { return }
+        draftSaveTask?.cancel()
+        do {
+            try await lessonDrafts.deleteLessonDraft(occurrenceId: occurrenceId)
+            recoveredLessonDraft = nil
+            draftStatusMessage = "작성 중인 초안을 삭제했습니다."
+            draftStatusIsError = false
+        } catch {
+            draftStatusMessage = "초안 삭제 실패: \(error.localizedDescription)"
+            draftStatusIsError = true
+        }
+    }
+
+    func persistLessonDraft() async {
+        guard let lessonContext else { return }
+        draftSaveTask = nil
+        let input = LessonDraftInput(
+            occurrenceId: lessonContext.id,
+            studentId: studentId,
+            coveredMaterial: runCovered,
+            observations: runObservation,
+            practiceAssigned: runPractice,
+            nextStepHint: runNextHint
+        )
+        draftStatusMessage = "자동 저장 중…"
+        draftStatusIsError = false
+        do {
+            if input.isEmpty {
+                try await lessonDrafts.deleteLessonDraft(occurrenceId: lessonContext.id)
+                draftStatusMessage = nil
+            } else {
+                let draft = try await lessonDrafts.upsertLessonDraft(input)
+                draftStatusMessage = "\(Self.autosaveTimeLabel(draft.updatedAt)) 자동 저장됨"
+            }
+        } catch {
+            draftStatusMessage = "자동 저장 실패: \(error.localizedDescription)"
+            draftStatusIsError = true
         }
     }
 
@@ -242,6 +337,8 @@ final class StudentDetailViewModel {
             return
         }
         guard let detail, let draft = closeoutDraft else { return }
+        draftSaveTask?.cancel()
+        draftSaveTask = nil
         isSaving = true
         defer { isSaving = false }
         do {
@@ -274,10 +371,39 @@ final class StudentDetailViewModel {
             runNextHint = ""
             closeoutDraft = nil
             closeoutStatusMessage = "마무리 기록을 저장했습니다."
+            recoveredLessonDraft = nil
+            draftStatusMessage = nil
+            draftStatusIsError = false
         } catch {
             closeoutStatusMessage = nil
             errorMessage = error.localizedDescription
+            scheduleLessonDraftAutosave()
         }
+    }
+
+    private func loadLessonDraftIfNeeded() async {
+        guard !hasLoadedLessonDraft, let lessonContext else { return }
+        hasLoadedLessonDraft = true
+        do {
+            guard let draft = try await lessonDrafts.loadLessonDraft(occurrenceId: lessonContext.id) else { return }
+            recoveredLessonDraft = draft
+            draftStatusMessage = "\(Self.autosaveTimeLabel(draft.updatedAt)) 저장된 초안"
+            draftStatusIsError = false
+        } catch {
+            draftStatusMessage = "초안 불러오기 실패: \(error.localizedDescription)"
+            draftStatusIsError = true
+        }
+    }
+
+    private static func autosaveTimeLabel(_ timestamp: String) -> String {
+        guard let date = ISO8601DateFormatter.withFractions.date(from: timestamp)
+            ?? ISO8601DateFormatter.plain.date(from: timestamp) else {
+            return "방금"
+        }
+        return date.formatted(
+            Date.FormatStyle(date: .omitted, time: .shortened)
+                .locale(Locale(identifier: "ko_KR"))
+        )
     }
 
     @discardableResult

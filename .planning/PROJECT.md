@@ -8,7 +8,7 @@ Drum Lesson OS is a local macOS SwiftUI CRM for a drum instructor managing multi
 
 ## Current Product State
 
-The instructor-side v1 implementation is complete through Phase 12. The active app:
+The instructor-side implementation is complete through Phase 13. The active app:
 
 - runs without login and stores canonical data in local SQLite;
 - writes app-owned lesson occurrences to Apple Calendar through EventKit;
@@ -16,6 +16,7 @@ The instructor-side v1 implementation is complete through Phase 12. The active a
 - supports local backup and restore with pre-restore safety copies;
 - preserves append-only progress checkpoints;
 - tracks manual prepaid four-lesson tuition cycles without processing payments.
+- recovers occurrence-scoped in-lesson drafts after navigation or app restart.
 
 Release-confidence UAT remains for native backup panels, light mode, keyboard and VoiceOver behavior, real EventKit create/edit/delete, and iPhone iCloud propagation. See [STATE.md](STATE.md).
 
@@ -57,9 +58,10 @@ Release-confidence UAT remains for native backup panels, light mode, keyboard an
 | Persist EventKit work in a durable outbox | Permission and calendar failures must not lose lesson occurrences or create untracked duplicate work. | 2026-07-10 |
 | Keep backups portable and exclude the execution queue | Restoring teaching data must not replay stale calendar operations automatically. | 2026-07-11 |
 | Track four-lesson cycles without payment processing | The instructor needs operational visibility without billing or bank integrations. | 2026-07-11 |
+| Persist in-lesson notes by occurrence | Live teaching notes must survive navigation and app termination until closeout succeeds. | 2026-07-11 |
 
 Historical decisions and superseded architectures remain in [ROADMAP.md](ROADMAP.md) and the completed [phase records](phases/README.md).
 
 ---
 
-*Last updated: 2026-07-11 after Phase 12 implementation and documentation consolidation.*
+*Last updated: 2026-07-11 for Phase 13 in-lesson draft recovery.*

@@ -112,6 +112,7 @@ import Testing
         students: store,
         calendar: calendar,
         writes: store,
+        lessonDrafts: store,
         schedules: schedules,
         tuitionRepository: store
     )

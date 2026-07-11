@@ -413,6 +413,23 @@ struct LessonRunPanelView: View {
                     )
                 }
 
+                if let message = viewModel.draftStatusMessage {
+                    Label(
+                        message,
+                        systemImage: viewModel.draftStatusIsError
+                            ? "exclamationmark.triangle.fill"
+                            : "checkmark.arrow.trianglehead.counterclockwise"
+                    )
+                    .font(.caption.monospacedDigit())
+                    .foregroundStyle(viewModel.draftStatusIsError ? AppTheme.Semantic.error : .secondary)
+                    .accessibilityLabel("레슨 초안 상태")
+                    .accessibilityValue(message)
+                }
+
+                if let draft = viewModel.recoveredLessonDraft {
+                    recoveredDraftBanner(draft)
+                }
+
                 LazyVGrid(
                     columns: fieldColumns,
                     alignment: .leading,
@@ -447,10 +464,12 @@ struct LessonRunPanelView: View {
                         isRequired: false
                     )
                 }
+                .disabled(viewModel.recoveredLessonDraft != nil)
 
                 Divider()
 
                 closeoutArea
+                    .disabled(viewModel.recoveredLessonDraft != nil)
 
                 if let errorMessage = viewModel.errorMessage {
                     Label(errorMessage, systemImage: "exclamationmark.triangle")
@@ -462,6 +481,44 @@ struct LessonRunPanelView: View {
                 }
             }
         }
+        .onChange(of: runNotesSnapshot) { _, _ in
+            viewModel.scheduleLessonDraftAutosave()
+        }
+        .onDisappear {
+            Task { await viewModel.flushLessonDraftAutosave() }
+        }
+    }
+
+    private func recoveredDraftBanner(_ draft: LessonDraft) -> some View {
+        VStack(alignment: .leading, spacing: AppTheme.Spacing.md) {
+            Label("작성 중인 초안이 있습니다", systemImage: "doc.badge.clock")
+                .font(.headline)
+                .foregroundStyle(AppTheme.Accent.teachingForeground)
+
+            Text("이 레슨에서 저장되지 않은 기록을 이어서 작성하거나 삭제하세요.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+
+            HStack(spacing: AppTheme.Spacing.sm) {
+                Button("초안 삭제", role: .destructive) {
+                    Task { await viewModel.deleteRecoveredLessonDraft() }
+                }
+                .buttonStyle(.bordered)
+
+                Spacer()
+
+                Button("이어서 작성") {
+                    viewModel.continueRecoveredLessonDraft()
+                }
+                .buttonStyle(.borderedProminent)
+                .keyboardShortcut(.defaultAction)
+            }
+        }
+        .padding(AppTheme.Spacing.md)
+        .background(AppTheme.Accent.teaching.opacity(0.10), in: AppTheme.softPanel)
+        .overlay(AppTheme.softPanel.stroke(AppTheme.Accent.teaching.opacity(0.24), lineWidth: 1))
+        .accessibilityElement(children: .contain)
+        .accessibilityValue("마지막 저장 \(draft.updatedAt)")
     }
 
     private var closeoutArea: some View {
@@ -510,6 +567,15 @@ struct LessonRunPanelView: View {
         [viewModel.runCovered, viewModel.runObservation, viewModel.runPractice]
             .filter(hasText)
             .count
+    }
+
+    private var runNotesSnapshot: RunNotesSnapshot {
+        RunNotesSnapshot(
+            coveredMaterial: viewModel.runCovered,
+            observations: viewModel.runObservation,
+            practiceAssigned: viewModel.runPractice,
+            nextStepHint: viewModel.runNextHint
+        )
     }
 
     private var canPrepareCloseout: Bool {
@@ -569,6 +635,13 @@ struct LessonRunPanelView: View {
         case observation
         case practice
         case nextHint
+    }
+
+    private struct RunNotesSnapshot: Equatable {
+        var coveredMaterial: String
+        var observations: String
+        var practiceAssigned: String
+        var nextStepHint: String
     }
 }
 

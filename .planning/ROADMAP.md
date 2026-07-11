@@ -2,7 +2,7 @@
 
 ## Status
 
-All 12 instructor-side v1 implementation phases are complete. Remaining work is release-confidence UAT, listed in [STATE.md](STATE.md).
+All 13 instructor-side implementation phases are complete. Remaining work is release-confidence UAT, listed in [STATE.md](STATE.md).
 
 The active product is native-first and local-first. SQLite is canonical, EventKit is the Apple Calendar boundary, and hosted authentication is not part of the running app.
 
@@ -23,6 +23,7 @@ The active product is native-first and local-first. SQLite is canonical, EventKi
 | 10 | In-lesson workspace redesign | Complete; direct accessibility UAT remains | [Phase 10](phases/10-in-lesson-workspace-redesign/) |
 | 11 | Local backup and progress history | Complete; native file-panel UAT remains | [Phase 11](phases/11-local-backup-and-progress-history/) |
 | 12 | Prepaid four-lesson tuition management | Complete | [Phase 12](phases/12-prepaid-tuition-management/) |
+| 13 | In-lesson draft autosave and recovery | Complete | [Phase 13](phases/13-in-lesson-draft-recovery/) |
 
 ## Architecture Transitions
 

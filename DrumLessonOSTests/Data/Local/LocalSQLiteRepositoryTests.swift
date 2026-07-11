@@ -425,6 +425,14 @@ import Testing
     let repository = try LocalSQLiteRepository(databaseURL: databaseURL)
     let occurrence = try await makeScheduledOccurrence(repository: repository, dateKey: "2026-07-10")
     let before = try await repository.loadStudentDetail(studentId: PreviewData.minjiId)
+    _ = try await repository.upsertLessonDraft(LessonDraftInput(
+        occurrenceId: occurrence.id,
+        studentId: PreviewData.minjiId,
+        coveredMaterial: "롤백할 진행",
+        observations: "롤백할 관찰",
+        practiceAssigned: "롤백할 과제",
+        nextStepHint: "롤백할 다음 확인"
+    ))
     try executeSQLite(
         "CREATE TRIGGER reject_snapshot_update BEFORE UPDATE ON snapshots BEGIN SELECT RAISE(ABORT, 'forced failure'); END",
         at: databaseURL
@@ -442,6 +450,7 @@ import Testing
 
     #expect(after.recentNotes.count == before.recentNotes.count)
     #expect(after.nextPlan == before.nextPlan)
+    #expect(try await repository.loadLessonDraft(occurrenceId: occurrence.id)?.coveredMaterial == "롤백할 진행")
 }
 
 @MainActor
@@ -501,12 +510,21 @@ import Testing
         occurrenceId: occurrence.id,
         lessonDate: "2026-08-06"
     )
+    _ = try await repository.upsertLessonDraft(LessonDraftInput(
+        occurrenceId: occurrence.id,
+        studentId: PreviewData.minjiId,
+        coveredMaterial: "저장 중인 내용",
+        observations: "저장 중인 관찰",
+        practiceAssigned: "저장 중인 과제",
+        nextStepHint: "저장 중인 다음 확인"
+    ))
 
     try await repository.closeoutLesson(input)
     let completed = try await repository.loadOccurrence(id: occurrence.id)
     let noteCount = try await repository.loadStudentDetail(studentId: PreviewData.minjiId).recentNotes.count
 
     #expect(completed.status == .completed)
+    #expect(try await repository.loadLessonDraft(occurrenceId: occurrence.id) == nil)
     await #expect(throws: ValidationError.self) {
         try await repository.closeoutLesson(input)
     }
@@ -522,6 +540,26 @@ import Testing
         _ = try await repository.cancelOccurrence(id: occurrence.id)
     }
     #expect(try await repository.loadStudentDetail(studentId: PreviewData.minjiId).recentNotes.count == noteCount)
+}
+
+@MainActor
+@Test func cancelingOccurrenceDeletesItsLessonDraft() async throws {
+    let databaseURL = temporarySQLiteURL()
+    defer { removeSQLiteFiles(at: databaseURL) }
+    let repository = try LocalSQLiteRepository(databaseURL: databaseURL)
+    let occurrence = try await makeScheduledOccurrence(repository: repository, dateKey: "2026-07-10")
+    _ = try await repository.upsertLessonDraft(LessonDraftInput(
+        occurrenceId: occurrence.id,
+        studentId: PreviewData.minjiId,
+        coveredMaterial: "취소할 레슨 초안",
+        observations: "관찰",
+        practiceAssigned: "과제",
+        nextStepHint: "다음"
+    ))
+
+    _ = try await repository.cancelOccurrence(id: occurrence.id)
+
+    #expect(try await repository.loadLessonDraft(occurrenceId: occurrence.id) == nil)
 }
 
 @MainActor
@@ -743,7 +781,7 @@ import Testing
     defer { removeSQLiteFiles(at: databaseURL) }
     _ = try LocalSQLiteRepository(databaseURL: databaseURL)
     try executeSQLite(
-        "UPDATE snapshots SET value = CAST(json_remove(CAST(value AS TEXT), '$.templates', '$.progressCheckpoints', '$.tuitionCycles') AS BLOB) WHERE key = 'app_snapshot'",
+        "UPDATE snapshots SET value = CAST(json_remove(CAST(value AS TEXT), '$.templates', '$.progressCheckpoints', '$.tuitionCycles', '$.lessonDrafts') AS BLOB) WHERE key = 'app_snapshot'",
         at: databaseURL
     )
 
@@ -752,10 +790,11 @@ import Testing
     let detail = try await reopened.loadStudentDetail(studentId: PreviewData.minjiId)
     #expect(detail.progressItems.allSatisfy { $0.checkpoints.isEmpty })
     #expect(try await reopened.loadTuitionRoster().allSatisfy { $0.currentCycle == nil })
+    #expect(try await reopened.loadLessonDraft(occurrenceId: PreviewData.occurrences[0].id) == nil)
 }
 
 @MainActor
-@Test func tuitionCyclesRoundTripInVersionTwoBackupAndVersionOneStillRestores() async throws {
+@Test func lessonDraftsRoundTripInVersionThreeBackupAndOlderVersionsStillRestore() async throws {
     let directory = FileManager.default.temporaryDirectory
         .appendingPathComponent("DrumLessonOS-TuitionBackup-\(UUID().uuidString)", isDirectory: true)
     try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
@@ -767,21 +806,45 @@ import Testing
         completedLessonCount: 2,
         paymentConfirmedOn: "2026-07-11"
     )
-    let versionTwoBackup = try await repository.makeBackupData()
-    var backupObject = try #require(JSONSerialization.jsonObject(with: versionTwoBackup) as? [String: Any])
+    let occurrence = PreviewData.occurrences[0]
+    _ = try await repository.upsertLessonDraft(LessonDraftInput(
+        occurrenceId: occurrence.id,
+        studentId: occurrence.studentId,
+        coveredMaterial: "코러스 전 필인",
+        observations: "오른손 긴장",
+        practiceAssigned: "84 BPM 반복",
+        nextStepHint: "1박 착지"
+    ))
+    let reopened = try LocalSQLiteRepository(databaseURL: databaseURL)
+    #expect(try await reopened.loadLessonDraft(occurrenceId: occurrence.id)?.observations == "오른손 긴장")
+    let versionThreeBackup = try await repository.makeBackupData()
+    var backupObject = try #require(JSONSerialization.jsonObject(with: versionThreeBackup) as? [String: Any])
 
-    #expect(backupObject["formatVersion"] as? Int == 2)
+    #expect(backupObject["formatVersion"] as? Int == 3)
     try await repository.setTuitionPaymentConfirmation(
         cycleId: cycleId,
         studentId: PreviewData.minjiId,
         confirmedOn: nil
     )
-    _ = try await repository.restoreBackup(from: versionTwoBackup)
+    try await repository.deleteLessonDraft(occurrenceId: occurrence.id)
+    _ = try await repository.restoreBackup(from: versionThreeBackup)
     let restoredRoster = try await repository.loadTuitionRoster()
     let restoredItem = try #require(restoredRoster.first { $0.studentId == PreviewData.minjiId })
     let restoredCycle = try #require(restoredItem.currentCycle)
     #expect(restoredCycle.completedLessonCount == 2)
     #expect(restoredCycle.paymentConfirmedOn == "2026-07-11")
+    #expect(try await repository.loadLessonDraft(occurrenceId: occurrence.id)?.coveredMaterial == "코러스 전 필인")
+
+    backupObject["formatVersion"] = 2
+    var versionTwoSnapshot = try #require(backupObject["snapshot"] as? [String: Any])
+    versionTwoSnapshot.removeValue(forKey: "lessonDrafts")
+    backupObject["snapshot"] = versionTwoSnapshot
+    let versionTwoBackup = try JSONSerialization.data(withJSONObject: backupObject)
+
+    _ = try await repository.restoreBackup(from: versionTwoBackup)
+    #expect(try await repository.loadLessonDraft(occurrenceId: occurrence.id) == nil)
+    let versionTwoRoster = try await repository.loadTuitionRoster()
+    #expect(versionTwoRoster.first { $0.studentId == PreviewData.minjiId }?.currentCycle != nil)
 
     backupObject["formatVersion"] = 1
     var legacySnapshot = try #require(backupObject["snapshot"] as? [String: Any])
@@ -796,11 +859,47 @@ import Testing
 }
 
 @MainActor
+@Test func backupRejectsDraftWithoutMatchingScheduledOccurrence() async throws {
+    let databaseURL = temporarySQLiteURL()
+    defer { removeSQLiteFiles(at: databaseURL) }
+    let repository = try LocalSQLiteRepository(databaseURL: databaseURL)
+    let occurrence = PreviewData.occurrences[0]
+    _ = try await repository.upsertLessonDraft(LessonDraftInput(
+        occurrenceId: occurrence.id,
+        studentId: occurrence.studentId,
+        coveredMaterial: "검증할 초안",
+        observations: "관찰",
+        practiceAssigned: "과제",
+        nextStepHint: "다음"
+    ))
+    let validBackup = try await repository.makeBackupData()
+    var object = try #require(JSONSerialization.jsonObject(with: validBackup) as? [String: Any])
+    var snapshot = try #require(object["snapshot"] as? [String: Any])
+    var drafts = try #require(snapshot["lessonDrafts"] as? [[String: Any]])
+    drafts[0]["occurrence_id"] = UUID().uuidString
+    snapshot["lessonDrafts"] = drafts
+    object["snapshot"] = snapshot
+
+    await #expect(throws: RepositoryError.self) {
+        _ = try await repository.restoreBackup(from: JSONSerialization.data(withJSONObject: object))
+    }
+}
+
+@MainActor
 @Test func localSQLiteRepositoryResetKeepsInstructorAndPersistsEmptyRecords() async throws {
     let databaseURL = temporarySQLiteURL()
     defer { removeSQLiteFiles(at: databaseURL) }
     let repository = try LocalSQLiteRepository(databaseURL: databaseURL)
     let instructor = try await repository.loadCurrentInstructor()
+    let occurrence = PreviewData.occurrences[0]
+    _ = try await repository.upsertLessonDraft(LessonDraftInput(
+        occurrenceId: occurrence.id,
+        studentId: occurrence.studentId,
+        coveredMaterial: "초기화할 초안",
+        observations: "",
+        practiceAssigned: "",
+        nextStepHint: ""
+    ))
 
     try await repository.resetLocalData()
 
@@ -822,7 +921,8 @@ import Testing
         "plans",
         "templates",
         "occurrences",
-        "tuitionCycles"
+        "tuitionCycles",
+        "lessonDrafts"
     ]
     for key in recordKeys {
         #expect((snapshot[key] as? [Any])?.isEmpty == true)
