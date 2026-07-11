@@ -22,5 +22,29 @@
 	<string>Drum Lesson OS writes scheduled lesson times to the Apple Calendar you choose.</string>
 	<key>NSCalendarsUsageDescription</key>
 	<string>Drum Lesson OS writes scheduled lesson times to the Apple Calendar you choose.</string>
+	<key>UTExportedTypeDeclarations</key>
+	<array>
+		<dict>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.json</string>
+			</array>
+			<key>UTTypeDescription</key>
+			<string>Drum Lesson OS Backup</string>
+			<key>UTTypeIdentifier</key>
+			<string>com.ericshim.DrumLessonOS.backup</string>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>drumlessonbackup</string>
+				</array>
+				<key>public.mime-type</key>
+				<array>
+					<string>application/json</string>
+				</array>
+			</dict>
+		</dict>
+	</array>
 </dict>
 </plist>

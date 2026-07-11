@@ -5,6 +5,7 @@ import Testing
 @Test func nativeSmokeTest() {
     #expect(AppRoute.dashboard.description == "dashboard")
     #expect(AppRoute.calendar.description == "calendar")
+    #expect(AppRoute.tuition.description == "tuition")
 }
 
 @Test func associatedRoutesKeepDashboardSelectedInSidebar() {
@@ -29,7 +30,7 @@ import Testing
 
     #expect(AppRoute.dashboard.sidebarDestination == .dashboard)
     #expect(AppRoute.calendar.sidebarDestination == .calendar)
+    #expect(AppRoute.tuition.sidebarDestination == .tuition)
     #expect(AppRoute.student(studentID).sidebarDestination == .dashboard)
     #expect(AppRoute.lesson(event).sidebarDestination == .dashboard)
-    #expect(AppRoute.settings.sidebarDestination == .settings)
 }

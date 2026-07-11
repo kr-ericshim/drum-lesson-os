@@ -2,17 +2,21 @@ import Foundation
 import SQLite3
 
 @MainActor
-final class LocalSQLiteRepository: StudentRepository, StudentWriteRepository, ScheduleRepository {
+final class LocalSQLiteRepository: StudentRepository, StudentWriteRepository, ScheduleRepository, TuitionRepository, LocalDataBackupRepository {
     private let store: LocalSQLiteStore
+    private let databaseURL: URL
+    private let currentDate: () -> Date
     private var snapshot: LocalAppSnapshot
 
     convenience init() throws {
         try self.init(databaseURL: Self.defaultDatabaseURL())
     }
 
-    init(databaseURL: URL) throws {
+    init(databaseURL: URL, currentDate: @escaping () -> Date = Date.init) throws {
         let openedStore = try LocalSQLiteStore(databaseURL: databaseURL)
         store = openedStore
+        self.databaseURL = databaseURL
+        self.currentDate = currentDate
         snapshot = try openedStore.withImmediateTransaction {
             if let data = try openedStore.loadData(forKey: Self.snapshotKey) {
                 return try JSONDecoder().decode(LocalAppSnapshot.self, from: data)
@@ -45,6 +49,20 @@ final class LocalSQLiteRepository: StudentRepository, StudentWriteRepository, Sc
         return mapRoster(snapshot)
     }
 
+    func loadTuitionRoster() async throws -> [TuitionRosterItem] {
+        try refreshSnapshot()
+        return snapshot.students
+            .filter(\.active)
+            .sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
+            .map { student in
+                TuitionRosterItem(
+                    studentId: student.id,
+                    studentName: student.name,
+                    cycles: snapshot.tuitionCycles.filter { $0.studentId == student.id }
+                )
+            }
+    }
+
     func loadStudentDetail(studentId: EntityID) async throws -> StudentDetail {
         try refreshSnapshot()
         guard let student = snapshot.students.first(where: { $0.id == studentId }) else {
@@ -54,11 +72,12 @@ final class LocalSQLiteRepository: StudentRepository, StudentWriteRepository, Sc
         return StudentDetailMapper.map(
             student: student,
             progressItems: snapshot.progressItems.filter { $0.studentId == studentId },
+            progressCheckpoints: snapshot.progressCheckpoints.filter { $0.studentId == studentId },
             traits: snapshot.traits.filter { $0.studentId == studentId },
             assignments: snapshot.assignments.filter { $0.studentId == studentId },
             notes: snapshot.notes.filter { $0.studentId == studentId },
             nextPlans: snapshot.plans.filter { $0.studentId == studentId },
-            todayDate: DateOnly.today(in: .current)
+            todayDate: DateOnly.string(from: currentDate(), timeZone: .current)
         )
     }
 
@@ -85,6 +104,17 @@ final class LocalSQLiteRepository: StudentRepository, StudentWriteRepository, Sc
                 profileCue: input.profileCue,
                 primaryWeakPoint: input.primaryWeakPoint,
                 active: input.active,
+                createdAt: timestamp,
+                updatedAt: timestamp
+            ))
+            snapshot.tuitionCycles.append(TuitionCycle(
+                id: UUID(),
+                instructorId: snapshot.instructor.id,
+                studentId: id,
+                sequence: 1,
+                targetLessonCount: TuitionValidation.targetLessonCount,
+                completedLessonCount: 0,
+                paymentConfirmedOn: nil,
                 createdAt: timestamp,
                 updatedAt: timestamp
             ))
@@ -168,6 +198,35 @@ final class LocalSQLiteRepository: StudentRepository, StudentWriteRepository, Sc
                 detail: input.detail,
                 tempoNote: input.tempoNote,
                 updatedAt: nowString()
+            ))
+        }
+        return id
+    }
+
+    func createProgressCheckpoint(_ input: ProgressCheckpointInput) async throws -> EntityID {
+        try StudentEditingValidation.validate(input)
+        let id = UUID()
+        try mutateSnapshot { snapshot in
+            try requireStudent(input.studentId, in: snapshot)
+            guard let item = snapshot.progressItems.first(where: { $0.id == input.progressItemId }) else {
+                throw RepositoryError.notFound
+            }
+            guard item.studentId == input.studentId else {
+                throw RepositoryError(message: "선택한 진도 항목이 해당 학생에게 속하지 않습니다.")
+            }
+            guard item.status == input.status else {
+                throw ValidationError(field: "status", message: "진도 상태가 변경되었습니다. 새로고침 후 다시 저장하세요.")
+            }
+            snapshot.progressCheckpoints.append(ProgressCheckpoint(
+                id: id,
+                instructorId: snapshot.instructor.id,
+                studentId: input.studentId,
+                progressItemId: input.progressItemId,
+                observedOn: input.observedOn,
+                bpm: input.bpm,
+                status: input.status,
+                note: input.note.trimmingCharacters(in: .whitespacesAndNewlines),
+                createdAt: nowString()
             ))
         }
         return id
@@ -316,6 +375,18 @@ final class LocalSQLiteRepository: StudentRepository, StudentWriteRepository, Sc
             if occurrence.status != .scheduled {
                 throw ValidationError(field: "occurrenceId", message: "예정 상태인 레슨만 마무리할 수 있습니다.")
             }
+            let occurrenceDate = DateOnly.string(
+                fromISOInstant: occurrence.startsAt,
+                timeZoneIdentifier: occurrence.timezone
+            )
+            guard input.lessonDate == occurrenceDate else {
+                throw ValidationError(field: "lessonDate", message: "선택한 레슨 날짜와 마무리 기록 날짜가 일치하지 않습니다.")
+            }
+            let occurrenceTimeZone = TimeZone(identifier: occurrence.timezone) ?? .current
+            let today = DateOnly.string(from: currentDate(), timeZone: occurrenceTimeZone)
+            guard occurrenceDate <= today else {
+                throw ValidationError(field: "occurrenceId", message: "미래 레슨은 당일이 된 뒤 마무리할 수 있습니다.")
+            }
 
             let timestamp = nowString()
             snapshot.notes.append(LessonNote(
@@ -377,6 +448,7 @@ final class LocalSQLiteRepository: StudentRepository, StudentWriteRepository, Sc
             if let occurrenceId = input.occurrenceId,
                let index = snapshot.occurrences.firstIndex(where: { $0.id == occurrenceId }) {
                 snapshot.occurrences[index].status = .completed
+                try advanceTuitionCycle(for: input.studentId, in: &snapshot, timestamp: timestamp)
             }
         }
     }
@@ -482,6 +554,164 @@ final class LocalSQLiteRepository: StudentRepository, StudentWriteRepository, Sc
         }
     }
 
+    func configureTuitionCycle(
+        studentId: EntityID,
+        completedLessonCount: Int,
+        paymentConfirmedOn: String?
+    ) async throws -> EntityID {
+        try TuitionValidation.validate(
+            completedLessonCount: completedLessonCount,
+            paymentConfirmedOn: paymentConfirmedOn
+        )
+        let id = UUID()
+        try mutateSnapshot { snapshot in
+            try requireStudent(studentId, in: snapshot)
+            guard !snapshot.tuitionCycles.contains(where: { $0.studentId == studentId }) else {
+                throw ValidationError(field: "studentId", message: "이미 수강비 관리가 시작된 학생입니다.")
+            }
+            let timestamp = nowString()
+            snapshot.tuitionCycles.append(TuitionCycle(
+                id: id,
+                instructorId: snapshot.instructor.id,
+                studentId: studentId,
+                sequence: 1,
+                targetLessonCount: TuitionValidation.targetLessonCount,
+                completedLessonCount: completedLessonCount,
+                paymentConfirmedOn: paymentConfirmedOn,
+                createdAt: timestamp,
+                updatedAt: timestamp
+            ))
+        }
+        return id
+    }
+
+    func updateTuitionCycleProgress(
+        cycleId: EntityID,
+        studentId: EntityID,
+        completedLessonCount: Int
+    ) async throws {
+        try TuitionValidation.validateCompletedLessonCount(completedLessonCount)
+        try mutateSnapshot { snapshot in
+            try requireStudent(studentId, in: snapshot)
+            guard let cycle = try relatedRecord(
+                id: cycleId,
+                studentId: studentId,
+                records: snapshot.tuitionCycles,
+                recordID: \.id,
+                ownerID: \.studentId
+            ), let index = snapshot.tuitionCycles.firstIndex(where: { $0.id == cycle.id }) else {
+                throw RepositoryError.notFound
+            }
+            let latestCycleId = snapshot.tuitionCycles
+                .filter { $0.studentId == studentId }
+                .max { $0.sequence < $1.sequence }?
+                .id
+            guard latestCycleId == cycleId else {
+                throw ValidationError(field: "cycleId", message: "현재 수강 주기의 회차만 수정할 수 있습니다.")
+            }
+            snapshot.tuitionCycles[index].completedLessonCount = completedLessonCount
+            snapshot.tuitionCycles[index].updatedAt = nowString()
+        }
+    }
+
+    func setTuitionPaymentConfirmation(
+        cycleId: EntityID,
+        studentId: EntityID,
+        confirmedOn: String?
+    ) async throws {
+        try TuitionValidation.validatePaymentConfirmedOn(confirmedOn)
+        try mutateSnapshot { snapshot in
+            try requireStudent(studentId, in: snapshot)
+            guard let cycle = try relatedRecord(
+                id: cycleId,
+                studentId: studentId,
+                records: snapshot.tuitionCycles,
+                recordID: \.id,
+                ownerID: \.studentId
+            ), let index = snapshot.tuitionCycles.firstIndex(where: { $0.id == cycle.id }) else {
+                throw RepositoryError.notFound
+            }
+            snapshot.tuitionCycles[index].paymentConfirmedOn = confirmedOn
+            snapshot.tuitionCycles[index].updatedAt = nowString()
+        }
+    }
+
+    func startNextTuitionCycle(
+        studentId: EntityID,
+        currentCycleId: EntityID,
+        paymentConfirmedOn: String?
+    ) async throws -> EntityID {
+        try TuitionValidation.validatePaymentConfirmedOn(paymentConfirmedOn)
+        let id = UUID()
+        try mutateSnapshot { snapshot in
+            try requireStudent(studentId, in: snapshot)
+            guard let current = try relatedRecord(
+                id: currentCycleId,
+                studentId: studentId,
+                records: snapshot.tuitionCycles,
+                recordID: \.id,
+                ownerID: \.studentId
+            ) else {
+                throw RepositoryError.notFound
+            }
+            let latest = snapshot.tuitionCycles
+                .filter { $0.studentId == studentId }
+                .max { $0.sequence < $1.sequence }
+            guard latest?.id == currentCycleId else {
+                throw ValidationError(field: "currentCycleId", message: "가장 최근 수강 주기에서만 다음 4회를 시작할 수 있습니다.")
+            }
+            guard current.isComplete else {
+                throw ValidationError(field: "completedLessonCount", message: "현재 4회를 모두 마친 뒤 다음 4회를 시작하세요.")
+            }
+
+            let timestamp = nowString()
+            snapshot.tuitionCycles.append(TuitionCycle(
+                id: id,
+                instructorId: snapshot.instructor.id,
+                studentId: studentId,
+                sequence: current.sequence + 1,
+                targetLessonCount: TuitionValidation.targetLessonCount,
+                completedLessonCount: 0,
+                paymentConfirmedOn: paymentConfirmedOn,
+                createdAt: timestamp,
+                updatedAt: timestamp
+            ))
+        }
+        return id
+    }
+
+    func makeBackupData() async throws -> Data {
+        try refreshSnapshot()
+        return try encodeBackup(snapshot)
+    }
+
+    func restoreBackup(from data: Data) async throws -> URL {
+        let payload: LocalDataBackupPayload
+        do {
+            payload = try JSONDecoder().decode(LocalDataBackupPayload.self, from: data)
+        } catch {
+            throw RepositoryError(message: "Drum Lesson OS 백업 파일을 읽을 수 없습니다.")
+        }
+        guard LocalDataBackupPayload.supportedFormatVersions.contains(payload.formatVersion) else {
+            throw RepositoryError(message: "지원하지 않는 백업 버전입니다.")
+        }
+        try validateBackupSnapshot(payload.snapshot)
+
+        let latest = try loadLatestSnapshot()
+        let safetyBackupURL = try writeSafetyBackup(for: latest)
+        var restored = payload.snapshot
+        for index in restored.occurrences.indices where restored.occurrences[index].nativeCalendarSyncStatus == .pending {
+            restored.occurrences[index].nativeCalendarSyncStatus = .failed
+            restored.occurrences[index].nativeCalendarSyncError = "백업에서 복원되었습니다. Apple 캘린더 동기화를 수동으로 재시도하세요."
+        }
+
+        try store.withImmediateTransaction {
+            try store.saveData(JSONEncoder().encode(restored), forKey: Self.snapshotKey)
+        }
+        snapshot = restored
+        return safetyBackupURL
+    }
+
     private func mapRoster(_ snapshot: LocalAppSnapshot) -> [StudentRosterItem] {
         StudentRosterMapper.map(
             students: snapshot.students,
@@ -493,8 +723,130 @@ final class LocalSQLiteRepository: StudentRepository, StudentWriteRepository, Sc
         )
     }
 
+    private func advanceTuitionCycle(
+        for studentId: EntityID,
+        in snapshot: inout LocalAppSnapshot,
+        timestamp: String
+    ) throws {
+        guard let currentIndex = snapshot.tuitionCycles.indices
+            .filter({ snapshot.tuitionCycles[$0].studentId == studentId })
+            .max(by: { snapshot.tuitionCycles[$0].sequence < snapshot.tuitionCycles[$1].sequence }) else {
+            return
+        }
+
+        let current = snapshot.tuitionCycles[currentIndex]
+        try TuitionValidation.validate(current)
+        if current.isComplete {
+            snapshot.tuitionCycles.append(TuitionCycle(
+                id: UUID(),
+                instructorId: snapshot.instructor.id,
+                studentId: studentId,
+                sequence: current.sequence + 1,
+                targetLessonCount: TuitionValidation.targetLessonCount,
+                completedLessonCount: 1,
+                paymentConfirmedOn: nil,
+                createdAt: timestamp,
+                updatedAt: timestamp
+            ))
+        } else {
+            snapshot.tuitionCycles[currentIndex].completedLessonCount += 1
+            snapshot.tuitionCycles[currentIndex].updatedAt = timestamp
+        }
+    }
+
     private func refreshSnapshot() throws {
         snapshot = try loadLatestSnapshot()
+    }
+
+    private func encodeBackup(_ snapshot: LocalAppSnapshot) throws -> Data {
+        let payload = LocalDataBackupPayload(
+            formatVersion: LocalDataBackupPayload.currentFormatVersion,
+            createdAt: nowString(),
+            snapshot: snapshot
+        )
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        return try encoder.encode(payload)
+    }
+
+    private func writeSafetyBackup(for snapshot: LocalAppSnapshot) throws -> URL {
+        let directory = databaseURL.deletingLastPathComponent().appendingPathComponent("Backups", isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = .current
+        formatter.dateFormat = "yyyy-MM-dd-HHmmss"
+        let suffix = UUID().uuidString.prefix(8)
+        let url = directory.appendingPathComponent("Before-Restore-\(formatter.string(from: Date()))-\(suffix).drumlessonbackup")
+        try encodeBackup(snapshot).write(to: url, options: .atomic)
+        return url
+    }
+
+    private func validateBackupSnapshot(_ candidate: LocalAppSnapshot) throws {
+        let studentIDs = Set(candidate.students.map(\.id))
+        let progressByID = Dictionary(candidate.progressItems.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        let tuitionSequenceKeys = Set(candidate.tuitionCycles.map { "\($0.studentId.uuidString):\($0.sequence)" })
+        let templateByID = Dictionary(candidate.templates.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        guard hasUniqueIDs(candidate.students),
+              hasUniqueIDs(candidate.progressItems),
+              hasUniqueIDs(candidate.progressCheckpoints),
+              hasUniqueIDs(candidate.traits),
+              hasUniqueIDs(candidate.assignments),
+              hasUniqueIDs(candidate.notes),
+              hasUniqueIDs(candidate.plans),
+              hasUniqueIDs(candidate.templates),
+              hasUniqueIDs(candidate.occurrences),
+              hasUniqueIDs(candidate.tuitionCycles),
+              tuitionSequenceKeys.count == candidate.tuitionCycles.count else {
+            throw RepositoryError(message: "백업 파일에 중복된 기록 식별자가 있습니다.")
+        }
+        guard candidate.students.allSatisfy({ $0.instructorId == candidate.instructor.id }),
+              candidate.progressItems.allSatisfy({ studentIDs.contains($0.studentId) && $0.instructorId == candidate.instructor.id }),
+              candidate.traits.allSatisfy({ studentIDs.contains($0.studentId) && $0.instructorId == candidate.instructor.id }),
+              candidate.assignments.allSatisfy({ studentIDs.contains($0.studentId) && $0.instructorId == candidate.instructor.id }),
+              candidate.notes.allSatisfy({ studentIDs.contains($0.studentId) && $0.instructorId == candidate.instructor.id }),
+              candidate.plans.allSatisfy({ studentIDs.contains($0.studentId) && $0.instructorId == candidate.instructor.id }),
+              candidate.templates.allSatisfy({ studentIDs.contains($0.studentId) && $0.instructorId == candidate.instructor.id }),
+              candidate.occurrences.allSatisfy({ occurrence in
+                  guard studentIDs.contains(occurrence.studentId),
+                        occurrence.instructorId == candidate.instructor.id else {
+                      return false
+                  }
+                  guard let templateId = occurrence.scheduleTemplateId else { return true }
+                  guard let template = templateByID[templateId] else { return false }
+                  return template.studentId == occurrence.studentId &&
+                      template.instructorId == occurrence.instructorId
+              }),
+              candidate.tuitionCycles.allSatisfy({ cycle in
+                  studentIDs.contains(cycle.studentId) &&
+                      cycle.instructorId == candidate.instructor.id &&
+                      cycle.sequence > 0 &&
+                      cycle.targetLessonCount == TuitionValidation.targetLessonCount &&
+                      (0...cycle.targetLessonCount).contains(cycle.completedLessonCount) &&
+                      isValidTuitionPaymentDate(cycle.paymentConfirmedOn)
+              }),
+              candidate.progressCheckpoints.allSatisfy({ checkpoint in
+                  guard let item = progressByID[checkpoint.progressItemId] else { return false }
+                  return checkpoint.studentId == item.studentId &&
+                      studentIDs.contains(checkpoint.studentId) &&
+                      checkpoint.instructorId == candidate.instructor.id
+              }) else {
+            throw RepositoryError(message: "백업 파일의 학생 연결 정보를 확인할 수 없습니다.")
+        }
+    }
+
+    private func hasUniqueIDs<Record: Identifiable>(_ records: [Record]) -> Bool where Record.ID == EntityID {
+        Set(records.map(\.id)).count == records.count
+    }
+
+    private func isValidTuitionPaymentDate(_ value: String?) -> Bool {
+        guard let value else { return true }
+        do {
+            try TuitionValidation.validatePaymentConfirmedOn(value)
+            return true
+        } catch {
+            return false
+        }
     }
 
     private func loadLatestSnapshot() throws -> LocalAppSnapshot {
@@ -576,7 +928,7 @@ final class LocalSQLiteRepository: StudentRepository, StudentWriteRepository, Sc
     }
 
     private func nowString() -> String {
-        ISO8601DateFormatter.plain.string(from: Date())
+        ISO8601DateFormatter.plain.string(from: currentDate())
     }
 
     private static let snapshotKey = "app_snapshot"
@@ -586,45 +938,53 @@ private struct LocalAppSnapshot: Codable, Equatable {
     var instructor: Instructor
     var students: [Student]
     var progressItems: [ProgressItem]
+    var progressCheckpoints: [ProgressCheckpoint]
     var traits: [StudentTrait]
     var assignments: [Assignment]
     var notes: [LessonNote]
     var plans: [NextLessonPlan]
     var templates: [LessonScheduleTemplate]
     var occurrences: [LessonOccurrence]
+    var tuitionCycles: [TuitionCycle]
 
     enum CodingKeys: String, CodingKey {
         case instructor
         case students
         case progressItems
+        case progressCheckpoints
         case traits
         case assignments
         case notes
         case plans
         case templates
         case occurrences
+        case tuitionCycles
     }
 
     init(
         instructor: Instructor,
         students: [Student],
         progressItems: [ProgressItem],
+        progressCheckpoints: [ProgressCheckpoint],
         traits: [StudentTrait],
         assignments: [Assignment],
         notes: [LessonNote],
         plans: [NextLessonPlan],
         templates: [LessonScheduleTemplate],
-        occurrences: [LessonOccurrence]
+        occurrences: [LessonOccurrence],
+        tuitionCycles: [TuitionCycle]
     ) {
         self.instructor = instructor
         self.students = students
         self.progressItems = progressItems
+        self.progressCheckpoints = progressCheckpoints
         self.traits = traits
         self.assignments = assignments
         self.notes = notes
         self.plans = plans
         self.templates = templates
         self.occurrences = occurrences
+        self.tuitionCycles = tuitionCycles
     }
 
     init(from decoder: Decoder) throws {
@@ -632,6 +992,7 @@ private struct LocalAppSnapshot: Codable, Equatable {
         instructor = try container.decode(Instructor.self, forKey: .instructor)
         students = try container.decode([Student].self, forKey: .students)
         progressItems = try container.decode([ProgressItem].self, forKey: .progressItems)
+        progressCheckpoints = try container.decodeIfPresent([ProgressCheckpoint].self, forKey: .progressCheckpoints) ?? []
         traits = try container.decode([StudentTrait].self, forKey: .traits)
         assignments = try container.decode([Assignment].self, forKey: .assignments)
         notes = try container.decode([LessonNote].self, forKey: .notes)
@@ -639,7 +1000,10 @@ private struct LocalAppSnapshot: Codable, Equatable {
         var decodedOccurrences = try container.decode([LessonOccurrence].self, forKey: .occurrences)
         templates = try container.decodeIfPresent([LessonScheduleTemplate].self, forKey: .templates) ?? []
 
-        let templateTimezones = Dictionary(uniqueKeysWithValues: templates.map { ($0.id, $0.timezone) })
+        let templateTimezones = Dictionary(
+            templates.map { ($0.id, $0.timezone) },
+            uniquingKeysWith: { first, _ in first }
+        )
         for index in decodedOccurrences.indices where decodedOccurrences[index].recurrenceSlotDate == nil {
             guard let templateId = decodedOccurrences[index].scheduleTemplateId,
                   let timezone = templateTimezones[templateId] else { continue }
@@ -649,19 +1013,31 @@ private struct LocalAppSnapshot: Codable, Equatable {
             )
         }
         occurrences = decodedOccurrences
+        tuitionCycles = try container.decodeIfPresent([TuitionCycle].self, forKey: .tuitionCycles) ?? []
     }
 
     static let seed = LocalAppSnapshot(
         instructor: PreviewData.instructor,
         students: PreviewData.students,
         progressItems: PreviewData.progressItems,
+        progressCheckpoints: PreviewData.progressCheckpoints,
         traits: PreviewData.traits,
         assignments: PreviewData.assignments,
         notes: PreviewData.notes,
         plans: PreviewData.nextPlans,
         templates: [],
-        occurrences: PreviewData.occurrences
+        occurrences: PreviewData.occurrences,
+        tuitionCycles: []
     )
+}
+
+private struct LocalDataBackupPayload: Codable {
+    static let currentFormatVersion = 2
+    static let supportedFormatVersions = 1...currentFormatVersion
+
+    var formatVersion: Int
+    var createdAt: String
+    var snapshot: LocalAppSnapshot
 }
 
 private final class LocalSQLiteStore {

@@ -13,6 +13,7 @@ final class StudentDetailViewModel {
     var runNextHint = ""
     var closeoutDraft: LessonCloseoutDraft?
     var closeoutStatusMessage: String?
+    var checkpointStatusMessage: String?
     var isSaving = false
 
     let studentId: EntityID
@@ -110,6 +111,44 @@ final class StudentDetailViewModel {
         }
     }
 
+    @discardableResult
+    func saveProgressCheckpoint(
+        progressItemId: EntityID,
+        observedOn: String,
+        bpmText: String,
+        status: ProgressStatus,
+        note: String
+    ) async -> Bool {
+        let trimmedBPM = bpmText.trimmingCharacters(in: .whitespacesAndNewlines)
+        let bpm: Int?
+        if trimmedBPM.isEmpty {
+            bpm = nil
+        } else if let value = Int(trimmedBPM) {
+            bpm = value
+        } else {
+            checkpointStatusMessage = nil
+            errorMessage = "BPM은 숫자로 입력하세요."
+            return false
+        }
+        let input = ProgressCheckpointInput(
+            studentId: studentId,
+            progressItemId: progressItemId,
+            observedOn: observedOn,
+            bpm: bpm,
+            status: status,
+            note: note
+        )
+        checkpointStatusMessage = nil
+        let didSave = await saveAndReload {
+            try StudentEditingValidation.validate(input)
+            _ = try await writes.createProgressCheckpoint(input)
+        }
+        if didSave {
+            checkpointStatusMessage = "진도 체크포인트를 저장했습니다."
+        }
+        return didSave
+    }
+
     func saveAssignment(assignmentId: EntityID?, title: String, status: AssignmentStatus, dueDate: String?, detail: String) async {
         let input = AssignmentInput(
             studentId: studentId,
@@ -174,11 +213,16 @@ final class StudentDetailViewModel {
         )
     }
 
-    func saveCloseout() async {
+    func saveCloseout(now: Date = Date()) async {
         guard !isSaving else { return }
         guard let lessonContext else {
             closeoutStatusMessage = nil
             errorMessage = "예약된 레슨에서만 마무리 기록을 저장할 수 있습니다."
+            return
+        }
+        guard LessonEventActionContext(event: lessonContext, now: now) != .prepare else {
+            closeoutStatusMessage = nil
+            errorMessage = "미래 레슨은 당일이 된 뒤 마무리할 수 있습니다."
             return
         }
         guard let detail, let draft = closeoutDraft else { return }

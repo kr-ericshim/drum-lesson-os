@@ -166,7 +166,8 @@ import Testing
         currentFocus: true,
         observedOn: "2026-05-28",
         detail: "착지 확인",
-        tempoNote: nil
+        tempoNote: nil,
+        checkpoints: []
     )
     let note = StudentLessonNote(
         id: UUID(),

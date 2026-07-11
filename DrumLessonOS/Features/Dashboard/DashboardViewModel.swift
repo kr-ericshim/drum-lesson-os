@@ -112,7 +112,6 @@ final class DashboardViewModel {
         let reloadAnchor = weekAnchor
         movingOccurrenceIDs.insert(event.id)
         defer { movingOccurrenceIDs.remove(event.id) }
-        applyOptimisticMove(event: event, input: input)
 
         do {
             let occurrence = try await scheduleRepository.editOccurrence(input)
@@ -148,38 +147,6 @@ final class DashboardViewModel {
         self.errorMessage = errorMessage
     }
 
-    private func applyOptimisticMove(event: CalendarLessonEvent, input: EditOccurrenceInput) {
-        guard var model else { return }
-
-        var movedEvent = event
-        movedEvent.startsAt = input.startsAt
-        movedEvent.endsAt = input.endsAt
-        movedEvent.dateKey = DateOnly.string(
-            fromISOInstant: input.startsAt,
-            timeZoneIdentifier: input.timezone
-        )
-        movedEvent.timeLabel = DateOnly.timeLabel(
-            fromISOInstant: input.startsAt,
-            timeZoneIdentifier: input.timezone
-        )
-        movedEvent.syncStatus = .pending
-        movedEvent.syncError = nil
-
-        for index in model.days.indices {
-            model.days[index].events.removeAll { $0.id == event.id }
-        }
-        if let targetIndex = model.days.firstIndex(where: { $0.dateKey == movedEvent.dateKey }) {
-            model.days[targetIndex].events.append(movedEvent)
-            model.days[targetIndex].events.sort { $0.startsAt < $1.startsAt }
-        }
-        model.todayEvents = model.days
-            .first(where: { $0.dateKey == model.todayDateKey })?
-            .events ?? []
-        model.selectedEvent = movedEvent
-
-        self.model = model
-        selectedEvent = movedEvent
-    }
 }
 
 enum ScheduleMoveInputFactory {

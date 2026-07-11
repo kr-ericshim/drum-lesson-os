@@ -31,6 +31,31 @@ import Testing
     #expect(!StudentEditingValidation.isProgressStatusTransitionAllowed(currentStatus: .new, nextStatus: .complete))
 }
 
+@Test func progressCheckpointValidationRequiresContentAndReasonableBPM() {
+    let base = ProgressCheckpointInput(
+        studentId: UUID(),
+        progressItemId: UUID(),
+        observedOn: "2026-07-11",
+        bpm: nil,
+        status: .inProgress,
+        note: ""
+    )
+
+    #expect(throws: ValidationError.self) {
+        try StudentEditingValidation.validate(base)
+    }
+    #expect(throws: ValidationError.self) {
+        var invalid = base
+        invalid.bpm = 401
+        try StudentEditingValidation.validate(invalid)
+    }
+    #expect(throws: Never.self) {
+        var valid = base
+        valid.bpm = 96
+        try StudentEditingValidation.validate(valid)
+    }
+}
+
 @MainActor
 @Test func detailViewModelSavesProfileAndReloadsDetail() async throws {
     let repository = StudentDetailEditingSpyRepository()
@@ -82,6 +107,27 @@ import Testing
 }
 
 @MainActor
+@Test func detailViewModelSavesProgressCheckpointAndReloadsDetail() async throws {
+    let repository = StudentDetailEditingSpyRepository()
+    let viewModel = StudentDetailViewModel(studentId: repository.studentId, repository: repository, writes: repository)
+    await viewModel.load()
+
+    let didSave = await viewModel.saveProgressCheckpoint(
+        progressItemId: repository.progressItemId,
+        observedOn: "2026-07-11",
+        bpmText: "96",
+        status: .inProgress,
+        note: "30초 유지"
+    )
+
+    #expect(didSave)
+    #expect(repository.savedCheckpoint?.bpm == 96)
+    #expect(repository.savedCheckpoint?.note == "30초 유지")
+    #expect(repository.loadDetailCount == 2)
+    #expect(viewModel.checkpointStatusMessage == "진도 체크포인트를 저장했습니다.")
+}
+
+@MainActor
 @Test func detailViewModelSavesCloseoutAndShowsSuccessMessage() async throws {
     let repository = StudentDetailEditingSpyRepository()
     let viewModel = StudentDetailViewModel(
@@ -129,6 +175,45 @@ import Testing
     #expect(repository.savedCloseout == nil)
     #expect(viewModel.closeoutDraft != nil)
     #expect(viewModel.errorMessage == "예약된 레슨에서만 마무리 기록을 저장할 수 있습니다.")
+}
+
+@MainActor
+@Test func detailViewModelRejectsFutureLessonCloseout() async throws {
+    let repository = StudentDetailEditingSpyRepository()
+    var futureLesson = makeLessonContext(studentId: repository.studentId)
+    futureLesson.dateKey = "2026-08-06"
+    futureLesson.startsAt = "2026-08-06T10:00:00Z"
+    futureLesson.endsAt = "2026-08-06T10:50:00Z"
+    let now = try #require(ISO8601DateFormatter.plain.date(from: "2026-07-11T00:00:00Z"))
+    let viewModel = StudentDetailViewModel(
+        studentId: repository.studentId,
+        lessonContext: futureLesson,
+        repository: repository,
+        writes: repository
+    )
+    await viewModel.load()
+    viewModel.runCovered = "코러스 전 필인"
+    viewModel.runObservation = "착지가 흔들림"
+    viewModel.runPractice = "2마디 루프"
+    viewModel.runNextHint = "1박 착지"
+    viewModel.useRunNotesInCloseout()
+
+    await viewModel.saveCloseout(now: now)
+
+    #expect(repository.closeoutCallCount == 0)
+    #expect(repository.savedCloseout == nil)
+    #expect(viewModel.closeoutDraft != nil)
+    #expect(viewModel.errorMessage == "미래 레슨은 당일이 된 뒤 마무리할 수 있습니다.")
+}
+
+@Test func lessonEventActionContextMatchesCalendarDay() {
+    #expect(LessonEventActionContext.resolve(eventDateKey: "2026-07-12", todayDateKey: "2026-07-11") == .prepare)
+    #expect(LessonEventActionContext.resolve(eventDateKey: "2026-07-11", todayDateKey: "2026-07-11") == .start)
+    #expect(LessonEventActionContext.resolve(eventDateKey: "2026-07-10", todayDateKey: "2026-07-11") == .record)
+    #expect(LessonEventActionContext.prepare.title == "레슨 준비 보기")
+    #expect(!LessonEventActionContext.prepare.opensLessonWorkspace)
+    #expect(LessonEventActionContext.start.opensLessonWorkspace)
+    #expect(LessonEventActionContext.record.opensLessonWorkspace)
 }
 
 @MainActor
@@ -243,6 +328,7 @@ private final class StudentDetailEditingSpyRepository: StudentRepository, Studen
     var savedTrait: StudentTraitInput?
     var savedProgress: ProgressItemInput?
     var savedProgressStatus: ProgressStatusTransitionInput?
+    var savedCheckpoint: ProgressCheckpointInput?
     var savedAssignment: AssignmentInput?
     var savedLessonNote: LessonNoteInput?
     var savedNextPlan: NextPlanInput?
@@ -284,7 +370,8 @@ private final class StudentDetailEditingSpyRepository: StudentRepository, Studen
                     currentFocus: true,
                     observedOn: "2026-05-28",
                     detail: "착지 확인",
-                    tempoNote: "84 BPM"
+                    tempoNote: "84 BPM",
+                    checkpoints: []
                 )
             ],
             traits: [],
@@ -317,6 +404,11 @@ private final class StudentDetailEditingSpyRepository: StudentRepository, Studen
 
     func updateProgressStatus(_ input: ProgressStatusTransitionInput) async throws {
         savedProgressStatus = input
+    }
+
+    func createProgressCheckpoint(_ input: ProgressCheckpointInput) async throws -> EntityID {
+        savedCheckpoint = input
+        return UUID()
     }
 
     func upsertAssignment(_ input: AssignmentInput) async throws -> EntityID {

@@ -3,10 +3,10 @@ import Testing
 @testable import DrumLessonOS
 
 @MainActor
-@Test func appEnvironmentUsesLocalSQLiteByDefault() {
+@Test func appEnvironmentUsesLocalSQLiteByDefault() throws {
     let databaseURL = temporarySQLiteURL()
     defer { try? FileManager.default.removeItem(at: databaseURL.deletingLastPathComponent()) }
-    let environment = AppEnvironment.liveOrPreview(
+    let environment = try AppEnvironment.liveOrPreview(
         environment: [:],
         bundle: nil,
         databaseURL: databaseURL,
@@ -17,6 +17,44 @@ import Testing
     #expect(environment.writes is LocalSQLiteRepository)
     #expect(environment.schedules is CalendarBackedScheduleRepository)
     #expect(environment.localDataDirectoryURL == databaseURL.deletingLastPathComponent())
+}
+
+@MainActor
+@Test func appEnvironmentUsesIsolatedRuntimeConfiguration() throws {
+    let directory = FileManager.default.temporaryDirectory
+        .appendingPathComponent("DrumLessonOS-SafeRuntime-\(UUID().uuidString)", isDirectory: true)
+    defer { try? FileManager.default.removeItem(at: directory) }
+    let databaseURL = directory.appendingPathComponent("safe.sqlite")
+
+    let environment = try AppEnvironment.liveOrPreview(environment: [
+        AppEnvironment.RuntimeEnvironment.databasePath: databaseURL.path,
+        AppEnvironment.RuntimeEnvironment.previewCalendar: "1"
+    ])
+
+    #expect(environment.localDataDirectoryURL == directory)
+    #expect(environment.calendar is PreviewCalendarRepository)
+}
+
+@MainActor
+@Test func appEnvironmentReportsLocalStoreStartupFailure() throws {
+    let directory = FileManager.default.temporaryDirectory
+        .appendingPathComponent("DrumLessonOS-InvalidStore-\(UUID().uuidString)", isDirectory: true)
+    try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+    defer { try? FileManager.default.removeItem(at: directory) }
+
+    #expect(throws: Error.self) {
+        _ = try AppEnvironment.liveOrPreview(databaseURL: directory)
+    }
+
+    let startup = AppStartupState.load(environment: [
+        AppEnvironment.RuntimeEnvironment.databasePath: directory.path,
+        AppEnvironment.RuntimeEnvironment.previewCalendar: "1"
+    ], bundle: nil)
+    guard case .failed(let failure) = startup else {
+        Issue.record("시작 실패가 복구 화면 상태로 변환되어야 합니다.")
+        return
+    }
+    #expect(!failure.message.isEmpty)
 }
 
 @MainActor
@@ -74,7 +112,8 @@ import Testing
         students: store,
         calendar: calendar,
         writes: store,
-        schedules: schedules
+        schedules: schedules,
+        tuitionRepository: store
     )
 
     await environment.refresh()

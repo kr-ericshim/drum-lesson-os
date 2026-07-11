@@ -1,12 +1,24 @@
 import Accessibility
 import AppKit
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct SettingsView: View {
     @Bindable var syncStatus: SyncStatusViewModel
     let calendar: CalendarRepository
     @Bindable var preferences: AppPreferences
     let localDataDirectoryURL: URL?
+    let localDataBackup: LocalDataBackupRepository?
+    let onDataRestored: @MainActor () async -> Void
+
+    @State private var backupDocument: LocalDataBackupDocument?
+    @State private var isExportingBackup = false
+    @State private var isImportingBackup = false
+    @State private var isConfirmingRestore = false
+    @State private var isWorkingWithBackup = false
+    @State private var pendingRestoreData: Data?
+    @State private var pendingRestoreName = ""
+    @State private var backupFeedback: BackupFeedback?
 
     var body: some View {
         GeometryReader { proxy in
@@ -41,6 +53,37 @@ struct SettingsView: View {
             }
         }
         .navigationTitle("설정")
+        .fileExporter(
+            isPresented: $isExportingBackup,
+            document: backupDocument,
+            contentType: .drumLessonBackup,
+            defaultFilename: backupFilename
+        ) { result in
+            backupDocument = nil
+            switch result {
+            case .success:
+                backupFeedback = BackupFeedback(message: "백업 파일을 저장했습니다.", isError: false)
+            case .failure(let error):
+                backupFeedback = BackupFeedback(message: error.localizedDescription, isError: true)
+            }
+        }
+        .fileImporter(
+            isPresented: $isImportingBackup,
+            allowedContentTypes: [.drumLessonBackup, .json]
+        ) { result in
+            prepareRestore(from: result)
+        }
+        .alert("백업을 복원할까요?", isPresented: $isConfirmingRestore) {
+            Button("취소", role: .cancel) {
+                pendingRestoreData = nil
+                pendingRestoreName = ""
+            }
+            Button("복원", role: .destructive) {
+                restoreSelectedBackup()
+            }
+        } message: {
+            Text("\(pendingRestoreName)의 기록으로 현재 데이터를 교체합니다. 복원 직전 상태는 자동 백업되며 캘린더 대기 작업은 비워집니다.")
+        }
     }
 
     private var preferencesSection: some View {
@@ -140,6 +183,34 @@ struct SettingsView: View {
                     }
                     .buttonStyle(.bordered)
                     .help("데이터베이스와 캘린더 동기화 대기열이 저장된 폴더를 엽니다.")
+
+                    if localDataBackup != nil {
+                        Divider()
+
+                        ViewThatFits(in: .horizontal) {
+                            HStack(spacing: AppTheme.Spacing.sm) {
+                                backupButtons
+                            }
+                            VStack(alignment: .leading, spacing: AppTheme.Spacing.sm) {
+                                backupButtons
+                            }
+                        }
+
+                        Text("백업 파일에는 학생과 레슨 기록만 포함됩니다. Apple 캘린더 실행 대기열은 포함되지 않습니다.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+
+                        if let backupFeedback {
+                            Label(
+                                backupFeedback.message,
+                                systemImage: backupFeedback.isError ? "exclamationmark.triangle" : "checkmark.circle"
+                            )
+                            .font(.caption)
+                            .foregroundStyle(backupFeedback.isError ? AppTheme.Semantic.error : AppTheme.Semantic.success)
+                            .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
                 } else {
                     Label("미리보기 데이터는 앱을 종료하면 유지되지 않습니다.", systemImage: "eye")
                         .font(.footnote)
@@ -150,6 +221,86 @@ struct SettingsView: View {
 
                 LabeledContent("버전", value: appVersion)
                     .font(.footnote)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var backupButtons: some View {
+        Button {
+            prepareBackupExport()
+        } label: {
+            Label("백업 저장", systemImage: "square.and.arrow.up")
+        }
+        .buttonStyle(.bordered)
+        .disabled(isWorkingWithBackup)
+
+        Button {
+            isImportingBackup = true
+        } label: {
+            Label("백업 복원", systemImage: "arrow.counterclockwise")
+        }
+        .buttonStyle(.bordered)
+        .disabled(isWorkingWithBackup)
+    }
+
+    private var backupFilename: String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = .current
+        formatter.dateFormat = "yyyy-MM-dd-HHmm"
+        return "Drum-Lesson-OS-\(formatter.string(from: Date()))"
+    }
+
+    private func prepareBackupExport() {
+        guard let localDataBackup else { return }
+        isWorkingWithBackup = true
+        backupFeedback = nil
+        Task {
+            defer { isWorkingWithBackup = false }
+            do {
+                backupDocument = LocalDataBackupDocument(data: try await localDataBackup.makeBackupData())
+                isExportingBackup = true
+            } catch {
+                backupFeedback = BackupFeedback(message: error.localizedDescription, isError: true)
+            }
+        }
+    }
+
+    private func prepareRestore(from result: Result<URL, Error>) {
+        do {
+            let url = try result.get()
+            let didAccess = url.startAccessingSecurityScopedResource()
+            defer {
+                if didAccess { url.stopAccessingSecurityScopedResource() }
+            }
+            pendingRestoreData = try Data(contentsOf: url)
+            pendingRestoreName = url.lastPathComponent
+            isConfirmingRestore = true
+        } catch {
+            backupFeedback = BackupFeedback(message: error.localizedDescription, isError: true)
+        }
+    }
+
+    private func restoreSelectedBackup() {
+        guard let localDataBackup, let data = pendingRestoreData else { return }
+        isWorkingWithBackup = true
+        backupFeedback = nil
+        Task {
+            defer {
+                isWorkingWithBackup = false
+                pendingRestoreData = nil
+                pendingRestoreName = ""
+            }
+            do {
+                let safetyBackupURL = try await localDataBackup.restoreBackup(from: data)
+                await onDataRestored()
+                backupFeedback = BackupFeedback(
+                    message: "복원했습니다. 이전 상태는 \(safetyBackupURL.lastPathComponent)에 보관했습니다.",
+                    isError: false
+                )
+            } catch {
+                backupFeedback = BackupFeedback(message: error.localizedDescription, isError: true)
             }
         }
     }
@@ -165,480 +316,35 @@ struct SettingsView: View {
         return build.map { "\(version) (\($0))" } ?? version
     }
 }
-
-struct CalendarSettingsView: View {
-    @Environment(\.openURL) private var openURL
-    @State private var viewModel: CalendarSettingsViewModel
-
-    init(calendar: CalendarRepository) {
-        _viewModel = State(initialValue: CalendarSettingsViewModel(calendar: calendar))
-    }
-
-    var body: some View {
-        WorkbenchSurface(.panel, padding: AppTheme.Spacing.lg) {
-            VStack(alignment: .leading, spacing: 12) {
-                WorkbenchHeader(title: "Apple 캘린더", subtitle: "Apple 비밀번호를 저장하지 않고 캘린더 권한으로 연결합니다.") {
-                    StatusBadge(
-                        label: viewModel.permission.label,
-                        systemImage: permissionIcon,
-                        tint: permissionTint
-                    )
-                }
-
-                permissionContent
-
-                if let feedback = viewModel.feedback {
-                    Label(feedback.message, systemImage: feedback.systemImage)
-                        .font(.footnote)
-                        .foregroundStyle(feedback.tint)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-            }
-        }
-        .task { await viewModel.refresh() }
-        .onChange(of: viewModel.feedback) { _, feedback in
-            guard let feedback else { return }
-            AccessibilityNotification.Announcement(feedback.message).post()
-        }
-    }
-
-    @ViewBuilder
-    private var permissionContent: some View {
-        switch viewModel.permission {
-        case .authorized:
-            authorizedContent
-        case .notDetermined:
-            permissionExplanation(
-                title: "캘린더 연결이 필요합니다",
-                description: "레슨 일정을 만들고 수정하려면 Apple 캘린더 전체 접근을 허용하세요.",
-                systemImage: "calendar.badge.plus"
-            )
-            requestAccessButton
-        case .denied:
-            permissionExplanation(
-                title: "캘린더 접근이 꺼져 있습니다",
-                description: "시스템 설정의 개인정보 보호 및 보안에서 Drum Lesson OS의 캘린더 접근을 허용하세요.",
-                systemImage: "calendar.badge.exclamationmark"
-            )
-            Button {
-                guard let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Calendars") else { return }
-                openURL(url)
-            } label: {
-                Label("시스템 설정 열기", systemImage: "gear")
-            }
-        case .restricted:
-            permissionExplanation(
-                title: "이 Mac에서 캘린더 접근이 제한됩니다",
-                description: "관리자 또는 스크린 타임 제한을 확인한 뒤 다시 시도하세요.",
-                systemImage: "lock.trianglebadge.exclamationmark"
-            )
-        case .writeOnly:
-            permissionExplanation(
-                title: "전체 접근이 필요합니다",
-                description: "현재는 쓰기 전용 권한입니다. 캘린더를 선택하고 기존 일정을 안전하게 수정하려면 전체 접근을 허용하세요.",
-                systemImage: "calendar.badge.exclamationmark"
-            )
-            requestAccessButton
-        case .unknown:
-            permissionExplanation(
-                title: "캘린더 권한 상태를 확인할 수 없습니다",
-                description: "상태를 다시 확인하거나 시스템 설정에서 캘린더 권한을 살펴보세요.",
-                systemImage: "questionmark.circle"
-            )
-            Button {
-                Task { await viewModel.refresh() }
-            } label: {
-                Label("상태 다시 확인", systemImage: "arrow.clockwise")
-            }
-            .disabled(viewModel.isBusy)
-        }
-    }
-
-    @ViewBuilder
-    private var authorizedContent: some View {
-        if viewModel.isLoadingCalendars && viewModel.calendars.isEmpty {
-            HStack(spacing: AppTheme.Spacing.sm) {
-                ProgressView()
-                    .controlSize(.small)
-                Text("쓸 수 있는 캘린더를 불러오는 중…")
-                    .foregroundStyle(.secondary)
-            }
-        } else if viewModel.hasLoadedCalendars && viewModel.calendars.isEmpty {
-            ContentUnavailableView {
-                Label("쓸 수 있는 캘린더가 없습니다", systemImage: "calendar.badge.exclamationmark")
-            } description: {
-                Text("Apple 캘린더에서 수정 가능한 캘린더를 만든 뒤 다시 불러오세요.")
-            } actions: {
-                reloadCalendarsButton
-            }
-        } else {
-            if !viewModel.hasLoadedCalendars {
-                reloadCalendarsButton
-            }
-
-            ForEach(viewModel.calendars) { item in
-                calendarRow(item)
-            }
-
-            if !viewModel.calendars.isEmpty, viewModel.selectedCalendarID == nil {
-                Label("레슨 일정을 저장할 캘린더를 선택하세요.", systemImage: "exclamationmark.circle")
-                    .font(.footnote)
-                    .foregroundStyle(AppTheme.Semantic.warning)
-            }
-
-            if viewModel.hasLoadedCalendars, !viewModel.calendars.isEmpty {
-                reloadCalendarsButton
-                    .controlSize(.small)
-            }
-        }
-    }
-
-    private func permissionExplanation(title: String, description: String, systemImage: String) -> some View {
-        Label {
-            VStack(alignment: .leading, spacing: AppTheme.Spacing.xs) {
-                Text(title)
-                    .font(.subheadline.weight(.semibold))
-                Text(description)
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-        } icon: {
-            Image(systemName: systemImage)
-                .foregroundStyle(permissionTint)
-        }
-    }
-
-    private var requestAccessButton: some View {
-        Button {
-            Task { await viewModel.requestPermission() }
-        } label: {
-            if viewModel.isRequestingPermission {
-                HStack(spacing: AppTheme.Spacing.sm) {
-                    ProgressView()
-                        .controlSize(.small)
-                    Text("접근 요청 중…")
-                }
-            } else {
-                Label("캘린더 접근 허용", systemImage: "checkmark.shield")
-            }
-        }
-        .buttonStyle(.borderedProminent)
-        .disabled(viewModel.isBusy)
-    }
-
-    private var reloadCalendarsButton: some View {
-        Button {
-            Task { await viewModel.loadCalendars() }
-        } label: {
-            if viewModel.isLoadingCalendars {
-                HStack(spacing: AppTheme.Spacing.sm) {
-                    ProgressView()
-                        .controlSize(.small)
-                    Text("불러오는 중…")
-                }
-            } else {
-                Label("캘린더 다시 불러오기", systemImage: "arrow.clockwise")
-            }
-        }
-        .disabled(viewModel.isBusy)
-    }
-
-    private func calendarRow(_ item: WritableCalendar) -> some View {
-        let isSelected = item.id == viewModel.selectedCalendarID
-        let isSelecting = item.id == viewModel.selectingCalendarID
-
-        return Button {
-            Task { await viewModel.selectCalendar(item) }
-        } label: {
-            HStack(spacing: AppTheme.Spacing.md) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(item.title)
-                        .font(.subheadline.weight(.semibold))
-                    Text(item.sourceTitle)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                Spacer(minLength: AppTheme.Spacing.md)
-                if isSelecting {
-                    ProgressView()
-                        .controlSize(.small)
-                } else if isSelected {
-                    Label("현재 저장 위치", systemImage: "checkmark.circle.fill")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(AppTheme.Semantic.success)
-                }
-            }
-            .padding(AppTheme.Spacing.sm)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(isSelected ? AppTheme.Accent.teaching.opacity(0.10) : Color.secondary.opacity(0.055), in: AppTheme.softPanel)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .disabled(viewModel.isBusy)
-        .accessibilityLabel("\(item.title), \(item.sourceTitle)")
-        .accessibilityValue(isSelected ? "현재 레슨 저장 위치" : "선택되지 않음")
-        .accessibilityHint(isSelected ? "" : "레슨 일정을 저장할 Apple 캘린더로 선택합니다.")
-        .accessibilityAddTraits(isSelected ? .isSelected : [])
-    }
-
-    private var permissionIcon: String {
-        switch viewModel.permission {
-        case .authorized: "checkmark.circle.fill"
-        case .denied, .restricted: "xmark.circle.fill"
-        case .writeOnly: "pencil.circle"
-        case .notDetermined, .unknown: "questionmark.circle"
-        }
-    }
-
-    private var permissionTint: Color {
-        switch viewModel.permission {
-        case .authorized: AppTheme.Semantic.success
-        case .denied, .restricted: AppTheme.Semantic.error
-        case .notDetermined, .writeOnly, .unknown: AppTheme.Semantic.warning
-        }
-    }
-}
-
-struct CalendarSettingsFeedback: Equatable {
-    enum Kind: Equatable {
-        case success
-        case warning
-        case error
-    }
-
-    var kind: Kind
+private struct BackupFeedback: Equatable {
     var message: String
-
-    var systemImage: String {
-        switch kind {
-        case .success: "checkmark.circle.fill"
-        case .warning: "exclamationmark.circle.fill"
-        case .error: "xmark.circle.fill"
-        }
-    }
-
-    var tint: Color {
-        switch kind {
-        case .success: AppTheme.Semantic.success
-        case .warning: AppTheme.Semantic.warning
-        case .error: AppTheme.Semantic.error
-        }
-    }
+    var isError: Bool
 }
 
-@MainActor
-@Observable
-final class CalendarSettingsViewModel {
-    private(set) var permission: EventKitPermissionState = .notDetermined
-    private(set) var calendars: [WritableCalendar] = []
-    private(set) var selectedCalendarID: String?
-    private(set) var feedback: CalendarSettingsFeedback?
-    private(set) var isRequestingPermission = false
-    private(set) var isLoadingCalendars = false
-    private(set) var selectingCalendarID: String?
-    private(set) var hasLoadedCalendars = false
-
-    private let calendar: CalendarRepository
-
-    init(calendar: CalendarRepository) {
-        self.calendar = calendar
-    }
-
-    var isBusy: Bool {
-        isRequestingPermission || isLoadingCalendars || selectingCalendarID != nil
-    }
-
-    func refresh() async {
-        permission = calendar.permissionStatus()
-        selectedCalendarID = calendar.selectedCalendar()?.id
-        feedback = nil
-
-        guard permission == .authorized else {
-            calendars = []
-            hasLoadedCalendars = false
-            return
-        }
-        await loadCalendars()
-    }
-
-    func requestPermission() async {
-        guard !isBusy else { return }
-        isRequestingPermission = true
-        feedback = nil
-        defer { isRequestingPermission = false }
-
-        do {
-            permission = try await calendar.requestPermission()
-            if permission == .authorized {
-                feedback = CalendarSettingsFeedback(kind: .success, message: "Apple 캘린더 접근을 허용했습니다.")
-                await loadCalendars()
-            } else {
-                calendars = []
-                hasLoadedCalendars = false
-                feedback = CalendarSettingsFeedback(
-                    kind: .warning,
-                    message: "캘린더 권한이 \(permission.label) 상태입니다. 안내에 따라 권한을 확인하세요."
-                )
-            }
-        } catch {
-            feedback = CalendarSettingsFeedback(kind: .error, message: "캘린더 접근을 요청하지 못했습니다. \(error.localizedDescription)")
-        }
-    }
-
-    func loadCalendars() async {
-        guard !isLoadingCalendars, selectingCalendarID == nil else { return }
-        guard permission == .authorized else {
-            feedback = CalendarSettingsFeedback(kind: .warning, message: "캘린더 전체 접근을 허용한 뒤 목록을 불러오세요.")
-            return
-        }
-
-        isLoadingCalendars = true
-        hasLoadedCalendars = false
-        if !isRequestingPermission {
-            feedback = nil
-        }
-        defer { isLoadingCalendars = false }
-
-        do {
-            calendars = try await calendar.listWritableCalendars()
-                .sorted { lhs, rhs in
-                    let sourceOrder = lhs.sourceTitle.localizedStandardCompare(rhs.sourceTitle)
-                    if sourceOrder == .orderedSame {
-                        return lhs.title.localizedStandardCompare(rhs.title) == .orderedAscending
-                    }
-                    return sourceOrder == .orderedAscending
-                }
-            let selectedID = calendar.selectedCalendar()?.id
-            selectedCalendarID = calendars.contains { $0.id == selectedID } ? selectedID : nil
-            hasLoadedCalendars = true
-        } catch {
-            calendars = []
-            hasLoadedCalendars = false
-            feedback = CalendarSettingsFeedback(kind: .error, message: "캘린더 목록을 불러오지 못했습니다. \(error.localizedDescription)")
-        }
-    }
-
-    func selectCalendar(_ item: WritableCalendar) async {
-        guard !isBusy, item.id != selectedCalendarID else { return }
-        selectingCalendarID = item.id
-        feedback = nil
-        defer { selectingCalendarID = nil }
-
-        do {
-            try await calendar.selectCalendar(item)
-            selectedCalendarID = item.id
-            feedback = CalendarSettingsFeedback(kind: .success, message: "‘\(item.title)’ 캘린더에 레슨 일정을 저장합니다.")
-        } catch {
-            feedback = CalendarSettingsFeedback(kind: .error, message: "캘린더를 선택하지 못했습니다. \(error.localizedDescription)")
-        }
-    }
+private extension UTType {
+    static let drumLessonBackup = UTType(
+        exportedAs: "com.ericshim.DrumLessonOS.backup",
+        conformingTo: .json
+    )
 }
 
-@MainActor
-@Observable
-final class SyncStatusViewModel {
-    var queue: LocalWriteQueue
-    var retry: RetryScheduler
-    var schedules: ScheduleRepository?
-    var lastMessage: String?
-    var isRetrying = false
+private struct LocalDataBackupDocument: FileDocument {
+    static var readableContentTypes: [UTType] { [.drumLessonBackup, .json] }
 
-    init(queue: LocalWriteQueue, retry: RetryScheduler, schedules: ScheduleRepository? = nil) {
-        self.queue = queue
-        self.retry = retry
-        self.schedules = schedules
+    var data: Data
+
+    init(data: Data) {
+        self.data = data
     }
 
-    func refresh() {
-        lastMessage = queue.hasPendingWrites ? "대기 중인 작업 \(queue.writes.count)개" : "로컬 작업이 모두 처리됐습니다."
+    init(configuration: ReadConfiguration) throws {
+        guard let data = configuration.file.regularFileContents else {
+            throw RepositoryError(message: "백업 파일을 읽을 수 없습니다.")
+        }
+        self.data = data
     }
 
-    func retryNow() async {
-        guard !isRetrying else { return }
-        isRetrying = true
-        lastMessage = "동기화를 다시 시도하는 중…"
-        defer { isRetrying = false }
-
-        var attemptedOccurrences: Set<EntityID> = []
-        await retry.retryNow { [schedules] write in
-            guard write.kind == .calendar else {
-                throw RepositoryError(message: "지원하지 않는 동기화 대기 작업입니다.")
-            }
-            guard let occurrenceId = write.recordId else {
-                throw RepositoryError(message: "동기화 대기 작업에 일정 식별자가 없습니다.")
-            }
-            guard let schedules else {
-                throw RepositoryError(message: "캘린더 동기화 저장소를 사용할 수 없습니다.")
-            }
-            guard attemptedOccurrences.insert(occurrenceId).inserted else {
-                throw RepositoryError(message: "같은 일정의 앞선 동기화 작업을 먼저 완료해야 합니다.")
-            }
-            try await schedules.retryNativeCalendarSync(occurrenceId: occurrenceId)
-        }
-        refresh()
-    }
-}
-
-struct SyncStatusView: View {
-    @Bindable var viewModel: SyncStatusViewModel
-
-    var body: some View {
-        WorkbenchSurface(.panel, padding: AppTheme.Spacing.lg) {
-            VStack(alignment: .leading, spacing: 12) {
-                SectionHeader(title: "동기화 대기열", subtitle: viewModel.lastMessage)
-                if viewModel.queue.writes.isEmpty {
-                    VStack(alignment: .leading, spacing: AppTheme.Spacing.xs) {
-                        Label("동기화할 일정이 없습니다", systemImage: "checkmark.circle.fill")
-                            .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(AppTheme.Semantic.success)
-                        Text("새 일정은 선택한 Apple 캘린더와 자동으로 동기화됩니다.")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                    .padding(.vertical, AppTheme.Spacing.xs)
-                } else {
-                    ForEach(viewModel.queue.writes) { write in
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("\(write.kind.label) · \(write.operationLabel)")
-                                .font(.subheadline.weight(.semibold))
-                            Text(write.payloadSummary)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                            if let error = write.lastError {
-                                Label(error, systemImage: "exclamationmark.triangle.fill")
-                                    .font(.caption)
-                                    .foregroundStyle(AppTheme.Semantic.error)
-                                    .fixedSize(horizontal: false, vertical: true)
-                            }
-                        }
-                        .padding(AppTheme.Spacing.sm)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(Color.secondary.opacity(0.055), in: AppTheme.softPanel)
-                    }
-                }
-                Button {
-                    Task { await viewModel.retryNow() }
-                } label: {
-                    if viewModel.isRetrying {
-                        HStack(spacing: AppTheme.Spacing.sm) {
-                            ProgressView()
-                                .controlSize(.small)
-                            Text("다시 시도하는 중…")
-                        }
-                    } else {
-                        Label("지금 재시도", systemImage: "arrow.triangle.2.circlepath")
-                    }
-                }
-                .disabled(viewModel.isRetrying || !viewModel.queue.hasPendingWrites)
-                .help(viewModel.queue.hasPendingWrites ? "대기 중인 캘린더 동기화를 다시 시도합니다." : "현재 대기 중인 동기화가 없습니다.")
-                .accessibilityLabel(viewModel.isRetrying ? "동기화 재시도 중" : "동기화 지금 재시도")
-            }
-        }
-        .onAppear { viewModel.refresh() }
-        .onChange(of: viewModel.lastMessage) { _, message in
-            guard let message else { return }
-            AccessibilityNotification.Announcement(message).post()
-        }
+    func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper {
+        FileWrapper(regularFileWithContents: data)
     }
 }

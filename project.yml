@@ -34,6 +34,16 @@ targets:
         CFBundleVersion: "1"
         NSCalendarsFullAccessUsageDescription: Drum Lesson OS writes scheduled lesson times to the Apple Calendar you choose.
         NSCalendarsUsageDescription: Drum Lesson OS writes scheduled lesson times to the Apple Calendar you choose.
+        UTExportedTypeDeclarations:
+          - UTTypeIdentifier: com.ericshim.DrumLessonOS.backup
+            UTTypeDescription: Drum Lesson OS Backup
+            UTTypeConformsTo:
+              - public.json
+            UTTypeTagSpecification:
+              public.filename-extension:
+                - drumlessonbackup
+              public.mime-type:
+                - application/json
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.ericshim.DrumLessonOS
@@ -41,6 +51,7 @@ targets:
         GENERATE_INFOPLIST_FILE: NO
         ENABLE_HARDENED_RUNTIME: YES
         CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: 95P2P242SQ
   DrumLessonOSTests:
     type: bundle.unit-test
     platform: macOS
@@ -52,3 +63,5 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.ericshim.DrumLessonOSTests
         GENERATE_INFOPLIST_FILE: YES
+        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: 95P2P242SQ

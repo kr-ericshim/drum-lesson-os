@@ -6,7 +6,7 @@
   "scripts": {
     "generate": "xcodegen generate",
     "test": "npm run test:native",
-    "test:native": "xcodebuild -quiet -project DrumLessonOS.xcodeproj -scheme DrumLessonOS -destination 'platform=macOS' test",
+    "test:native": "xcodebuild -quiet -project DrumLessonOS.xcodeproj -scheme DrumLessonOS -destination 'platform=macOS' CODE_SIGNING_ALLOWED=${CODE_SIGNING_ALLOWED:-YES} test",
     "verify": "xcodegen generate && npm run test:native"
   }
 }

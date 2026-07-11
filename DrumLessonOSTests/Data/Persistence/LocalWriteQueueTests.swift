@@ -39,6 +39,44 @@ import Testing
 }
 
 @MainActor
+@Test func queueRemoveAllPersistsEmptyState() throws {
+    let directory = FileManager.default.temporaryDirectory
+        .appendingPathComponent("DrumLessonOS-Queue-Clear-\(UUID().uuidString)", isDirectory: true)
+    let url = directory.appendingPathComponent("writes.json")
+    defer { try? FileManager.default.removeItem(at: directory) }
+    let queue = try LocalWriteQueue(storageURL: url)
+    try queue.enqueue(QueuedWrite(kind: .calendar, operation: "eventkit_create", payloadSummary: "레슨"))
+
+    try queue.removeAll()
+
+    #expect(queue.writes.isEmpty)
+    #expect(try LocalWriteQueue(storageURL: url).writes.isEmpty)
+}
+
+@MainActor
+@Test func restoringThroughBackupControllerClearsExistingCalendarQueue() async throws {
+    let directory = FileManager.default.temporaryDirectory
+        .appendingPathComponent("DrumLessonOS-Backup-Queue-\(UUID().uuidString)", isDirectory: true)
+    try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+    defer { try? FileManager.default.removeItem(at: directory) }
+    let repository = try LocalSQLiteRepository(databaseURL: directory.appendingPathComponent("app.sqlite"))
+    let queue = try LocalWriteQueue(storageURL: directory.appendingPathComponent("queue.json"))
+    try queue.enqueue(QueuedWrite(
+        kind: .calendar,
+        operation: CalendarQueueOperation.create.rawValue,
+        recordId: UUID(),
+        payloadSummary: "복원 전 대기 작업"
+    ))
+    let controller = LocalDataBackupController(repository: repository, writeQueue: queue)
+    let backupData = try await controller.makeBackupData()
+
+    _ = try await controller.restoreBackup(from: backupData)
+
+    #expect(queue.writes.isEmpty)
+    #expect(try LocalWriteQueue(storageURL: directory.appendingPathComponent("queue.json")).writes.isEmpty)
+}
+
+@MainActor
 @Test func durableQueueRestoresWriteAndMetadataStageAfterRelaunch() throws {
     let directory = FileManager.default.temporaryDirectory
         .appendingPathComponent("DrumLessonOS-Queue-\(UUID().uuidString)", isDirectory: true)

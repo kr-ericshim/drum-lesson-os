@@ -5,7 +5,6 @@ struct WeekCalendarView: View {
     @Binding var selected: CalendarLessonEvent?
     var onAddLesson: () -> Void
     var onMove: (CalendarLessonEvent, String) -> Void
-    @State private var draggedEventID: UUID?
 
     var body: some View {
         WorkbenchSurface(.canvas, padding: AppTheme.Spacing.lg) {
@@ -59,7 +58,6 @@ struct WeekCalendarView: View {
                         day: day,
                         allEvents: days.flatMap(\.events),
                         selected: $selected,
-                        draggedEventID: $draggedEventID,
                         onMove: onMove
                     )
                 }
@@ -72,7 +70,6 @@ private struct DashboardDayColumn: View {
     var day: CalendarDay
     var allEvents: [CalendarLessonEvent]
     @Binding var selected: CalendarLessonEvent?
-    @Binding var draggedEventID: UUID?
     var onMove: (CalendarLessonEvent, String) -> Void
     @State private var isDropTargeted = false
 
@@ -98,15 +95,12 @@ private struct DashboardDayColumn: View {
                         selected = event
                     } label: {
                         LessonEventCard(event: event, isSelected: event.id == selected?.id, density: .compact)
+                            .draggable(LessonEventDragPayload.value(for: event)) {
+                                LessonEventDragPreview(event: event)
+                            }
                     }
                     .buttonStyle(.plain)
                     .lessonEventContextActions(for: event)
-                    .onDrag {
-                        draggedEventID = event.id
-                        return LessonEventDragPayload.itemProvider(for: event)
-                    } preview: {
-                        LessonEventDragPreview(event: event)
-                    }
                     .accessibilityLabel("\(day.label) \(event.timeLabel) \(event.studentName) 레슨")
                     .accessibilityValue(lessonAccessibilityValue(for: event))
                     .accessibilityHint("선택하거나 다른 요일로 드래그할 수 있습니다. 우클릭하면 일정 동작을 엽니다.")
@@ -127,16 +121,15 @@ private struct DashboardDayColumn: View {
         .background(isDropTargeted ? AppTheme.Accent.teaching.opacity(0.09) : Color.clear, in: AppTheme.softPanel)
         .overlay(AppTheme.softPanel.stroke(isDropTargeted ? AppTheme.Accent.teaching.opacity(0.42) : Color.clear, lineWidth: 1))
         .contentShape(Rectangle())
-        .onDrop(
-            of: [LessonEventDragPayload.contentType],
-            delegate: DashboardDayDropDelegate(
-                dateKey: day.dateKey,
-                allEvents: allEvents,
-                draggedEventID: $draggedEventID,
-                isTargeted: $isDropTargeted,
-                onMove: onMove
-            )
-        )
+        .dropDestination(for: String.self) { values, _ in
+            guard let event = LessonEventDragPayload.event(from: values, in: allEvents) else {
+                return false
+            }
+            onMove(event, day.dateKey)
+            return true
+        } isTargeted: {
+            isDropTargeted = $0
+        }
     }
 }
 
@@ -145,7 +138,6 @@ struct WeekAgendaView: View {
     @Binding var selected: CalendarLessonEvent?
     var onAddLesson: () -> Void
     var onMove: (CalendarLessonEvent, String) -> Void
-    @State private var draggedEventID: UUID?
 
     var body: some View {
         WorkbenchSurface(.canvas, padding: AppTheme.Spacing.lg) {
@@ -160,7 +152,6 @@ struct WeekAgendaView: View {
                             day: day,
                             allEvents: days.flatMap(\.events),
                             selected: $selected,
-                            draggedEventID: $draggedEventID,
                             onMove: onMove
                         )
                     }
@@ -182,7 +173,6 @@ private struct DashboardAgendaDay: View {
     var day: CalendarDay
     var allEvents: [CalendarLessonEvent]
     @Binding var selected: CalendarLessonEvent?
-    @Binding var draggedEventID: UUID?
     var onMove: (CalendarLessonEvent, String) -> Void
     @State private var isDropTargeted = false
 
@@ -209,15 +199,12 @@ private struct DashboardAgendaDay: View {
                     selected = event
                 } label: {
                     LessonEventCard(event: event, isSelected: event.id == selected?.id)
+                        .draggable(LessonEventDragPayload.value(for: event)) {
+                            LessonEventDragPreview(event: event)
+                        }
                 }
                 .buttonStyle(.plain)
                 .lessonEventContextActions(for: event)
-                .onDrag {
-                    draggedEventID = event.id
-                    return LessonEventDragPayload.itemProvider(for: event)
-                } preview: {
-                    LessonEventDragPreview(event: event)
-                }
                 .accessibilityLabel("\(day.label) \(event.timeLabel) \(event.studentName) 레슨")
                 .accessibilityValue(lessonAccessibilityValue(for: event))
                 .accessibilityHint("선택하거나 다른 날짜로 드래그할 수 있습니다. 우클릭하면 일정 동작을 엽니다.")
@@ -235,53 +222,15 @@ private struct DashboardAgendaDay: View {
         .background(isDropTargeted ? AppTheme.Accent.teaching.opacity(0.09) : Color.clear, in: AppTheme.softPanel)
         .overlay(AppTheme.softPanel.stroke(isDropTargeted ? AppTheme.Accent.teaching.opacity(0.42) : Color.clear, lineWidth: 1))
         .contentShape(Rectangle())
-        .onDrop(
-            of: [LessonEventDragPayload.contentType],
-            delegate: DashboardDayDropDelegate(
-                dateKey: day.dateKey,
-                allEvents: allEvents,
-                draggedEventID: $draggedEventID,
-                isTargeted: $isDropTargeted,
-                onMove: onMove
-            )
-        )
-    }
-}
-
-private struct DashboardDayDropDelegate: DropDelegate {
-    var dateKey: String
-    var allEvents: [CalendarLessonEvent]
-    @Binding var draggedEventID: UUID?
-    @Binding var isTargeted: Bool
-    var onMove: (CalendarLessonEvent, String) -> Void
-
-    func validateDrop(info: DropInfo) -> Bool {
-        draggedEventID != nil && info.hasItemsConforming(to: [LessonEventDragPayload.contentType])
-    }
-
-    func dropEntered(info: DropInfo) {
-        isTargeted = true
-    }
-
-    func dropExited(info: DropInfo) {
-        isTargeted = false
-    }
-
-    func dropUpdated(info: DropInfo) -> DropProposal? {
-        DropProposal(operation: .move)
-    }
-
-    func performDrop(info: DropInfo) -> Bool {
-        defer {
-            isTargeted = false
-            draggedEventID = nil
+        .dropDestination(for: String.self) { values, _ in
+            guard let event = LessonEventDragPayload.event(from: values, in: allEvents) else {
+                return false
+            }
+            onMove(event, day.dateKey)
+            return true
+        } isTargeted: {
+            isDropTargeted = $0
         }
-        guard let draggedEventID,
-              let event = allEvents.first(where: { $0.id == draggedEventID }) else {
-            return false
-        }
-        onMove(event, dateKey)
-        return true
     }
 }
 

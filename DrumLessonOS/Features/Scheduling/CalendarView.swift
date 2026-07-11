@@ -66,6 +66,7 @@ struct CalendarView: View {
         }
         .padding(.horizontal, AppTheme.Spacing.xl)
         .padding(.vertical, AppTheme.Spacing.xxl)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .background(AppTheme.workspaceBackground)
         .inspector(isPresented: $isInspectorPresented) {
             ScrollView {
@@ -142,17 +143,19 @@ struct CalendarView: View {
             await viewModel.moveOccurrence(event, toDateKey: dateKey, minuteOfDay: minuteOfDay)
         }
     }
+
 }
 
 private struct WeekTimeGridView: View {
     var days: [CalendarDay]
     @Binding var selected: CalendarLessonEvent?
     var onMove: (CalendarLessonEvent, String, Int) -> Void
-    @State private var draggedEventID: UUID?
 
     private let axisWidth: CGFloat = 56
     private let minimumDayWidth: CGFloat = 112
     private let hourHeight: CGFloat = 72
+    private let headerHeight: CGFloat = 58
+    private let dividerHeight: CGFloat = 1
 
     var body: some View {
         WorkbenchSurface(.canvas, padding: 0) {
@@ -162,11 +165,12 @@ private struct WeekTimeGridView: View {
                     proxy.size.width,
                     axisWidth + minimumDayWidth * CGFloat(max(days.count, 1))
                 )
+                let gridHeight = max(0, proxy.size.height - headerHeight - dividerHeight)
 
                 ScrollView(.horizontal) {
                     VStack(spacing: 0) {
                         timelineHeader
-                            .frame(width: contentWidth)
+                            .frame(width: contentWidth, height: headerHeight)
 
                         Divider()
 
@@ -180,7 +184,6 @@ private struct WeekTimeGridView: View {
                                         day: day,
                                         allEvents: days.flatMap(\.events),
                                         selected: $selected,
-                                        draggedEventID: $draggedEventID,
                                         scale: scale,
                                         hourHeight: hourHeight,
                                         onMove: onMove
@@ -190,9 +193,11 @@ private struct WeekTimeGridView: View {
                             }
                             .frame(width: contentWidth)
                         }
+                        .frame(height: gridHeight)
                     }
-                    .frame(width: contentWidth)
+                    .frame(width: contentWidth, height: proxy.size.height, alignment: .top)
                 }
+                .frame(width: proxy.size.width, height: proxy.size.height)
             }
         }
         .frame(minHeight: 520)
@@ -308,7 +313,6 @@ private struct TimelineDayColumn: View {
     var day: CalendarDay
     var allEvents: [CalendarLessonEvent]
     @Binding var selected: CalendarLessonEvent?
-    @Binding var draggedEventID: UUID?
     var scale: TimelineScale
     var hourHeight: CGFloat
     var onMove: (CalendarLessonEvent, String, Int) -> Void
@@ -324,16 +328,17 @@ private struct TimelineDayColumn: View {
                     Button {
                         selected = event
                     } label: {
-                        TimelineLessonCard(event: event, height: rawHeight)
+                        TimelineLessonCard(
+                            event: event,
+                            height: rawHeight,
+                            isSelected: event.id == selected?.id
+                        )
+                            .draggable(LessonEventDragPayload.value(for: event)) {
+                                LessonEventDragPreview(event: event)
+                            }
                     }
                     .buttonStyle(.plain)
                     .lessonEventContextActions(for: event)
-                    .onDrag {
-                        draggedEventID = event.id
-                        return LessonEventDragPayload.itemProvider(for: event)
-                    } preview: {
-                        LessonEventDragPreview(event: event)
-                    }
                     .frame(maxWidth: .infinity)
                     .padding(.horizontal, 3)
                     .offset(y: scale.yOffset(for: minute, hourHeight: hourHeight) + 2)
@@ -352,18 +357,19 @@ private struct TimelineDayColumn: View {
                 .frame(width: 1)
         }
         .contentShape(Rectangle())
-        .onDrop(
-            of: [LessonEventDragPayload.contentType],
-            delegate: TimelineDayDropDelegate(
-                day: day,
-                allEvents: allEvents,
-                draggedEventID: $draggedEventID,
-                isTargeted: $isDropTargeted,
-                scale: scale,
-                hourHeight: hourHeight,
-                onMove: onMove
-            )
-        )
+        .dropDestination(for: String.self) { values, location in
+            guard let event = LessonEventDragPayload.event(from: values, in: allEvents) else {
+                return false
+            }
+            let rawMinute = scale.startMinute + Int((location.y / hourHeight) * 60)
+            let snappedMinute = ((rawMinute + 7) / 15) * 15
+            let latestStart = max(scale.startMinute, scale.endMinute - max(event.durationMinutes, 15))
+            let resolvedMinute = min(max(snappedMinute, scale.startMinute), latestStart)
+            onMove(event, day.dateKey, resolvedMinute)
+            return true
+        } isTargeted: {
+            isDropTargeted = $0
+        }
     }
 
     private var timelineGrid: some View {
@@ -383,52 +389,10 @@ private struct TimelineDayColumn: View {
     }
 }
 
-private struct TimelineDayDropDelegate: DropDelegate {
-    var day: CalendarDay
-    var allEvents: [CalendarLessonEvent]
-    @Binding var draggedEventID: UUID?
-    @Binding var isTargeted: Bool
-    var scale: TimelineScale
-    var hourHeight: CGFloat
-    var onMove: (CalendarLessonEvent, String, Int) -> Void
-
-    func validateDrop(info: DropInfo) -> Bool {
-        draggedEventID != nil && info.hasItemsConforming(to: [LessonEventDragPayload.contentType])
-    }
-
-    func dropEntered(info: DropInfo) {
-        isTargeted = true
-    }
-
-    func dropExited(info: DropInfo) {
-        isTargeted = false
-    }
-
-    func dropUpdated(info: DropInfo) -> DropProposal? {
-        DropProposal(operation: .move)
-    }
-
-    func performDrop(info: DropInfo) -> Bool {
-        defer {
-            isTargeted = false
-            draggedEventID = nil
-        }
-        guard let draggedEventID,
-              let event = allEvents.first(where: { $0.id == draggedEventID }) else {
-            return false
-        }
-        let rawMinute = scale.startMinute + Int((info.location.y / hourHeight) * 60)
-        let snappedMinute = ((rawMinute + 7) / 15) * 15
-        let latestStart = max(scale.startMinute, scale.endMinute - max(event.durationMinutes, 15))
-        let resolvedMinute = min(max(snappedMinute, scale.startMinute), latestStart)
-        onMove(event, day.dateKey, resolvedMinute)
-        return true
-    }
-}
-
 private struct TimelineLessonCard: View {
     var event: CalendarLessonEvent
     var height: CGFloat
+    var isSelected: Bool
     @State private var isHovering = false
 
     var body: some View {
@@ -462,11 +426,37 @@ private struct TimelineLessonCard: View {
         .padding(.vertical, 5)
         .frame(maxWidth: .infinity, minHeight: max(20, height - 4), maxHeight: max(20, height - 4), alignment: .topLeading)
         .background(
-            AppTheme.Accent.teaching.opacity(isHovering ? 0.18 : 0.11),
+            AppTheme.Accent.teaching.opacity(backgroundOpacity),
             in: AppTheme.softPanel
         )
-        .overlay(AppTheme.softPanel.stroke(AppTheme.Accent.teaching.opacity(0.32), lineWidth: 1))
+        .overlay(
+            AppTheme.softPanel.stroke(
+                AppTheme.Accent.teaching.opacity(borderOpacity),
+                lineWidth: isSelected ? 2 : 1
+            )
+        )
+        .overlay(alignment: .leading) {
+            if isSelected {
+                Capsule()
+                    .fill(AppTheme.Accent.teaching)
+                    .frame(width: 3)
+                    .padding(.vertical, 6)
+                    .padding(.leading, 3)
+                    .accessibilityHidden(true)
+            }
+        }
         .contentShape(Rectangle())
         .onHover { isHovering = $0 }
+        .animation(.easeOut(duration: 0.12), value: isSelected)
+    }
+
+    private var backgroundOpacity: Double {
+        if isSelected { return 0.22 }
+        return isHovering ? 0.14 : 0.07
+    }
+
+    private var borderOpacity: Double {
+        if isSelected { return 0.82 }
+        return isHovering ? 0.38 : 0.2
     }
 }

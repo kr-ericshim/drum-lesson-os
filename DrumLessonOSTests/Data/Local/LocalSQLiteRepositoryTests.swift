@@ -78,6 +78,189 @@ import Testing
 }
 
 @MainActor
+@Test func localBackupRestoreIsReversibleAndPausesPendingCalendarWork() async throws {
+    let directory = FileManager.default.temporaryDirectory
+        .appendingPathComponent("DrumLessonOS-Backup-\(UUID().uuidString)", isDirectory: true)
+    try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+    defer { try? FileManager.default.removeItem(at: directory) }
+    let databaseURL = directory.appendingPathComponent("DrumLessonOS.sqlite")
+    let repository = try LocalSQLiteRepository(databaseURL: databaseURL)
+    let occurrence = try await repository.createOneOffOccurrence(ScheduleLessonInput(
+        studentId: PreviewData.minjiId,
+        title: "복원 테스트 레슨",
+        startsAt: "2026-08-06T10:00:00Z",
+        endsAt: "2026-08-06T10:50:00Z",
+        timezone: "Asia/Seoul",
+        durationMinutes: 50
+    ))
+    let backupData = try await repository.makeBackupData()
+    let laterStudentID = try await repository.createStudent(StudentProfileInput(
+        studentId: nil,
+        name: "백업 이후 학생",
+        profileCue: "복원 전 상태에만 존재",
+        primaryWeakPoint: "없음",
+        active: true
+    ))
+
+    let safetyBackupURL = try await repository.restoreBackup(from: backupData)
+
+    #expect(FileManager.default.fileExists(atPath: safetyBackupURL.path))
+    await #expect(throws: RepositoryError.self) {
+        _ = try await repository.loadStudentDetail(studentId: laterStudentID)
+    }
+    let restoredOccurrence = try await repository.loadOccurrence(id: occurrence.id)
+    #expect(restoredOccurrence.nativeCalendarSyncStatus == .failed)
+    #expect(restoredOccurrence.nativeCalendarSyncError?.contains("수동으로 재시도") == true)
+    #expect(try await repository.loadPendingNativeCalendarOccurrences().contains { $0.id == occurrence.id } == false)
+
+    let safetyBackupData = try Data(contentsOf: safetyBackupURL)
+    _ = try await repository.restoreBackup(from: safetyBackupData)
+    #expect(try await repository.loadStudentDetail(studentId: laterStudentID).name == "백업 이후 학생")
+}
+
+@MainActor
+@Test func invalidBackupDoesNotModifyCurrentSnapshot() async throws {
+    let databaseURL = temporarySQLiteURL()
+    defer { removeSQLiteFiles(at: databaseURL) }
+    let repository = try LocalSQLiteRepository(databaseURL: databaseURL)
+    let studentID = try await repository.createStudent(StudentProfileInput(
+        studentId: nil,
+        name: "유지되어야 하는 학생",
+        profileCue: "잘못된 복원 뒤에도 유지",
+        primaryWeakPoint: "없음",
+        active: true
+    ))
+
+    await #expect(throws: RepositoryError.self) {
+        _ = try await repository.restoreBackup(from: Data("not-a-backup".utf8))
+    }
+
+    let validBackup = try await repository.makeBackupData()
+    var unsupported = try #require(JSONSerialization.jsonObject(with: validBackup) as? [String: Any])
+    unsupported["formatVersion"] = 999
+    await #expect(throws: RepositoryError.self) {
+        _ = try await repository.restoreBackup(from: JSONSerialization.data(withJSONObject: unsupported))
+    }
+
+    #expect(try await repository.loadStudentDetail(studentId: studentID).name == "유지되어야 하는 학생")
+}
+
+@MainActor
+@Test func backupWithDuplicateTemplateIdIsRejectedWithoutCrashing() async throws {
+    let databaseURL = temporarySQLiteURL()
+    defer { removeSQLiteFiles(at: databaseURL) }
+    let repository = try LocalSQLiteRepository(databaseURL: databaseURL)
+    _ = try await repository.createWeeklySchedule(WeeklyScheduleInput(
+        studentId: PreviewData.minjiId,
+        title: "중복 검증 주간 레슨",
+        defaultDurationMinutes: 50,
+        timezone: "Asia/Seoul",
+        recurrenceInterval: 1,
+        recurrenceWeekday: 4,
+        startsOn: "2026-05-28",
+        endsOn: nil,
+        startTime: "19:00"
+    ))
+
+    let validBackup = try await repository.makeBackupData()
+    var object = try #require(JSONSerialization.jsonObject(with: validBackup) as? [String: Any])
+    var snapshot = try #require(object["snapshot"] as? [String: Any])
+    var templates = try #require(snapshot["templates"] as? [[String: Any]])
+    templates.append(try #require(templates.first))
+    snapshot["templates"] = templates
+    object["snapshot"] = snapshot
+
+    await #expect(throws: RepositoryError.self) {
+        _ = try await repository.restoreBackup(from: JSONSerialization.data(withJSONObject: object))
+    }
+}
+
+@MainActor
+@Test func backupRejectsDuplicateOccurrenceAndBrokenTemplateReference() async throws {
+    let databaseURL = temporarySQLiteURL()
+    defer { removeSQLiteFiles(at: databaseURL) }
+    let repository = try LocalSQLiteRepository(databaseURL: databaseURL)
+    let validBackup = try await repository.makeBackupData()
+
+    var duplicateObject = try #require(JSONSerialization.jsonObject(with: validBackup) as? [String: Any])
+    var duplicateSnapshot = try #require(duplicateObject["snapshot"] as? [String: Any])
+    var occurrences = try #require(duplicateSnapshot["occurrences"] as? [[String: Any]])
+    occurrences.append(try #require(occurrences.first))
+    duplicateSnapshot["occurrences"] = occurrences
+    duplicateObject["snapshot"] = duplicateSnapshot
+
+    await #expect(throws: RepositoryError.self) {
+        _ = try await repository.restoreBackup(from: JSONSerialization.data(withJSONObject: duplicateObject))
+    }
+
+    var brokenObject = try #require(JSONSerialization.jsonObject(with: validBackup) as? [String: Any])
+    var brokenSnapshot = try #require(brokenObject["snapshot"] as? [String: Any])
+    var brokenOccurrences = try #require(brokenSnapshot["occurrences"] as? [[String: Any]])
+    brokenOccurrences[0]["schedule_template_id"] = UUID().uuidString
+    brokenSnapshot["occurrences"] = brokenOccurrences
+    brokenObject["snapshot"] = brokenSnapshot
+
+    await #expect(throws: RepositoryError.self) {
+        _ = try await repository.restoreBackup(from: JSONSerialization.data(withJSONObject: brokenObject))
+    }
+}
+
+@MainActor
+@Test func progressCheckpointsAppendWithoutOverwritingProgressItem() async throws {
+    let databaseURL = temporarySQLiteURL()
+    defer { removeSQLiteFiles(at: databaseURL) }
+    let repository = try LocalSQLiteRepository(databaseURL: databaseURL)
+    let itemID = try await repository.upsertProgressItem(ProgressItemInput(
+        studentId: PreviewData.minjiId,
+        progressItemId: nil,
+        category: .rudiment,
+        status: .inProgress,
+        title: "싱글 스트로크",
+        detail: "힘을 빼고 일정하게",
+        tempoNote: "기준 80 BPM",
+        observedOn: "2026-07-01",
+        currentFocus: false
+    ))
+
+    _ = try await repository.createProgressCheckpoint(ProgressCheckpointInput(
+        studentId: PreviewData.minjiId,
+        progressItemId: itemID,
+        observedOn: "2026-07-04",
+        bpm: 90,
+        status: .inProgress,
+        note: "오른손이 먼저 긴장함"
+    ))
+    _ = try await repository.createProgressCheckpoint(ProgressCheckpointInput(
+        studentId: PreviewData.minjiId,
+        progressItemId: itemID,
+        observedOn: "2026-07-11",
+        bpm: 100,
+        status: .inProgress,
+        note: "30초 유지"
+    ))
+
+    let reopened = try LocalSQLiteRepository(databaseURL: databaseURL)
+    let detail = try await reopened.loadStudentDetail(studentId: PreviewData.minjiId)
+    let item = try #require(detail.progressItems.first { $0.id == itemID })
+
+    #expect(item.checkpoints.map(\.bpm) == [100, 90])
+    #expect(item.checkpoints.map(\.note) == ["30초 유지", "오른손이 먼저 긴장함"])
+    #expect(item.observedOn == "2026-07-01")
+    #expect(item.tempoNote == "기준 80 BPM")
+
+    await #expect(throws: RepositoryError.self) {
+        _ = try await repository.createProgressCheckpoint(ProgressCheckpointInput(
+            studentId: PreviewData.joonId,
+            progressItemId: itemID,
+            observedOn: "2026-07-11",
+            bpm: 100,
+            status: .inProgress,
+            note: "잘못된 학생 연결"
+        ))
+    }
+}
+
+@MainActor
 @Test func closeoutValidationFailureDoesNotCreatePartialLessonNote() async throws {
     let databaseURL = temporarySQLiteURL()
     defer { removeSQLiteFiles(at: databaseURL) }
@@ -137,10 +320,34 @@ import Testing
 }
 
 @MainActor
+@Test func closeoutRejectsFutureOccurrenceWithoutChangingStudentHistory() async throws {
+    let databaseURL = temporarySQLiteURL()
+    defer { removeSQLiteFiles(at: databaseURL) }
+    let now = try #require(ISO8601DateFormatter.plain.date(from: "2026-07-11T00:00:00Z"))
+    let repository = try LocalSQLiteRepository(databaseURL: databaseURL, currentDate: { now })
+    let occurrence = try await makeScheduledOccurrence(repository: repository, dateKey: "2026-08-06")
+    let before = try await repository.loadStudentDetail(studentId: PreviewData.minjiId)
+
+    await #expect(throws: ValidationError.self) {
+        try await repository.closeoutLesson(makeCloseoutInput(
+            studentId: PreviewData.minjiId,
+            occurrenceId: occurrence.id,
+            lessonDate: "2026-08-06"
+        ))
+    }
+
+    let unchangedOccurrence = try await repository.loadOccurrence(id: occurrence.id)
+    let after = try await repository.loadStudentDetail(studentId: PreviewData.minjiId)
+    #expect(unchangedOccurrence.status == .scheduled)
+    #expect(after.recentNotes.count == before.recentNotes.count)
+}
+
+@MainActor
 @Test func closeoutCompletesOccurrenceAndRejectsDuplicateCloseout() async throws {
     let databaseURL = temporarySQLiteURL()
     defer { removeSQLiteFiles(at: databaseURL) }
-    let repository = try LocalSQLiteRepository(databaseURL: databaseURL)
+    let now = try #require(ISO8601DateFormatter.plain.date(from: "2026-08-06T12:00:00Z"))
+    let repository = try LocalSQLiteRepository(databaseURL: databaseURL, currentDate: { now })
     let occurrence = try await repository.createOneOffOccurrence(ScheduleLessonInput(
         studentId: PreviewData.minjiId,
         title: "김민지 드럼 레슨",
@@ -149,7 +356,11 @@ import Testing
         timezone: "Asia/Seoul",
         durationMinutes: 50
     ))
-    let input = makeCloseoutInput(studentId: PreviewData.minjiId, occurrenceId: occurrence.id)
+    let input = makeCloseoutInput(
+        studentId: PreviewData.minjiId,
+        occurrenceId: occurrence.id,
+        lessonDate: "2026-08-06"
+    )
 
     try await repository.closeoutLesson(input)
     let completed = try await repository.loadOccurrence(id: occurrence.id)
@@ -387,23 +598,71 @@ import Testing
 }
 
 @MainActor
-@Test func snapshotWithoutTemplatesKeyStillDecodes() async throws {
+@Test func legacySnapshotWithoutNewCollectionKeysStillDecodes() async throws {
     let databaseURL = temporarySQLiteURL()
     defer { removeSQLiteFiles(at: databaseURL) }
     _ = try LocalSQLiteRepository(databaseURL: databaseURL)
     try executeSQLite(
-        "UPDATE snapshots SET value = CAST(json_remove(CAST(value AS TEXT), '$.templates') AS BLOB) WHERE key = 'app_snapshot'",
+        "UPDATE snapshots SET value = CAST(json_remove(CAST(value AS TEXT), '$.templates', '$.progressCheckpoints', '$.tuitionCycles') AS BLOB) WHERE key = 'app_snapshot'",
         at: databaseURL
     )
 
     let reopened = try LocalSQLiteRepository(databaseURL: databaseURL)
     #expect(try await reopened.loadRoster().count == PreviewData.students.filter(\.active).count)
+    let detail = try await reopened.loadStudentDetail(studentId: PreviewData.minjiId)
+    #expect(detail.progressItems.allSatisfy { $0.checkpoints.isEmpty })
+    #expect(try await reopened.loadTuitionRoster().allSatisfy { $0.currentCycle == nil })
 }
 
-private func makeCloseoutInput(studentId: EntityID, occurrenceId: EntityID? = nil) -> LessonCloseoutInput {
+@MainActor
+@Test func tuitionCyclesRoundTripInVersionTwoBackupAndVersionOneStillRestores() async throws {
+    let directory = FileManager.default.temporaryDirectory
+        .appendingPathComponent("DrumLessonOS-TuitionBackup-\(UUID().uuidString)", isDirectory: true)
+    try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+    defer { try? FileManager.default.removeItem(at: directory) }
+    let databaseURL = directory.appendingPathComponent("DrumLessonOS.sqlite")
+    let repository = try LocalSQLiteRepository(databaseURL: databaseURL)
+    let cycleId = try await repository.configureTuitionCycle(
+        studentId: PreviewData.minjiId,
+        completedLessonCount: 2,
+        paymentConfirmedOn: "2026-07-11"
+    )
+    let versionTwoBackup = try await repository.makeBackupData()
+    var backupObject = try #require(JSONSerialization.jsonObject(with: versionTwoBackup) as? [String: Any])
+
+    #expect(backupObject["formatVersion"] as? Int == 2)
+    try await repository.setTuitionPaymentConfirmation(
+        cycleId: cycleId,
+        studentId: PreviewData.minjiId,
+        confirmedOn: nil
+    )
+    _ = try await repository.restoreBackup(from: versionTwoBackup)
+    let restoredRoster = try await repository.loadTuitionRoster()
+    let restoredItem = try #require(restoredRoster.first { $0.studentId == PreviewData.minjiId })
+    let restoredCycle = try #require(restoredItem.currentCycle)
+    #expect(restoredCycle.completedLessonCount == 2)
+    #expect(restoredCycle.paymentConfirmedOn == "2026-07-11")
+
+    backupObject["formatVersion"] = 1
+    var legacySnapshot = try #require(backupObject["snapshot"] as? [String: Any])
+    legacySnapshot.removeValue(forKey: "tuitionCycles")
+    backupObject["snapshot"] = legacySnapshot
+    let versionOneBackup = try JSONSerialization.data(withJSONObject: backupObject)
+
+    _ = try await repository.restoreBackup(from: versionOneBackup)
+    let legacyRoster = try await repository.loadTuitionRoster()
+    let legacyItem = try #require(legacyRoster.first { $0.studentId == PreviewData.minjiId })
+    #expect(legacyItem.currentCycle == nil)
+}
+
+private func makeCloseoutInput(
+    studentId: EntityID,
+    occurrenceId: EntityID? = nil,
+    lessonDate: String = "2026-07-10"
+) -> LessonCloseoutInput {
     LessonCloseoutInput(
         studentId: studentId,
-        lessonDate: "2026-07-10",
+        lessonDate: lessonDate,
         coveredMaterial: "코러스 전 필인",
         observations: "착지가 흔들림",
         practiceAssigned: "2마디 루프",

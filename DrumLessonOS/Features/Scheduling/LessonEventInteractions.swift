@@ -1,11 +1,53 @@
 import SwiftUI
-import UniformTypeIdentifiers
 
 enum LessonEventDragPayload {
-    static let contentType = UTType.utf8PlainText
+    static func value(for event: CalendarLessonEvent) -> String {
+        event.id.uuidString
+    }
 
-    static func itemProvider(for event: CalendarLessonEvent) -> NSItemProvider {
-        NSItemProvider(object: event.id.uuidString as NSString)
+    static func event(from values: [String], in events: [CalendarLessonEvent]) -> CalendarLessonEvent? {
+        guard let identifier = values.compactMap(UUID.init(uuidString:)).first else { return nil }
+        return events.first { $0.id == identifier }
+    }
+}
+
+enum LessonEventActionContext: Equatable {
+    case prepare
+    case start
+    case record
+
+    init(event: CalendarLessonEvent, now: Date = Date()) {
+        let timeZone = TimeZone(identifier: event.timezone) ?? .current
+        self = Self.resolve(
+            eventDateKey: event.dateKey,
+            todayDateKey: DateOnly.string(from: now, timeZone: timeZone)
+        )
+    }
+
+    static func resolve(eventDateKey: String, todayDateKey: String) -> Self {
+        if eventDateKey > todayDateKey { return .prepare }
+        if eventDateKey < todayDateKey { return .record }
+        return .start
+    }
+
+    var title: String {
+        switch self {
+        case .prepare: "레슨 준비 보기"
+        case .start: "레슨 시작"
+        case .record: "레슨 기록"
+        }
+    }
+
+    var systemImage: String {
+        switch self {
+        case .prepare: "checklist"
+        case .start: "play.circle.fill"
+        case .record: "square.and.pencil"
+        }
+    }
+
+    var opensLessonWorkspace: Bool {
+        self != .prepare
     }
 }
 
@@ -36,12 +78,16 @@ struct LessonEventActionMenuItems: View {
     var onEdit: () -> Void
     var onCancel: () -> Void
     var onRetrySync: () -> Void
-    var onOpenLesson: () -> Void
+    var onPrimaryAction: () -> Void
     var onOpenStudent: () -> Void
 
+    private var actionContext: LessonEventActionContext {
+        LessonEventActionContext(event: event)
+    }
+
     var body: some View {
-        Button(action: onOpenLesson) {
-            Label("레슨 시작", systemImage: "play.circle.fill")
+        Button(action: onPrimaryAction) {
+            Label(actionContext.title, systemImage: actionContext.systemImage)
         }
 
         Button(action: onOpenStudent) {
@@ -84,7 +130,7 @@ private struct LessonEventContextActionsModifier: ViewModifier {
                     onRetrySync: {
                         Task { await environment.dashboard.retryCalendarSync(occurrenceId: event.id) }
                     },
-                    onOpenLesson: { environment.route = .lesson(event) },
+                    onPrimaryAction: { openPrimaryAction(for: event) },
                     onOpenStudent: { environment.route = .student(event.studentId) }
                 )
             }
@@ -103,6 +149,11 @@ private struct LessonEventContextActionsModifier: ViewModifier {
             } message: {
                 Text("이번 회차만 취소하며 주간 보기와 Apple 캘린더에 반영됩니다.")
             }
+    }
+
+    private func openPrimaryAction(for event: CalendarLessonEvent) {
+        let context = LessonEventActionContext(event: event)
+        environment.route = context.opensLessonWorkspace ? .lesson(event) : .student(event.studentId)
     }
 
     private var isShowingCancelConfirmation: Binding<Bool> {

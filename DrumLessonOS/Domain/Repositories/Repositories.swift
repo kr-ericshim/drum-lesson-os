@@ -14,11 +14,18 @@ protocol StudentWriteRepository {
     func updateStudentProfile(_ input: StudentProfileInput) async throws
     func upsertTrait(_ input: StudentTraitInput) async throws -> EntityID
     func upsertProgressItem(_ input: ProgressItemInput) async throws -> EntityID
+    func createProgressCheckpoint(_ input: ProgressCheckpointInput) async throws -> EntityID
     func updateProgressStatus(_ input: ProgressStatusTransitionInput) async throws
     func upsertAssignment(_ input: AssignmentInput) async throws -> EntityID
     func createLessonNote(_ input: LessonNoteInput) async throws -> EntityID
     func upsertNextPlan(_ input: NextPlanInput) async throws -> EntityID
     func closeoutLesson(_ input: LessonCloseoutInput) async throws
+}
+
+@MainActor
+protocol LocalDataBackupRepository {
+    func makeBackupData() async throws -> Data
+    func restoreBackup(from data: Data) async throws -> URL
 }
 
 @MainActor

@@ -127,6 +127,39 @@ import Testing
     #expect(viewModel.model == moved)
 }
 
+@MainActor
+@Test func dashboardDragMoveKeepsRenderedEventStableUntilEditCompletes() async throws {
+    let initial = makeDashboardWorkbench(title: "이동 전")
+    let moved = makeDashboardWorkbench(title: "이동 후")
+    let repository = DashboardStudentRepositoryFake(results: [
+        .success(initial),
+        .success(moved)
+    ])
+    let schedules = DashboardScheduleRepositoryFake(suspendEdits: true)
+    let viewModel = DashboardViewModel(repository: repository, scheduleRepository: schedules)
+    let event = try #require(initial.selectedEvent)
+
+    await viewModel.load()
+    let move = Task {
+        await viewModel.moveOccurrence(event, toDateKey: "2026-05-29")
+    }
+    try await waitForPendingEditCount(1, repository: schedules)
+
+    #expect(viewModel.model == initial)
+    #expect(viewModel.selectedEvent == initial.selectedEvent)
+    #expect(viewModel.movingOccurrenceIDs == [event.id])
+
+    await viewModel.moveOccurrence(event, toDateKey: "2026-05-30")
+    #expect(schedules.editedInputs.count == 1)
+
+    schedules.resumePendingEdit(at: 0)
+    await move.value
+
+    #expect(viewModel.model == moved)
+    #expect(viewModel.selectedEvent == moved.selectedEvent)
+    #expect(viewModel.movingOccurrenceIDs.isEmpty)
+}
+
 @Test func calendarDragMoveUsesDroppedMinuteInLessonTimezone() throws {
     let event = try #require(makeDashboardWorkbench(title: "시간 이동").selectedEvent)
 
@@ -138,6 +171,19 @@ import Testing
 
     #expect(input.startsAt == "2026-05-29T11:15:00Z")
     #expect(input.endsAt == "2026-05-29T12:05:00Z")
+}
+
+@Test func lessonEventDragPayloadResolvesTheDraggedEvent() throws {
+    let model = makeDashboardWorkbench(title: "드래그 대상")
+    let event = try #require(model.selectedEvent)
+
+    let resolved = LessonEventDragPayload.event(
+        from: [LessonEventDragPayload.value(for: event)],
+        in: model.days.flatMap(\.events)
+    )
+
+    #expect(resolved == event)
+    #expect(LessonEventDragPayload.event(from: ["invalid"], in: [event]) == nil)
 }
 
 @MainActor
@@ -152,6 +198,21 @@ private func waitForPendingLoadCount(
     _ = try #require(
         repository.pendingLoads.count >= expectedCount,
         "대시보드 로드 요청이 제한 시간 안에 시작되지 않았습니다."
+    )
+}
+
+@MainActor
+private func waitForPendingEditCount(
+    _ expectedCount: Int,
+    repository: DashboardScheduleRepositoryFake
+) async throws {
+    for _ in 0..<1_000 {
+        if repository.pendingEditContinuations.count >= expectedCount { return }
+        await Task.yield()
+    }
+    _ = try #require(
+        repository.pendingEditContinuations.count >= expectedCount,
+        "일정 이동 요청이 제한 시간 안에 시작되지 않았습니다."
     )
 }
 
@@ -248,10 +309,14 @@ private final class DashboardScheduleRepositoryFake: ScheduleRepository {
     var canceledOccurrenceIds: [EntityID] = []
     var retriedOccurrenceIds: [EntityID] = []
     var editedInputs: [EditOccurrenceInput] = []
+    var pendingEditContinuations: [CheckedContinuation<LessonOccurrence, Never>] = []
+    private var pendingEditOccurrences: [LessonOccurrence] = []
     private let reconciledCount: Int
+    private let suspendEdits: Bool
 
-    init(reconciledCount: Int = 0) {
+    init(reconciledCount: Int = 0, suspendEdits: Bool = false) {
         self.reconciledCount = reconciledCount
+        self.suspendEdits = suspendEdits
     }
 
     func createOneOffOccurrence(_ input: ScheduleLessonInput) async throws -> LessonOccurrence {
@@ -274,7 +339,17 @@ private final class DashboardScheduleRepositoryFake: ScheduleRepository {
         ).makeOccurrence(instructorId: PreviewData.instructorId)
         occurrence.id = input.occurrenceId
         occurrence.nativeCalendarSyncStatus = .synced
+        if suspendEdits {
+            return await withCheckedContinuation { continuation in
+                pendingEditOccurrences.append(occurrence)
+                pendingEditContinuations.append(continuation)
+            }
+        }
         return occurrence
+    }
+
+    func resumePendingEdit(at index: Int) {
+        pendingEditContinuations[index].resume(returning: pendingEditOccurrences[index])
     }
 
     func cancelOccurrence(id: EntityID) async throws -> LessonOccurrence {

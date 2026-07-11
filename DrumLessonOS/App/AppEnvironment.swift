@@ -77,6 +77,7 @@ final class AppEnvironment {
     var route: AppRoute = .dashboard
     var dashboard: DashboardViewModel
     var syncStatus: SyncStatusViewModel
+    var tuition: TuitionViewModel
 
     let students: StudentRepository
     let calendar: CalendarRepository
@@ -84,6 +85,7 @@ final class AppEnvironment {
     let schedules: ScheduleRepository
     let preferences: AppPreferences
     let localDataDirectoryURL: URL?
+    let localDataBackup: LocalDataBackupRepository?
 
     init(
         dashboard: DashboardViewModel,
@@ -92,8 +94,10 @@ final class AppEnvironment {
         calendar: CalendarRepository,
         writes: StudentWriteRepository,
         schedules: ScheduleRepository,
+        tuitionRepository: TuitionRepository,
         preferences: AppPreferences = AppPreferences(),
-        localDataDirectoryURL: URL? = nil
+        localDataDirectoryURL: URL? = nil,
+        localDataBackup: LocalDataBackupRepository? = nil
     ) {
         self.dashboard = dashboard
         self.syncStatus = syncStatus
@@ -101,8 +105,10 @@ final class AppEnvironment {
         self.calendar = calendar
         self.writes = writes
         self.schedules = schedules
+        tuition = TuitionViewModel(repository: tuitionRepository)
         self.preferences = preferences
         self.localDataDirectoryURL = localDataDirectoryURL
+        self.localDataBackup = localDataBackup
     }
 
     static func preview() -> AppEnvironment {
@@ -119,7 +125,8 @@ final class AppEnvironment {
             students: store,
             calendar: calendar,
             writes: store,
-            schedules: schedules
+            schedules: schedules,
+            tuitionRepository: store
         )
     }
 
@@ -127,17 +134,10 @@ final class AppEnvironment {
         databaseURL: URL? = nil,
         calendar: CalendarRepository? = nil,
         preferences: AppPreferences = AppPreferences()
-    ) -> AppEnvironment {
-        let store: LocalSQLiteRepository
-        let queue: LocalWriteQueue
-        let resolvedDatabaseURL: URL
-        do {
-            resolvedDatabaseURL = try databaseURL ?? LocalSQLiteRepository.defaultDatabaseURL()
-            store = try LocalSQLiteRepository(databaseURL: resolvedDatabaseURL)
-            queue = try LocalWriteQueue(storageURL: writeQueueURL(for: resolvedDatabaseURL))
-        } catch {
-            preconditionFailure("Local store failed: \(error.localizedDescription)")
-        }
+    ) throws -> AppEnvironment {
+        let resolvedDatabaseURL = try databaseURL ?? LocalSQLiteRepository.defaultDatabaseURL()
+        let store = try LocalSQLiteRepository(databaseURL: resolvedDatabaseURL)
+        let queue = try LocalWriteQueue(storageURL: writeQueueURL(for: resolvedDatabaseURL))
 
         let calendar = calendar ?? EventKitCalendarRepository {
             preferences.calendarReminderMinutes
@@ -145,6 +145,7 @@ final class AppEnvironment {
         let retry = RetryScheduler(writeQueue: queue)
         let schedules = CalendarBackedScheduleRepository(schedules: store, calendar: calendar, queue: queue)
         let sync = SyncStatusViewModel(queue: queue, retry: retry, schedules: schedules)
+        let backup = LocalDataBackupController(repository: store, writeQueue: queue)
 
         return AppEnvironment(
             dashboard: DashboardViewModel(repository: store, scheduleRepository: schedules),
@@ -153,8 +154,10 @@ final class AppEnvironment {
             calendar: calendar,
             writes: store,
             schedules: schedules,
+            tuitionRepository: store,
             preferences: preferences,
-            localDataDirectoryURL: resolvedDatabaseURL.deletingLastPathComponent()
+            localDataDirectoryURL: resolvedDatabaseURL.deletingLastPathComponent(),
+            localDataBackup: backup
         )
     }
 
@@ -164,20 +167,36 @@ final class AppEnvironment {
         databaseURL: URL? = nil,
         calendar: CalendarRepository? = nil,
         preferences: AppPreferences = AppPreferences()
-    ) -> AppEnvironment {
-        _ = environment
+    ) throws -> AppEnvironment {
         _ = bundle
-        return local(databaseURL: databaseURL, calendar: calendar, preferences: preferences)
+        let configuredDatabaseURL = databaseURL ?? environment[RuntimeEnvironment.databasePath]
+            .map { URL(fileURLWithPath: $0) }
+        let configuredCalendar = calendar ?? (
+            environment[RuntimeEnvironment.previewCalendar] == "1"
+                ? PreviewCalendarRepository()
+                : nil
+        )
+        return try local(
+            databaseURL: configuredDatabaseURL,
+            calendar: configuredCalendar,
+            preferences: preferences
+        )
     }
 
     @MainActor
     func refresh() async {
         await syncStatus.retryNow()
         await dashboard.load()
+        await tuition.load()
         syncStatus.refresh()
     }
 
     private static func writeQueueURL(for databaseURL: URL) -> URL {
         databaseURL.appendingPathExtension("calendar-write-queue.json")
+    }
+
+    enum RuntimeEnvironment {
+        static let databasePath = "DRUM_LESSON_OS_DATABASE_PATH"
+        static let previewCalendar = "DRUM_LESSON_OS_PREVIEW_CALENDAR"
     }
 }

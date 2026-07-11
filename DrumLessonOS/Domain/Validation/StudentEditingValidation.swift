@@ -21,6 +21,17 @@ enum StudentEditingValidation {
         try optional(input.tempoNote, field: "tempoNote", max: 240)
     }
 
+    static func validate(_ input: ProgressCheckpointInput) throws {
+        try requireDate(input.observedOn, field: "observedOn")
+        try optional(input.note, field: "checkpointNote", max: 500)
+        if let bpm = input.bpm, !(20...400).contains(bpm) {
+            throw ValidationError(field: "bpm", message: "BPM은 20에서 400 사이로 입력하세요.")
+        }
+        if input.bpm == nil, input.note.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            throw ValidationError(field: "checkpoint", message: "BPM이나 관찰 메모를 입력하세요.")
+        }
+    }
+
     static func validate(_ input: StudentTraitInput) throws {
         try require(input.label, field: "traitLabel", max: 160)
         try require(input.detail, field: "traitDetail", max: 1_000)
@@ -156,6 +167,7 @@ enum StudentEditingValidation {
         case "detail": "상세"
         case "observedOn": "확인 날짜"
         case "tempoNote": "템포 메모"
+        case "checkpointNote": "체크포인트 메모"
         case "traitLabel": "특성 라벨"
         case "traitDetail": "특성 상세"
         case "dueDate": "마감일"
@@ -206,6 +218,15 @@ struct ProgressStatusTransitionInput: Equatable {
     var studentId: EntityID
     var progressItemId: EntityID
     var nextStatus: ProgressStatus
+}
+
+struct ProgressCheckpointInput: Equatable {
+    var studentId: EntityID
+    var progressItemId: EntityID
+    var observedOn: String
+    var bpm: Int?
+    var status: ProgressStatus
+    var note: String
 }
 
 struct AssignmentInput: Equatable {

@@ -138,6 +138,7 @@ enum StudentDetailMapper {
     static func map(
         student: Student,
         progressItems: [ProgressItem],
+        progressCheckpoints: [ProgressCheckpoint] = [],
         traits: [StudentTrait],
         assignments: [Assignment],
         notes: [LessonNote],
@@ -155,16 +156,33 @@ enum StudentDetailMapper {
 
         let mappedProgress = progressItems
             .sorted { $0.observedOn > $1.observedOn }
-            .map {
+            .map { item in
                 StudentProgressItem(
-                    id: $0.id,
-                    category: $0.category,
-                    status: $0.status,
-                    title: $0.title,
-                    currentFocus: $0.currentFocus,
-                    observedOn: $0.observedOn,
-                    detail: $0.detail,
-                    tempoNote: $0.tempoNote
+                    id: item.id,
+                    category: item.category,
+                    status: item.status,
+                    title: item.title,
+                    currentFocus: item.currentFocus,
+                    observedOn: item.observedOn,
+                    detail: item.detail,
+                    tempoNote: item.tempoNote,
+                    checkpoints: progressCheckpoints
+                        .filter { $0.progressItemId == item.id }
+                        .sorted {
+                            if $0.observedOn == $1.observedOn {
+                                return ($0.createdAt ?? "") > ($1.createdAt ?? "")
+                            }
+                            return $0.observedOn > $1.observedOn
+                        }
+                        .map {
+                            ProgressCheckpointSummary(
+                                id: $0.id,
+                                observedOn: $0.observedOn,
+                                bpm: $0.bpm,
+                                status: $0.status,
+                                note: $0.note
+                            )
+                        }
                 )
             }
 

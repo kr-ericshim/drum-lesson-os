@@ -9,9 +9,15 @@ struct SelectedLessonPanel: View {
     var body: some View {
         WorkbenchSurface(event == nil ? .quiet : .inspector, padding: AppTheme.Spacing.lg) {
             if let event {
-                VStack(alignment: .leading, spacing: AppTheme.Spacing.lg) {
-                    HStack(alignment: .firstTextBaseline, spacing: AppTheme.Spacing.md) {
+                let actionContext = LessonEventActionContext(event: event)
+
+                VStack(alignment: .leading, spacing: AppTheme.Spacing.md) {
+                    HStack(alignment: .top, spacing: AppTheme.Spacing.md) {
                         VStack(alignment: .leading, spacing: AppTheme.Spacing.xs) {
+                            Text("선택한 레슨")
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(.secondary)
+
                             Text(event.studentName)
                                 .font(.title2.weight(.semibold))
                                 .lineLimit(1)
@@ -39,14 +45,20 @@ struct SelectedLessonPanel: View {
                                     onRetrySync: {
                                         Task { await environment.dashboard.retryCalendarSync(occurrenceId: event.id) }
                                     },
-                                    onOpenLesson: { environment.route = .lesson(event) },
+                                    onPrimaryAction: { openPrimaryAction(for: event) },
                                     onOpenStudent: { environment.route = .student(event.studentId) }
                                 )
                             } label: {
-                                Image(systemName: "ellipsis.circle")
-                                    .frame(width: 28, height: 28)
+                                Image(systemName: "ellipsis")
+                                    .font(.body.weight(.semibold))
+                                    .foregroundStyle(.secondary)
+                                    .frame(width: 32, height: 32)
+                                    .contentShape(Circle())
                             }
                             .menuStyle(.borderlessButton)
+                            .menuIndicator(.hidden)
+                            .fixedSize()
+                            .frame(width: 40, height: 40)
                             .help("레슨 동작")
                             .accessibilityLabel("레슨 동작")
                         }
@@ -58,7 +70,7 @@ struct SelectedLessonPanel: View {
                             .foregroundStyle(AppTheme.Accent.teachingForeground)
 
                         Text(event.firstCheck)
-                            .font(.title2.weight(.semibold))
+                            .font(.title3.weight(.semibold))
                             .lineLimit(4)
 
                         if !event.watchFlags.isEmpty {
@@ -67,8 +79,8 @@ struct SelectedLessonPanel: View {
                     }
                     .padding(AppTheme.Spacing.md)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(AppTheme.Accent.teaching.opacity(0.07), in: AppTheme.softPanel)
-                    .overlay(AppTheme.softPanel.stroke(AppTheme.Accent.teaching.opacity(0.16), lineWidth: 1))
+                    .background(Color.primary.opacity(0.035), in: AppTheme.softPanel)
+                    .overlay(AppTheme.softPanel.stroke(Color.primary.opacity(0.08), lineWidth: 1))
 
                     if let error = event.syncError {
                         Text(error)
@@ -78,13 +90,22 @@ struct SelectedLessonPanel: View {
                             .accessibilityLabel("캘린더 동기화 오류")
                             .accessibilityValue(error)
                     }
-                    Button {
-                        environment.route = .lesson(event)
-                    } label: {
-                        Label("레슨 시작", systemImage: "play.circle.fill")
-                            .frame(maxWidth: .infinity)
+                    HStack(spacing: AppTheme.Spacing.sm) {
+                        Button {
+                            editTarget = event
+                        } label: {
+                            Label("시간 수정", systemImage: "calendar.badge.clock")
+                        }
+                        .buttonStyle(.bordered)
+
+                        Button {
+                            openPrimaryAction(for: event)
+                        } label: {
+                            Label(actionContext.title, systemImage: actionContext.systemImage)
+                                .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.borderedProminent)
                     }
-                    .buttonStyle(.borderedProminent)
                     .controlSize(.large)
                 }
             } else {
@@ -122,6 +143,11 @@ struct SelectedLessonPanel: View {
 
     private var shouldShowSyncStatus: Bool {
         event?.syncStatus.needsAttention == true
+    }
+
+    private func openPrimaryAction(for event: CalendarLessonEvent) {
+        let context = LessonEventActionContext(event: event)
+        environment.route = context.opensLessonWorkspace ? .lesson(event) : .student(event.studentId)
     }
 
     private var isShowingCancelConfirmation: Binding<Bool> {

@@ -40,6 +40,15 @@ struct StudentProgressItem: Identifiable, Hashable {
     var observedOn: String
     var detail: String
     var tempoNote: String?
+    var checkpoints: [ProgressCheckpointSummary]
+}
+
+struct ProgressCheckpointSummary: Identifiable, Hashable {
+    var id: EntityID
+    var observedOn: String
+    var bpm: Int?
+    var status: ProgressStatus
+    var note: String
 }
 
 struct StudentAssignment: Identifiable, Hashable {

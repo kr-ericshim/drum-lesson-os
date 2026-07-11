@@ -220,11 +220,53 @@ struct ProgressTabView: View {
                                 .font(.caption.monospaced())
                                 .foregroundStyle(.secondary)
                         }
+
+                        if !item.checkpoints.isEmpty {
+                            VStack(alignment: .leading, spacing: AppTheme.Spacing.sm) {
+                                Text("체크포인트")
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundStyle(.secondary)
+
+                                ForEach(item.checkpoints) { checkpoint in
+                                    checkpointRow(checkpoint)
+                                }
+                            }
+                            .padding(.top, AppTheme.Spacing.xs)
+                        }
                     }
                     Divider()
                 }
             }
         }
+    }
+
+    private func checkpointRow(_ checkpoint: ProgressCheckpointSummary) -> some View {
+        HStack(alignment: .top, spacing: AppTheme.Spacing.sm) {
+            Circle()
+                .fill(AppTheme.Accent.teaching)
+                .frame(width: 6, height: 6)
+                .padding(.top, 6)
+                .accessibilityHidden(true)
+
+            VStack(alignment: .leading, spacing: 2) {
+                HStack(spacing: AppTheme.Spacing.sm) {
+                    Text(LessonDateFormatters.displayDate(checkpoint.observedOn))
+                        .font(.caption.monospacedDigit().weight(.medium))
+                    if let bpm = checkpoint.bpm {
+                        Text("\(bpm) BPM")
+                            .font(.caption.monospacedDigit().weight(.semibold))
+                    }
+                    StatusBadge(label: checkpoint.status.label, tint: .secondary)
+                }
+                if !checkpoint.note.isEmpty {
+                    Text(checkpoint.note)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+        }
+        .accessibilityElement(children: .combine)
     }
 
     @ViewBuilder

@@ -19,13 +19,13 @@ struct RootView: View {
 enum SidebarDestination: Hashable {
     case dashboard
     case calendar
-    case settings
+    case tuition
 
     var route: AppRoute {
         switch self {
         case .dashboard: .dashboard
         case .calendar: .calendar
-        case .settings: .settings
+        case .tuition: .tuition
         }
     }
 }
@@ -33,8 +33,8 @@ enum SidebarDestination: Hashable {
 extension AppRoute {
     var sidebarDestination: SidebarDestination {
         switch self {
-        case .settings: .settings
         case .calendar: .calendar
+        case .tuition: .tuition
         case .dashboard, .student, .lesson: .dashboard
         }
     }
@@ -49,8 +49,11 @@ private struct SidebarView: View {
                 .tag(SidebarDestination.dashboard)
             Label("캘린더", systemImage: "calendar")
                 .tag(SidebarDestination.calendar)
-            Label("설정", systemImage: "gearshape")
-                .tag(SidebarDestination.settings)
+            Label("수강비", systemImage: "banknote")
+                .tag(SidebarDestination.tuition)
+            SettingsLink {
+                Label("설정", systemImage: "gearshape")
+            }
         }
         .navigationTitle("드럼 레슨 OS")
         .accessibilityLabel("주요 내비게이션")
@@ -74,17 +77,12 @@ private struct RouteContent: View {
             DashboardView(viewModel: environment.dashboard)
         case .calendar:
             CalendarView(viewModel: environment.dashboard)
+        case .tuition:
+            TuitionView(viewModel: environment.tuition)
         case .student(let id):
             StudentDetailRoute(studentId: id, lessonContext: nil)
         case .lesson(let event):
             StudentDetailRoute(studentId: event.studentId, lessonContext: event)
-        case .settings:
-            SettingsView(
-                syncStatus: environment.syncStatus,
-                calendar: environment.calendar,
-                preferences: environment.preferences,
-                localDataDirectoryURL: environment.localDataDirectoryURL
-            )
         }
     }
 }

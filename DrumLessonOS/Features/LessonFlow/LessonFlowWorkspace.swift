@@ -52,7 +52,11 @@ private struct ActiveLessonWorkspace: View {
                     alignment: .leading,
                     spacing: AppTheme.Spacing.xl
                 ) {
-                    LessonFocusPanel(detail: detail)
+                    LessonFocusPanel(
+                        viewModel: viewModel,
+                        detail: detail,
+                        observedOn: event.dateKey
+                    )
                     LessonRunPanelView(viewModel: viewModel)
                 }
                 .frame(maxWidth: contentMaxWidth, alignment: .top)
@@ -175,7 +179,9 @@ private struct LessonSessionHeader: View {
 }
 
 private struct LessonFocusPanel: View {
+    @Bindable var viewModel: StudentDetailViewModel
     var detail: StudentDetail
+    var observedOn: String
 
     private var brief: LessonBrief { detail.lessonBrief }
 
@@ -233,6 +239,17 @@ private struct LessonFocusPanel: View {
                     )
                 }
             }
+
+            if let focus = detail.currentFocus {
+                Divider()
+                    .overlay(AppTheme.Accent.teaching.opacity(0.22))
+
+                ProgressCheckpointCapture(
+                    viewModel: viewModel,
+                    focus: focus,
+                    observedOn: observedOn
+                )
+            }
         }
         .padding(AppTheme.Spacing.xl)
         .frame(maxWidth: .infinity, alignment: .topLeading)
@@ -258,6 +275,81 @@ private struct LessonFocusPanel: View {
             }
         }
         .accessibilityElement(children: .combine)
+    }
+}
+
+private struct ProgressCheckpointCapture: View {
+    @Bindable var viewModel: StudentDetailViewModel
+    var focus: ProgressFocusSummary
+    var observedOn: String
+
+    @State private var bpm = ""
+    @State private var note = ""
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: AppTheme.Spacing.md) {
+            VStack(alignment: .leading, spacing: AppTheme.Spacing.xs) {
+                Label("오늘 체크포인트", systemImage: "metronome")
+                    .font(.subheadline.weight(.semibold))
+                Text("\(focus.title)의 변화만 짧게 누적합니다")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            ViewThatFits(in: .horizontal) {
+                HStack(alignment: .bottom, spacing: AppTheme.Spacing.sm) {
+                    checkpointFields
+                    saveButton
+                }
+
+                VStack(alignment: .leading, spacing: AppTheme.Spacing.sm) {
+                    checkpointFields
+                    saveButton
+                }
+            }
+
+            if let message = viewModel.checkpointStatusMessage {
+                Label(message, systemImage: "checkmark.circle.fill")
+                    .font(.caption)
+                    .foregroundStyle(AppTheme.Semantic.success)
+            }
+        }
+    }
+
+    private var checkpointFields: some View {
+        HStack(spacing: AppTheme.Spacing.sm) {
+            TextField("BPM", text: $bpm)
+                .textFieldStyle(.roundedBorder)
+                .frame(width: 76)
+                .accessibilityLabel("체크포인트 BPM")
+            TextField("관찰 메모", text: $note)
+                .textFieldStyle(.roundedBorder)
+                .frame(minWidth: 150)
+                .accessibilityLabel("체크포인트 관찰 메모")
+        }
+    }
+
+    private var saveButton: some View {
+        Button {
+            Task {
+                let didSave = await viewModel.saveProgressCheckpoint(
+                    progressItemId: focus.id,
+                    observedOn: observedOn,
+                    bpmText: bpm,
+                    status: focus.status,
+                    note: note
+                )
+                if didSave {
+                    bpm = ""
+                    note = ""
+                }
+            }
+        } label: {
+            Label("추가", systemImage: "plus.circle")
+        }
+        .buttonStyle(.bordered)
+        .disabled(viewModel.isSaving || (bpm.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && note.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty))
+        .help("현재 진도에 체크포인트 추가")
     }
 }
 

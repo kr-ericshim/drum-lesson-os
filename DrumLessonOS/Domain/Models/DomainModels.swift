@@ -198,6 +198,30 @@ struct ProgressItem: Codable, Identifiable, Hashable {
     }
 }
 
+struct ProgressCheckpoint: Codable, Identifiable, Hashable {
+    var id: EntityID
+    var instructorId: EntityID
+    var studentId: EntityID
+    var progressItemId: EntityID
+    var observedOn: String
+    var bpm: Int?
+    var status: ProgressStatus
+    var note: String
+    var createdAt: String?
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case instructorId = "instructor_id"
+        case studentId = "student_id"
+        case progressItemId = "progress_item_id"
+        case observedOn = "observed_on"
+        case bpm
+        case status
+        case note
+        case createdAt = "created_at"
+    }
+}
+
 struct StudentTrait: Codable, Identifiable, Hashable {
     var id: EntityID
     var instructorId: EntityID
