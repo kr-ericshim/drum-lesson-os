@@ -1,41 +1,36 @@
-# Feature Research: Drum Lesson OS
+# Product Feature Boundaries
 
-## Table Stakes For Music Lesson Management
+## Core Instructor Workflow
 
-- Student profiles with lesson-relevant details
-- Lesson notes/history
-- Progress tracking
-- Assignment or practice task tracking
-- At-a-glance dashboard for upcoming or active teaching work
+- Scan today's and the current week's lessons.
+- Recall each student's current focus, weak points, learning traits, and next action.
+- Open the scheduled lesson in a focused workspace.
+- Capture short working notes without prematurely changing the durable record.
+- Complete closeout once and keep notes, progress, next plans, schedule status, and tuition progress aligned.
 
-Music-teacher products commonly include broader studio operations such as scheduling, billing, family contacts, student portals, practice timers, and events. Those features are common in the market, but not all are needed to validate this project's core value.
+## Supporting Features In V1
 
-## MVP Differentiator
+- Student creation and profile editing
+- Flexible progress categories and append-only checkpoints
+- Lesson-note history, assignments, and next plans
+- Recurring app-owned schedules and Apple Calendar write-through
+- Visible calendar sync status and manual retry
+- Local backup and validated restore
+- Manual four-lesson tuition cycles and dated payment confirmation
 
-Drum Lesson OS should be narrower and more lesson-aware than a generic CRM. The first useful version should make it easy to remember:
+## Deliberately Limited
 
-- What the student is working on
-- What is weak or improving
-- How the student learns best
-- What assignment or practice habit matters next
-- What to do in the next lesson
+- Tuition tracks cycle progress and confirmation only; it does not process money or store amounts.
+- Apple Calendar receives app-owned writes; optional reverse sync remains deferred.
+- The app targets one instructor on one Mac and has no hosted account boundary.
 
-## Defer
+## Excluded From V1
 
-- Scheduling automation
-- Billing and invoices
-- Student/parent portal
-- Messaging/reminders
-- Recital/event planning
-- AI roster import
-- Practice timer/streaks
+- Student or parent portal
+- Multi-instructor studio administration
+- Bank integration, invoices, payment processing, or accounting
+- Attendance, external booking, automated reminders, or non-Apple calendars
+- Messaging, recital planning, or practice streak gamification
+- AI summaries, notation, or audio/video analysis
 
-These are useful later, but they expand the product into studio management before the core instructor memory loop is proven.
-
-## Sources
-
-- Prepertoire student management/progress/assignment positioning: https://www.prepertoiremusic.com/
-- StudioSync students, lesson notes, assignments, progress tracking: https://studiosync.cc/
-- MusicDesk student management, notes, attendance, scheduling, billing: https://www.musicdesk.io/
-- Legato repertoire, practice tracker, student portal, lesson notes: https://getlegato.com/
-- TonicBase lesson history, progress notes, practice tracking, billing/scheduling comparison: https://www.tonicbase.com/
+New feature proposals should show how they strengthen the instructor memory and lesson-management loop before changing these boundaries.

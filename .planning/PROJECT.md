@@ -1,82 +1,65 @@
 # Drum Lesson OS
 
-## What This Is
+## Product
 
-Drum Lesson OS is a mini CRM for drum instructors who teach multiple students and need one place to remember each student's progress, habits, and lesson context. It helps an instructor see where every student is, what each person struggles with, and what should happen next in the lesson.
+Drum Lesson OS is a local macOS SwiftUI CRM for a drum instructor managing multiple students. It keeps the schedule, student context, lesson notes, progress history, assignments, next-lesson preparation, prepaid four-lesson cycles, and Apple Calendar write-through in one place.
 
-The MVP focuses on instructor-side student management in a macOS native app: a calendar-first schedule, clear student list, per-student progress tracking, lesson notes, student traits, weaknesses, practice patterns, and next-lesson preparation.
+**Core value:** An instructor can quickly understand a student's current progress and personal characteristics before or during a lesson.
 
-## Core Value
+## Current Product State
 
-An instructor can quickly understand a student's current progress and personal characteristics before or during a lesson.
+The instructor-side v1 implementation is complete through Phase 12. The active app:
 
-## Requirements
+- runs without login and stores canonical data in local SQLite;
+- writes app-owned lesson occurrences to Apple Calendar through EventKit;
+- preserves retryable calendar work in a durable local outbox;
+- supports local backup and restore with pre-restore safety copies;
+- preserves append-only progress checkpoints;
+- tracks manual prepaid four-lesson tuition cycles without processing payments.
 
-### Validated
+Release-confidence UAT remains for native backup panels, light mode, keyboard and VoiceOver behavior, real EventKit create/edit/delete, and iPhone iCloud propagation. See [STATE.md](STATE.md).
 
-(None yet - ship to validate)
+## Product Boundaries
 
-### Active
+### Included
 
-- [ ] Instructor can manage multiple drum students from one dashboard.
-- [ ] Instructor can record each student's current progress by practical lesson categories such as books, songs, rudiments, genres, techniques, lesson sessions, and assignments.
-- [ ] Instructor can capture student-specific traits such as strengths, weak points, practice habits, learning style, and musical preferences.
-- [ ] Instructor can review recent lesson notes for a student.
-- [ ] Instructor can prepare the next lesson using visible progress, notes, weak points, and assignment status.
-- [ ] Instructor can update progress and notes with minimal friction during or after a lesson.
+- Instructor-only student roster and detail
+- Flexible progress, traits, lesson notes, assignments, and next plans
+- Calendar-first scheduling and lesson closeout
+- Apple Calendar write-through with retry visibility
+- Local backup and restore
+- Manual four-lesson tuition-cycle tracking and dated payment confirmation
 
-### Out of Scope
+### Deferred Or Excluded
 
-- Student-facing accounts - MVP is instructor-side first, so students do not need login or self-service screens.
-- Payments, invoices, attendance, reminders, and external booking - useful for a broader studio CRM, but not part of the current product direction.
-- AI summaries, full music notation, and audio/video analysis - high complexity and not necessary to validate instructor workflow.
-- Multi-instructor studio administration - MVP targets one instructor managing their own students.
-
-## Context
-
-The project started from the need for a drum teacher to manage several students' progress and personal characteristics at a glance. The strongest pain points are progress tracking and remembering student-specific details.
-
-Useful progress dimensions include books, songs, rudiments, genres, techniques, lesson sessions, and assignments. Useful student-detail dimensions include rhythmic strengths, weak fill patterns, practice consistency, whether a student responds better to verbal explanation or demonstration, and musical taste.
-
-The first screen should feel like a working native instructor dashboard. The most important student detail view should surface current progress, recent lesson notes, next lesson plan, weak points or cautions, and assignment follow-through.
+- Student or parent accounts
+- Multi-instructor administration
+- Bank integration, invoices, payment processing, and tuition amounts
+- Attendance, reminders, external booking, and non-Apple calendar providers
+- Optional Apple Calendar reverse sync
+- AI summaries, notation, and audio/video upload or analysis
+- Full curriculum or syllabus builder
 
 ## Constraints
 
-- **Scope**: Keep MVP focused on instructor-side student CRM - this validates the core workflow before expanding to student accounts or payments.
-- **UX**: Optimize for fast scanning before a lesson - instructors should not need to dig through many screens to remember what matters.
-- **Data model**: Preserve flexible lesson notes and trait fields - early usage may reveal which categories deserve structured fields later.
-- **Safety**: Avoid overbuilding music-analysis features before the basic management loop works.
+- **Scope:** Protect the instructor memory and lesson-management loop before expanding into studio operations.
+- **UX:** Optimize for quick scanning before a lesson and low-friction updates during or after it.
+- **Data:** Keep lesson notes, progress categories, and traits flexible until real use supports stricter structure.
+- **Durability:** Local teaching records must survive app restarts and recover safely from EventKit failures.
 
-## Key Decisions
+## Current Decisions
 
-| Decision | Rationale | Outcome |
-|----------|-----------|---------|
-| Build for instructor-side use first | The core problem is the instructor remembering progress and student traits across many students. | - Pending |
-| Treat progress tracking and student traits as the MVP center | These are the two strongest pain points identified during project questioning. | - Pending |
-| Defer payments, scheduling automation, student accounts, and audio analysis | These add complexity before validating the core lesson-management workflow. | - Pending |
-| Exclude student portal, payments, attendance, calendar automation, AI summaries, and audio/video analysis from the next roadmap | The next useful work was finishing instructor-side editing, closeout, filters, and small drum-specific checkpoints. Superseded in part by the later Phase 6 Apple Calendar decision. | 2026-05-26 |
-| Add calendar-first scheduling and Apple Calendar sync as Phase 6 | The instructor already uses Apple Calendar, and the lesson operating board can become more useful when schedule changes from Drum Lesson OS write through to Apple Calendar. Drum Lesson OS remains the schedule source of truth. | 2026-05-28 |
-| Promote the macOS SwiftUI app to the primary project shape | Phase 7 passed independent implementation review, and keeping the native app nested inside a removed web runtime confused follow-up agents. | 2026-05-28 |
-| Remove the legacy Next.js runtime from the working tree | The current product direction is a native macOS app. Historical web evidence remains in planning docs only. | 2026-05-28 |
-| Make local SQLite canonical and remove hosted auth from the active app | The MVP targets one instructor on one Mac; transactional local writes keep the core workflow simpler while EventKit remains the Apple Calendar boundary. | 2026-07-10 |
-| Persist EventKit work in a durable local outbox | Calendar permission, network, or metadata failures must not lose the app-owned lesson occurrence or create untracked duplicate work. | 2026-07-10 |
+| Decision | Rationale | Date |
+|----------|-----------|------|
+| Keep the app instructor-only and local-first | One instructor on one Mac is the validated implementation boundary for v1. | 2026-07-10 |
+| Use SQLite as canonical persistence | Transactional local writes keep the core workflow reliable without hosted infrastructure. | 2026-07-10 |
+| Use EventKit only as the calendar boundary | Drum Lesson OS owns schedules while Apple Calendar remains the connected calendar target. | 2026-07-10 |
+| Persist EventKit work in a durable outbox | Permission and calendar failures must not lose lesson occurrences or create untracked duplicate work. | 2026-07-10 |
+| Keep backups portable and exclude the execution queue | Restoring teaching data must not replay stale calendar operations automatically. | 2026-07-11 |
+| Track four-lesson cycles without payment processing | The instructor needs operational visibility without billing or bank integrations. | 2026-07-11 |
 
-## Evolution
-
-This document evolves at phase transitions and milestone boundaries.
-
-**After each standalone phase transition**:
-1. Requirements invalidated? -> Move to Out of Scope with reason
-2. Requirements validated? -> Move to Validated with phase reference
-3. New requirements emerged? -> Add to Active
-4. Decisions to log? -> Add to Key Decisions
-5. "What This Is" still accurate? -> Update if drifted
-
-**After each milestone**:
-1. Full review of all sections
-2. Core Value check - still the right priority?
-3. Audit Out of Scope - reasons still valid?
-4. Update Context with current state
+Historical decisions and superseded architectures remain in [ROADMAP.md](ROADMAP.md) and the completed [phase records](phases/README.md).
 
 ---
-*Last updated: 2026-07-10 after local-first logic hardening*
+
+*Last updated: 2026-07-11 after Phase 12 implementation and documentation consolidation.*

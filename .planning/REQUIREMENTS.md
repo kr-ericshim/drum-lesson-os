@@ -1,8 +1,9 @@
 # Requirements: Drum Lesson OS
 
 **Defined:** 2026-05-22
-**Last updated:** 2026-07-10
+**Last updated:** 2026-07-11
 **Core Value:** An instructor can quickly understand a student's current progress and personal characteristics before or during a lesson.
+**Implementation status:** 53 complete, 1 deferred, 1 pending direct release UAT
 
 ## v1 Requirements
 
@@ -11,6 +12,7 @@
 - [x] **FND-01**: Instructor can run the app locally with a persistent database.
 - [x] **FND-02**: App includes a durable data model for students, progress items, lesson notes, traits, assignments, and next lesson plans.
 - [x] **FND-03**: App includes realistic sample data that demonstrates multiple students with different progress states and learning traits.
+- [x] **FND-04**: Instructor can export and restore a validated versioned local backup with a pre-restore safety copy.
 
 ### Student Roster
 
@@ -33,6 +35,7 @@
 - [x] **PROG-03**: Instructor can identify the student's current focus without reading the full lesson history.
 - [x] **PROG-04**: Instructor can move a progress item through common statuses from the progress list with minimal interaction.
 - [x] **PROG-05**: Instructor can record a small tempo checkpoint for progress items where BPM matters.
+- [x] **PROG-06**: Instructor can append dated BPM, status, and observation checkpoints without overwriting earlier progress history.
 
 ### Lesson Notes
 
@@ -88,6 +91,13 @@
 - [ ] **NATIVE-06**: Native production use is verified with real EventKit create/edit/cancel, iPhone iCloud propagation, and daily-use confidence.
 - [x] **NATIVE-07**: Repo structure is native-primary, with SwiftUI app source at root and the legacy web runtime removed from active development.
 
+### Prepaid Tuition Management
+
+- [x] **TUIT-01**: Instructor can scan each active student's current four-lesson cycle from a dedicated tuition workspace.
+- [x] **TUIT-02**: A successful scheduled-lesson closeout advances the configured tuition cycle exactly once.
+- [x] **TUIT-03**: Instructor can manually set the current cycle, confirm or correct prepaid tuition with a date, and start the next four-lesson cycle.
+- [x] **TUIT-04**: Tuition cycles and payment history persist locally, survive backup and restore, and keep earlier unconfirmed cycles visible.
+
 ## Not Planned
 
 The following are not part of the current product direction:
@@ -95,7 +105,7 @@ The following are not part of the current product direction:
 | Feature | Product decision |
 |---------|------------------|
 | Student portal or student login | Excluded from the near-term roadmap. |
-| Payments, invoices, or billing | Excluded from the near-term roadmap. |
+| Bank integration, invoices, payment processing, or tuition amounts | Excluded; Phase 12 only tracks four-lesson cycles and manual prepaid confirmation. |
 | Attendance tracking | Excluded from the near-term roadmap. |
 | Calendar reminders, external booking, or non-Apple calendar providers | Excluded from Phase 6. |
 | AI lesson summaries | Excluded from the near-term roadmap. |
@@ -115,6 +125,7 @@ Traceability maps every v1 requirement to exactly one phase.
 | FND-01 | Phase 1 | Complete |
 | FND-02 | Phase 1 | Complete |
 | FND-03 | Phase 1 | Complete |
+| FND-04 | Phase 11 | Complete |
 | ROST-01 | Phase 2 | Complete |
 | ROST-02 | Phase 3C | Complete |
 | ROST-03 | Phase 3D | Complete |
@@ -128,6 +139,7 @@ Traceability maps every v1 requirement to exactly one phase.
 | PROG-03 | Phase 3C | Complete |
 | PROG-04 | Phase 4A | Complete |
 | PROG-05 | Phase 4B | Complete |
+| PROG-06 | Phase 11 | Complete |
 | NOTE-01 | Phase 3A | Complete |
 | NOTE-02 | Phase 3A | Complete |
 | NOTE-03 | Phase 2 | Complete |
@@ -154,15 +166,22 @@ Traceability maps every v1 requirement to exactly one phase.
 | CAL-08 | Phase 6 | Complete |
 | CAL-09 | Phase 6 | Complete |
 | CAL-10 | Phase 6B | Deferred |
-| NATIVE-01 | Phase 7 | Implementation candidate complete |
-| NATIVE-02 | Phase 7 | Implementation candidate complete |
+| NATIVE-01 | Phase 7 | Complete |
+| NATIVE-02 | Phase 7 | Complete |
 | NATIVE-03 | Phase 7 | Complete |
 | NATIVE-04 | Phase 7 | Complete |
 | NATIVE-05 | Phase 7 | Complete |
 | NATIVE-06 | Phase 7 release gate | Pending live UAT |
 | NATIVE-07 | Phase 7 native-primary reorg | Complete |
+| TUIT-01 | Phase 12 | Complete |
+| TUIT-02 | Phase 12 | Complete |
+| TUIT-03 | Phase 12 | Complete |
+| TUIT-04 | Phase 12 | Complete |
 
 **Coverage:**
-- tracked requirements: 49 total
-- Mapped to phases: 49
+- tracked requirements: 55 total
+- Mapped to phases: 55
 - Unmapped: 0
+- Complete: 53
+- Deferred: 1 (`CAL-10`)
+- Pending direct release UAT: 1 (`NATIVE-06`)

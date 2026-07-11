@@ -1,5 +1,7 @@
 # GPT Pro Review Prompt: Drum Lesson OS Planning Docs
 
+> **Historical prompt:** This review brief predates the native local-first cutover. It is retained as review history and is not current project guidance. Use [../README.md](../README.md) to locate the active documents.
+
 아래 자료는 아직 구현 코드가 아니라, 새 프로젝트 초기화를 위해 작성한 GSD 계획 문서입니다. 코드 리뷰가 아니라 **프로젝트 방향, MVP 범위, 요구사항 품질, 로드맵 구조, 리스크, 문서 간 일관성**을 리뷰해 주세요.
 
 ## 프로젝트 요약

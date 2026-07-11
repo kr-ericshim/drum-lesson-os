@@ -1,44 +1,33 @@
-# Research Summary: Drum Lesson OS
+# Current Product And Technical Summary
 
-## Key Findings
+Drum Lesson OS is an instructor-side macOS workbench for remembering student context and running the lesson loop from preparation through closeout.
 
-Music lesson management products consistently expose student profiles, progress, lesson notes, assignments, schedules, billing, reminders, and portals. For Drum Lesson OS, the clearest MVP is a narrower instructor working-memory tool: student roster, current progress, traits/weaknesses, recent notes, assignments, and next lesson preparation.
+## Product Center
 
-## Stack
+- Calendar-first view of teaching work
+- Student roster and lesson-relevant profile
+- Flexible progress, traits, assignments, and notes
+- First action and next-lesson preparation
+- In-lesson working notes and durable closeout
+- Append-only progress observations
+- Manual prepaid four-lesson cycle visibility
 
-Recommended MVP stack:
+## Technical Center
 
-- Next.js App Router + TypeScript
-- Tailwind CSS v4
-- shadcn/ui
-- Prisma ORM
-- SQLite for local MVP, with a later Postgres/Supabase path if hosted sync or accounts become necessary
+- SwiftUI and Swift 6.2
+- XcodeGen project generation
+- Local SQLite as canonical persistence
+- EventKit write-through for Apple Calendar
+- Durable local outbox for calendar recovery
+- Versioned local backup and restore
+- Swift Testing for domain, persistence, sync, and view-model behavior
 
-## Table Stakes To Include
+## Scope Boundary
 
-- Student roster
-- Student profile/detail
-- Current progress by flexible lesson categories
-- Student traits, strengths, weak points, learning style, and musical preferences
-- Lesson notes/history
-- Assignment/practice task status
-- Next lesson plan or next action
+The app does not currently include student accounts, hosted sync, bank or payment processing, attendance, external booking, non-Apple calendars, AI summaries, or audio/video analysis.
 
-## Defer
+## Remaining Confidence Work
 
-- Scheduling automation
-- Billing and invoices
-- Student/parent portal
-- Messaging/reminders
-- Practice streak gamification
-- AI import or audio/video analysis
-- Multi-instructor studio management
+Implementation is complete through Phase 12. Native backup panels, broader accessibility checks, real EventKit behavior, iPhone iCloud propagation, and daily-use confidence still require direct UAT.
 
-## Roadmap Implication
-
-The roadmap should be vertical MVP style:
-
-1. Set up the app/data foundation.
-2. Make the roster and student detail readable with realistic seed data.
-3. Add editing flows for progress, traits, notes, assignments, and next plans.
-4. Polish the instructor dashboard so it works as a pre-lesson briefing screen.
+See [../STATE.md](../STATE.md) for the current status and [ARCHITECTURE.md](ARCHITECTURE.md) for component ownership.

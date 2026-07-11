@@ -1,31 +1,43 @@
-# Pitfalls Research: Drum Lesson OS
+# Active Product And Engineering Risks
 
-## Pitfall: Becoming A Generic Studio CRM Too Early
+## Losing The Fast-Scan Workflow
 
-Scheduling, billing, payments, messaging, and portals are common in the market, but they can bury the central value. The MVP should prove the instructor memory/progress workflow first.
+Dense maintenance controls can bury the next teaching action.
 
-**Prevention**: Keep phase requirements centered on students, progress, traits, lesson notes, assignments, and next lesson preparation.
+**Guardrail:** Keep current focus, first check, caution, assignment cue, and next action visually dominant. Move configuration and history behind secondary surfaces.
 
-## Pitfall: Over-Structuring Music Progress
+## Over-Structuring Music Progress
 
-Drum learning does not always move through one linear syllabus. Students may jump between songs, rudiments, technique, grooves, and genres.
+Students move between songs, rudiments, technique, grooves, and genres in nonlinear ways.
 
-**Prevention**: Model progress as flexible categorized items with status and notes. Avoid a hardcoded syllabus in v1.
+**Guardrail:** Preserve flexible progress categories, notes, and traits. Add structure only when repeated real use supports it.
 
-## Pitfall: Notes That Are Easy To Write But Hard To Scan
+## Splitting Canonical State
 
-A pile of long lesson notes can recreate the original problem.
+Treating Apple Calendar as a second source of truth can create conflicts and duplicate events.
 
-**Prevention**: Separate recent note history from current summary fields such as weak points, learning style, assignment status, and next lesson plan.
+**Guardrail:** Keep local SQLite canonical, restrict EventKit to app-owned writes, and persist stable sync identity plus retry state.
 
-## Pitfall: Ignoring Student Data Privacy
+## Replaying Unsafe Calendar Work
 
-Student notes can contain personal learning traits and contact context.
+Restoring a data backup together with an old execution queue could recreate or delete the wrong Apple events.
 
-**Prevention**: Even if the MVP is single-instructor, keep the data model ready for owner scoping. If hosted auth is introduced, use explicit user/workspace ownership and database access controls.
+**Guardrail:** Exclude the EventKit queue from portable backups and require explicit retry for restored pending states.
 
-## Pitfall: Dashboard Noise
+## Double-Applying Lesson Completion
 
-If every metric is equally visible, the instructor still has to hunt.
+Repeated closeout can duplicate notes or incorrectly advance prepaid tuition progress.
 
-**Prevention**: Dashboard rows should prioritize current progress, next lesson action, weak point, and assignment status. Push lower-priority studio operations out of the first MVP.
+**Guardrail:** Keep closeout atomic, occurrence-backed, and covered by duplicate-save regression tests.
+
+## Mistaking Test Completion For Release Confidence
+
+Unit and integration tests cannot prove native file panels, TCC permissions, VoiceOver behavior, or iCloud propagation.
+
+**Guardrail:** Keep direct UAT visible in `STATE.md` and do not mark release confidence complete until those checks are recorded.
+
+## Expanding Into Generic Studio Management
+
+Billing, portals, messaging, attendance, and automation can obscure the instructor memory loop.
+
+**Guardrail:** Require an explicit product-scope decision before adding hosted accounts, payment processing, or broader studio operations.

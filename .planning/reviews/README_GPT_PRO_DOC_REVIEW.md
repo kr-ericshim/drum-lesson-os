@@ -1,5 +1,7 @@
 # GPT Pro Document Review Materials
 
+> **Historical material:** This folder supported an external review of the initial planning set. Its prompt predates the native local-first cutover and must not be used as a current architecture brief. Start with [../README.md](../README.md) for active documentation.
+
 ## Purpose
 
 This folder prepares Drum Lesson OS planning documents for an external GPT Pro review after project initialization.
