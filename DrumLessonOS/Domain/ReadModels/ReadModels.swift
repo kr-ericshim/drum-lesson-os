@@ -59,6 +59,12 @@ struct StudentAssignment: Identifiable, Hashable {
     var detail: String
 }
 
+struct StudentUpcomingLesson: Identifiable, Hashable {
+    var id: EntityID
+    var dateKey: String
+    var timeLabel: String
+}
+
 struct StudentLessonNote: Identifiable, Hashable {
     var id: EntityID
     var lessonDate: String

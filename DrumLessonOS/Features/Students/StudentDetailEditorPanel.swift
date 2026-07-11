@@ -4,6 +4,7 @@ struct StudentDetailEditorPanel: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Bindable var viewModel: StudentDetailViewModel
     var detail: StudentDetail
+    let onStudentDeleted: () async -> Void
 
     @State private var profile: ProfileEditorDraft
     @State private var trait = TraitEditorDraft()
@@ -12,12 +13,18 @@ struct StudentDetailEditorPanel: View {
     @State private var note = LessonNoteEditorDraft()
     @State private var plan: NextPlanEditorDraft
     @State private var isEditorExpanded = false
+    @State private var isShowingDeleteConfirmation = false
 
     private static let newSelection = "new"
 
-    init(viewModel: StudentDetailViewModel, detail: StudentDetail) {
+    init(
+        viewModel: StudentDetailViewModel,
+        detail: StudentDetail,
+        onStudentDeleted: @escaping () async -> Void
+    ) {
         self.viewModel = viewModel
         self.detail = detail
+        self.onStudentDeleted = onStudentDeleted
         _profile = State(initialValue: ProfileEditorDraft(
             cue: detail.profileCue,
             primaryWeakPoint: detail.primaryWeakPoint
@@ -85,6 +92,7 @@ struct StudentDetailEditorPanel: View {
                             assignmentEditor
                             noteEditor
                             nextPlanEditor
+                            studentDeletionSection
                         }
 
                         if let message = viewModel.errorMessage {
@@ -99,6 +107,18 @@ struct StudentDetailEditorPanel: View {
                     .transition(.opacity)
                 }
             }
+        }
+        .alert("학생을 삭제할까요?", isPresented: $isShowingDeleteConfirmation) {
+            Button("취소", role: .cancel) {}
+            Button("학생 영구 삭제", role: .destructive) {
+                Task {
+                    if await viewModel.deleteStudent() {
+                        await onStudentDeleted()
+                    }
+                }
+            }
+        } message: {
+            Text("\(detail.name) 학생의 프로필과 모든 로컬 기록을 영구 삭제합니다. 이 작업은 되돌릴 수 없습니다. Apple 캘린더의 과거 일정은 삭제되지 않습니다.")
         }
     }
 
@@ -241,7 +261,10 @@ struct StudentDetailEditorPanel: View {
                     Text(status.label).tag(status)
                 }
             }
-            OptionalDatePicker(title: "마감일", selection: $assignment.dueDate)
+            AssignmentDueDatePicker(
+                selection: $assignment.dueDate,
+                upcomingLessons: viewModel.upcomingLessons
+            )
             editorTextField(
                 "상세",
                 prompt: "연습 방법과 완료 기준",
@@ -334,6 +357,21 @@ struct StudentDetailEditorPanel: View {
                     detail: plan.detail
                 )
             }
+        }
+    }
+
+    private var studentDeletionSection: some View {
+        editorSection(title: "학생 삭제", systemImage: "trash") {
+            Text("더 이상 보관할 필요가 없는 학생과 연결된 모든 로컬 기록을 삭제합니다.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Button("학생 영구 삭제", role: .destructive) {
+                isShowingDeleteConfirmation = true
+            }
+            .buttonStyle(.bordered)
+            .disabled(viewModel.isSaving)
         }
     }
 
@@ -573,6 +611,62 @@ private struct OptionalDatePicker: View {
             get: { selection ?? Date() },
             set: { selection = $0 }
         )
+    }
+}
+
+private struct AssignmentDueDatePicker: View {
+    @Binding var selection: Date?
+    var upcomingLessons: [StudentUpcomingLesson]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: AppTheme.Spacing.sm) {
+            OptionalDatePicker(title: "마감일", selection: $selection)
+
+            VStack(alignment: .leading, spacing: AppTheme.Spacing.xs) {
+                Text("수업 기준 빠른 설정")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: AppTheme.Spacing.sm) {
+                        lessonButton(at: 0, title: "다음 수업")
+                        lessonButton(at: 1, title: "다다음 수업")
+                    }
+
+                    VStack(alignment: .leading, spacing: AppTheme.Spacing.xs) {
+                        lessonButton(at: 0, title: "다음 수업")
+                        lessonButton(at: 1, title: "다다음 수업")
+                    }
+                }
+            }
+        }
+    }
+
+    private func lessonButton(at index: Int, title: String) -> some View {
+        let lesson = upcomingLessons.indices.contains(index) ? upcomingLessons[index] : nil
+        return Button {
+            guard let lesson, let date = date(from: lesson.dateKey) else { return }
+            selection = date
+        } label: {
+            Label(
+                lesson.map { "\(title) · \(LessonDateFormatters.displayDate($0.dateKey)) \($0.timeLabel)" }
+                    ?? "\(title) 없음",
+                systemImage: "\(index + 1).circle"
+            )
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .buttonStyle(.bordered)
+        .disabled(lesson == nil)
+    }
+
+    private func date(from dateKey: String) -> Date? {
+        let formatter = DateFormatter()
+        formatter.calendar = .iso8601SeoulCompatible
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = .current
+        formatter.dateFormat = "yyyy-MM-dd"
+        formatter.isLenient = false
+        return formatter.date(from: dateKey)
     }
 }
 

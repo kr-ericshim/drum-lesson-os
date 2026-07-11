@@ -86,6 +86,7 @@ final class AppEnvironment {
     let preferences: AppPreferences
     let localDataDirectoryURL: URL?
     let localDataBackup: LocalDataBackupRepository?
+    let localDataReset: LocalDataResetRepository?
 
     init(
         dashboard: DashboardViewModel,
@@ -97,7 +98,8 @@ final class AppEnvironment {
         tuitionRepository: TuitionRepository,
         preferences: AppPreferences = AppPreferences(),
         localDataDirectoryURL: URL? = nil,
-        localDataBackup: LocalDataBackupRepository? = nil
+        localDataBackup: LocalDataBackupRepository? = nil,
+        localDataReset: LocalDataResetRepository? = nil
     ) {
         self.dashboard = dashboard
         self.syncStatus = syncStatus
@@ -109,6 +111,7 @@ final class AppEnvironment {
         self.preferences = preferences
         self.localDataDirectoryURL = localDataDirectoryURL
         self.localDataBackup = localDataBackup
+        self.localDataReset = localDataReset
     }
 
     static func preview() -> AppEnvironment {
@@ -146,6 +149,7 @@ final class AppEnvironment {
         let schedules = CalendarBackedScheduleRepository(schedules: store, calendar: calendar, queue: queue)
         let sync = SyncStatusViewModel(queue: queue, retry: retry, schedules: schedules)
         let backup = LocalDataBackupController(repository: store, writeQueue: queue)
+        let reset = LocalDataResetController(store: store, calendar: calendar, writeQueue: queue)
 
         return AppEnvironment(
             dashboard: DashboardViewModel(repository: store, scheduleRepository: schedules),
@@ -157,7 +161,8 @@ final class AppEnvironment {
             tuitionRepository: store,
             preferences: preferences,
             localDataDirectoryURL: resolvedDatabaseURL.deletingLastPathComponent(),
-            localDataBackup: backup
+            localDataBackup: backup,
+            localDataReset: reset
         )
     }
 

@@ -206,6 +206,29 @@ final class EventKitCalendarRepository: CalendarRepository {
         _ event: LessonCalendarEventDraft,
         existingIdentity: CalendarEventIdentity
     ) async throws {
+        try removeLessonEvent(
+            event,
+            existingIdentity: existingIdentity,
+            treatsMissingEventAsDeleted: false
+        )
+    }
+
+    func deleteLessonEventForDataReset(
+        _ event: LessonCalendarEventDraft,
+        existingIdentity: CalendarEventIdentity
+    ) async throws {
+        try removeLessonEvent(
+            event,
+            existingIdentity: existingIdentity,
+            treatsMissingEventAsDeleted: true
+        )
+    }
+
+    private func removeLessonEvent(
+        _ event: LessonCalendarEventDraft,
+        existingIdentity: CalendarEventIdentity,
+        treatsMissingEventAsDeleted: Bool
+    ) throws {
         try requireReadableAccess()
         let lookup = try lookupEvent(for: event, identity: existingIdentity)
         if let ekEvent = lookup.event {
@@ -218,6 +241,10 @@ final class EventKitCalendarRepository: CalendarRepository {
             preferredCalendarIdentifier: existingIdentity.calendarIdentifier
         ) {
             try store.remove(recovered, span: .thisEvent, commit: true)
+            return
+        }
+
+        if treatsMissingEventAsDeleted {
             return
         }
 

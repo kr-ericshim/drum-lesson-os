@@ -5,6 +5,7 @@ import Observation
 @Observable
 final class StudentDetailViewModel {
     var detail: StudentDetail?
+    var upcomingLessons: [StudentUpcomingLesson] = []
     var isLoading = false
     var errorMessage: String?
     var runCovered = ""
@@ -28,11 +29,12 @@ final class StudentDetailViewModel {
         self.writes = writes
     }
 
-    func load() async {
+    func load(now: Date = Date()) async {
         isLoading = true
         defer { isLoading = false }
         do {
             detail = try await repository.loadStudentDetail(studentId: studentId)
+            upcomingLessons = try await repository.loadUpcomingLessons(studentId: studentId, after: now, limit: 2)
             errorMessage = nil
         } catch {
             errorMessage = error.localizedDescription
@@ -50,6 +52,20 @@ final class StudentDetailViewModel {
         _ = await saveAndReload {
             try StudentEditingValidation.validate(input)
             try await writes.updateStudentProfile(input)
+        }
+    }
+
+    func deleteStudent() async -> Bool {
+        guard !isSaving else { return false }
+        isSaving = true
+        defer { isSaving = false }
+        do {
+            try await writes.deleteStudent(studentId: studentId)
+            errorMessage = nil
+            return true
+        } catch {
+            errorMessage = error.localizedDescription
+            return false
         }
     }
 

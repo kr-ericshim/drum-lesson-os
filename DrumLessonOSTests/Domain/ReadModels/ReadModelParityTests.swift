@@ -111,6 +111,53 @@ import Testing
     #expect(model.selectedEvent == nil)
 }
 
+@Test func upcomingLessonMapperReturnsNextTwoScheduledLessonsForStudent() throws {
+    let studentId = UUID()
+    let otherStudentId = UUID()
+    let instructorId = UUID()
+    let referenceDate = try #require(ISO8601DateFormatter.plain.date(from: "2026-07-11T00:00:00Z"))
+
+    func occurrence(
+        studentId: EntityID,
+        startsAt: String,
+        status: LessonOccurrenceStatus = .scheduled
+    ) -> LessonOccurrence {
+        LessonOccurrence(
+            id: UUID(),
+            instructorId: instructorId,
+            studentId: studentId,
+            scheduleTemplateId: nil,
+            startsAt: startsAt,
+            endsAt: startsAt,
+            timezone: "Asia/Seoul",
+            status: status,
+            title: "드럼 레슨",
+            nativeCalendarEventIdentifier: nil,
+            nativeCalendarIdentifier: nil,
+            nativeCalendarExternalIdentifier: nil,
+            nativeCalendarSyncStatus: .notConnected,
+            nativeCalendarSyncError: nil,
+            nativeCalendarSyncedAt: nil
+        )
+    }
+
+    let lessons = StudentUpcomingLessonMapper.map(
+        occurrences: [
+            occurrence(studentId: studentId, startsAt: "2026-07-25T05:00:00Z"),
+            occurrence(studentId: otherStudentId, startsAt: "2026-07-12T05:00:00Z"),
+            occurrence(studentId: studentId, startsAt: "2026-07-18T05:00:00Z"),
+            occurrence(studentId: studentId, startsAt: "2026-07-13T05:00:00Z", status: .canceled),
+            occurrence(studentId: studentId, startsAt: "2026-07-04T05:00:00Z")
+        ],
+        studentId: studentId,
+        after: referenceDate,
+        limit: 2
+    )
+
+    #expect(lessons.map(\.dateKey) == ["2026-07-18", "2026-07-25"])
+    #expect(lessons.map(\.timeLabel) == ["14:00", "14:00"])
+}
+
 @MainActor
 @Test func calendarWorkbenchDoesNotMarkViewedWeekAsToday() async throws {
     let viewedDate = ISO8601DateFormatter.plain.date(from: "2026-05-28T00:00:00Z")!

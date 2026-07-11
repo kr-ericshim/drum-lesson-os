@@ -93,12 +93,18 @@ private struct StudentDetailRoute: View {
     let lessonContext: CalendarLessonEvent?
 
     var body: some View {
-        StudentDetailView(viewModel: StudentDetailViewModel(
-            studentId: studentId,
-            lessonContext: lessonContext,
-            repository: environment.students,
-            writes: environment.writes
-        ))
+        StudentDetailView(
+            viewModel: StudentDetailViewModel(
+                studentId: studentId,
+                lessonContext: lessonContext,
+                repository: environment.students,
+                writes: environment.writes
+            ),
+            onStudentDeleted: {
+                await environment.refresh()
+                environment.route = .dashboard
+            }
+        )
         .toolbar {
             ToolbarItem(placement: .navigation) {
                 Button {

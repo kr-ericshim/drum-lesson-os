@@ -56,7 +56,8 @@ struct DrumLessonOSApp: App {
                 preferences: environment.preferences,
                 localDataDirectoryURL: environment.localDataDirectoryURL,
                 localDataBackup: environment.localDataBackup,
-                onDataRestored: {
+                localDataReset: environment.localDataReset,
+                onDataChanged: {
                     environment.route = .dashboard
                     await environment.refresh()
                 }

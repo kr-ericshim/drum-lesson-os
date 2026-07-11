@@ -9,7 +9,8 @@ struct SettingsView: View {
     @Bindable var preferences: AppPreferences
     let localDataDirectoryURL: URL?
     let localDataBackup: LocalDataBackupRepository?
-    let onDataRestored: @MainActor () async -> Void
+    let localDataReset: LocalDataResetRepository?
+    let onDataChanged: @MainActor () async -> Void
 
     @State private var backupDocument: LocalDataBackupDocument?
     @State private var isExportingBackup = false
@@ -18,7 +19,9 @@ struct SettingsView: View {
     @State private var isWorkingWithBackup = false
     @State private var pendingRestoreData: Data?
     @State private var pendingRestoreName = ""
-    @State private var backupFeedback: BackupFeedback?
+    @State private var backupFeedback: SettingsFeedback?
+    @State private var resetFeedback: SettingsFeedback?
+    @State private var isPresentingDataReset = false
 
     var body: some View {
         GeometryReader { proxy in
@@ -33,6 +36,9 @@ struct SettingsView: View {
                         CalendarSettingsView(calendar: calendar)
                         SyncStatusView(viewModel: syncStatus)
                         localDataSection
+                        if localDataReset != nil {
+                            dangerZoneSection
+                        }
                     } else {
                         HStack(alignment: .top, spacing: 16) {
                             VStack(alignment: .leading, spacing: 16) {
@@ -43,6 +49,9 @@ struct SettingsView: View {
                             VStack(alignment: .leading, spacing: 16) {
                                 preferencesSection
                                 localDataSection
+                                if localDataReset != nil {
+                                    dangerZoneSection
+                                }
                             }
                             .frame(width: 360)
                         }
@@ -62,9 +71,9 @@ struct SettingsView: View {
             backupDocument = nil
             switch result {
             case .success:
-                backupFeedback = BackupFeedback(message: "백업 파일을 저장했습니다.", isError: false)
+                backupFeedback = SettingsFeedback(message: "백업 파일을 저장했습니다.", isError: false)
             case .failure(let error):
-                backupFeedback = BackupFeedback(message: error.localizedDescription, isError: true)
+                backupFeedback = SettingsFeedback(message: error.localizedDescription, isError: true)
             }
         }
         .fileImporter(
@@ -83,6 +92,17 @@ struct SettingsView: View {
             }
         } message: {
             Text("\(pendingRestoreName)의 기록으로 현재 데이터를 교체합니다. 복원 직전 상태는 자동 백업되며 캘린더 대기 작업은 비워집니다.")
+        }
+        .sheet(isPresented: $isPresentingDataReset) {
+            if let localDataReset {
+                DataResetConfirmationSheet(reset: localDataReset) {
+                    await onDataChanged()
+                    resetFeedback = SettingsFeedback(
+                        message: "로컬 기록과 연결된 Apple 캘린더 일정을 삭제했습니다.",
+                        isError: false
+                    )
+                }
+            }
         }
     }
 
@@ -225,6 +245,47 @@ struct SettingsView: View {
         }
     }
 
+    private var dangerZoneSection: some View {
+        WorkbenchSurface(.quiet, padding: AppTheme.Spacing.lg) {
+            VStack(alignment: .leading, spacing: AppTheme.Spacing.md) {
+                CountInMark(tint: AppTheme.Semantic.error)
+
+                SectionHeader(
+                    title: "위험 구역",
+                    subtitle: "모든 레슨 기록을 지우고 새로 시작할 때만 사용하세요."
+                )
+
+                Label {
+                    Text("학생, 레슨, 진도, 과제, 수강비 기록과 연결된 Apple 캘린더 일정이 함께 삭제됩니다.")
+                } icon: {
+                    Image(systemName: "exclamationmark.triangle")
+                        .foregroundStyle(AppTheme.Semantic.error)
+                }
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+                Button("데이터 초기화…", role: .destructive) {
+                    resetFeedback = nil
+                    isPresentingDataReset = true
+                }
+                .buttonStyle(.bordered)
+                .disabled(isWorkingWithBackup)
+                .accessibilityIdentifier("data-reset-start-button")
+
+                if let resetFeedback {
+                    Label(
+                        resetFeedback.message,
+                        systemImage: resetFeedback.isError ? "exclamationmark.triangle" : "checkmark.circle"
+                    )
+                    .font(.caption)
+                    .foregroundStyle(resetFeedback.isError ? AppTheme.Semantic.error : AppTheme.Semantic.success)
+                    .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+        }
+    }
+
     @ViewBuilder
     private var backupButtons: some View {
         Button {
@@ -262,7 +323,7 @@ struct SettingsView: View {
                 backupDocument = LocalDataBackupDocument(data: try await localDataBackup.makeBackupData())
                 isExportingBackup = true
             } catch {
-                backupFeedback = BackupFeedback(message: error.localizedDescription, isError: true)
+                backupFeedback = SettingsFeedback(message: error.localizedDescription, isError: true)
             }
         }
     }
@@ -278,7 +339,7 @@ struct SettingsView: View {
             pendingRestoreName = url.lastPathComponent
             isConfirmingRestore = true
         } catch {
-            backupFeedback = BackupFeedback(message: error.localizedDescription, isError: true)
+            backupFeedback = SettingsFeedback(message: error.localizedDescription, isError: true)
         }
     }
 
@@ -294,13 +355,13 @@ struct SettingsView: View {
             }
             do {
                 let safetyBackupURL = try await localDataBackup.restoreBackup(from: data)
-                await onDataRestored()
-                backupFeedback = BackupFeedback(
+                await onDataChanged()
+                backupFeedback = SettingsFeedback(
                     message: "복원했습니다. 이전 상태는 \(safetyBackupURL.lastPathComponent)에 보관했습니다.",
                     isError: false
                 )
             } catch {
-                backupFeedback = BackupFeedback(message: error.localizedDescription, isError: true)
+                backupFeedback = SettingsFeedback(message: error.localizedDescription, isError: true)
             }
         }
     }
@@ -316,7 +377,8 @@ struct SettingsView: View {
         return build.map { "\(version) (\($0))" } ?? version
     }
 }
-private struct BackupFeedback: Equatable {
+
+private struct SettingsFeedback: Equatable {
     var message: String
     var isError: Bool
 }

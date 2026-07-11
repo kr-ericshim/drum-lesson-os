@@ -5,9 +5,11 @@ struct StudentDetailView: View {
     @State private var viewModel: StudentDetailViewModel
     @State private var isShowingStudentRecord = false
     private let presentedViewModel: StudentDetailViewModel
+    private let onStudentDeleted: () async -> Void
 
-    init(viewModel: StudentDetailViewModel) {
+    init(viewModel: StudentDetailViewModel, onStudentDeleted: @escaping () async -> Void) {
         presentedViewModel = viewModel
+        self.onStudentDeleted = onStudentDeleted
         _viewModel = State(initialValue: viewModel)
     }
 
@@ -104,7 +106,11 @@ struct StudentDetailView: View {
                         StudentDetailTabs(detail: detail)
                     }
 
-                    StudentDetailEditorPanel(viewModel: viewModel, detail: detail)
+                    StudentDetailEditorPanel(
+                        viewModel: viewModel,
+                        detail: detail,
+                        onStudentDeleted: onStudentDeleted
+                    )
                         .id(detail.id)
                 }
                 .frame(maxWidth: AppTheme.contentWidth)

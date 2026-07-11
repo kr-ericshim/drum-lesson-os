@@ -280,6 +280,10 @@ private final class DashboardStudentRepositoryFake: StudentRepository {
         throw RepositoryError.notFound
     }
 
+    func loadUpcomingLessons(studentId: EntityID, after date: Date, limit: Int) async throws -> [StudentUpcomingLesson] {
+        []
+    }
+
     func loadCalendarWorkbench(weekContaining date: Date) async throws -> CalendarWorkbench {
         requestedAnchors.append(date)
         if !results.isEmpty {

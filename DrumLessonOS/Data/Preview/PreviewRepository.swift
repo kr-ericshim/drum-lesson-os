@@ -57,6 +57,15 @@ final class PreviewRepository: StudentRepository, StudentWriteRepository, Schedu
         )
     }
 
+    func loadUpcomingLessons(studentId: EntityID, after date: Date, limit: Int) async throws -> [StudentUpcomingLesson] {
+        StudentUpcomingLessonMapper.map(
+            occurrences: occurrences,
+            studentId: studentId,
+            after: date,
+            limit: limit
+        )
+    }
+
     func loadCalendarWorkbench(weekContaining date: Date) async throws -> CalendarWorkbench {
         let roster = try await loadRoster()
         return CalendarWorkbenchMapper.map(
@@ -101,6 +110,31 @@ final class PreviewRepository: StudentRepository, StudentWriteRepository, Schedu
         students[index].profileCue = input.profileCue
         students[index].primaryWeakPoint = input.primaryWeakPoint
         students[index].active = input.active
+    }
+
+    func deleteStudent(studentId: EntityID) async throws {
+        guard students.contains(where: { $0.id == studentId }) else {
+            throw RepositoryError.notFound
+        }
+        let relatedOccurrences = occurrences.filter { $0.studentId == studentId }
+        guard !relatedOccurrences.contains(where: { $0.status == .scheduled }) else {
+            throw RepositoryError(message: "예정된 레슨이 있습니다. 캘린더에서 먼저 모두 취소한 뒤 학생을 삭제하세요.")
+        }
+        guard !relatedOccurrences.contains(where: {
+            $0.nativeCalendarSyncStatus == .pending || $0.nativeCalendarSyncStatus == .failed
+        }) else {
+            throw RepositoryError(message: "Apple 캘린더 처리가 끝나지 않은 레슨이 있습니다. 동기화를 완료한 뒤 다시 시도하세요.")
+        }
+
+        students.removeAll { $0.id == studentId }
+        progressItems.removeAll { $0.studentId == studentId }
+        progressCheckpoints.removeAll { $0.studentId == studentId }
+        traits.removeAll { $0.studentId == studentId }
+        assignments.removeAll { $0.studentId == studentId }
+        notes.removeAll { $0.studentId == studentId }
+        plans.removeAll { $0.studentId == studentId }
+        occurrences.removeAll { $0.studentId == studentId }
+        tuitionCycles.removeAll { $0.studentId == studentId }
     }
 
     func upsertTrait(_ input: StudentTraitInput) async throws -> EntityID {

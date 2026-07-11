@@ -5,6 +5,7 @@ protocol StudentRepository {
     func loadCurrentInstructor() async throws -> Instructor
     func loadRoster() async throws -> [StudentRosterItem]
     func loadStudentDetail(studentId: EntityID) async throws -> StudentDetail
+    func loadUpcomingLessons(studentId: EntityID, after date: Date, limit: Int) async throws -> [StudentUpcomingLesson]
     func loadCalendarWorkbench(weekContaining date: Date) async throws -> CalendarWorkbench
 }
 
@@ -12,6 +13,7 @@ protocol StudentRepository {
 protocol StudentWriteRepository {
     func createStudent(_ input: StudentProfileInput) async throws -> EntityID
     func updateStudentProfile(_ input: StudentProfileInput) async throws
+    func deleteStudent(studentId: EntityID) async throws
     func upsertTrait(_ input: StudentTraitInput) async throws -> EntityID
     func upsertProgressItem(_ input: ProgressItemInput) async throws -> EntityID
     func createProgressCheckpoint(_ input: ProgressCheckpointInput) async throws -> EntityID
@@ -26,6 +28,11 @@ protocol StudentWriteRepository {
 protocol LocalDataBackupRepository {
     func makeBackupData() async throws -> Data
     func restoreBackup(from data: Data) async throws -> URL
+}
+
+@MainActor
+protocol LocalDataResetRepository {
+    func resetAllData() async throws
 }
 
 @MainActor
@@ -57,11 +64,19 @@ protocol CalendarRepository {
     func recoverOrCreateLessonEvent(_ event: LessonCalendarEventDraft) async throws -> CalendarWriteResult
     func updateLessonEvent(_ event: LessonCalendarEventDraft, existingIdentity: CalendarEventIdentity) async throws -> CalendarWriteResult
     func deleteLessonEvent(_ event: LessonCalendarEventDraft, existingIdentity: CalendarEventIdentity) async throws
+    func deleteLessonEventForDataReset(_ event: LessonCalendarEventDraft, existingIdentity: CalendarEventIdentity) async throws
 }
 
 extension CalendarRepository {
     func recoverOrCreateLessonEvent(_ event: LessonCalendarEventDraft) async throws -> CalendarWriteResult {
         try await createLessonEvent(event)
+    }
+
+    func deleteLessonEventForDataReset(
+        _ event: LessonCalendarEventDraft,
+        existingIdentity: CalendarEventIdentity
+    ) async throws {
+        try await deleteLessonEvent(event, existingIdentity: existingIdentity)
     }
 }
 

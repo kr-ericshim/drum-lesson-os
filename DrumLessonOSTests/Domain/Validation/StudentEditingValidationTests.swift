@@ -70,6 +70,21 @@ import Testing
 }
 
 @MainActor
+@Test func detailViewModelDeletesStudentWithoutReloadingDeletedDetail() async throws {
+    let repository = StudentDetailEditingSpyRepository()
+    let viewModel = StudentDetailViewModel(studentId: repository.studentId, repository: repository, writes: repository)
+    await viewModel.load()
+
+    let didDelete = await viewModel.deleteStudent()
+
+    #expect(didDelete)
+    #expect(repository.deletedStudentId == repository.studentId)
+    #expect(repository.loadDetailCount == 1)
+    #expect(viewModel.isSaving == false)
+    #expect(viewModel.errorMessage == nil)
+}
+
+@MainActor
 @Test func detailViewModelSavesWorkbenchItemsAndReloadsDetail() async throws {
     let repository = StudentDetailEditingSpyRepository()
     let viewModel = StudentDetailViewModel(studentId: repository.studentId, repository: repository, writes: repository)
@@ -333,6 +348,8 @@ private final class StudentDetailEditingSpyRepository: StudentRepository, Studen
     var savedLessonNote: LessonNoteInput?
     var savedNextPlan: NextPlanInput?
     var savedCloseout: LessonCloseoutInput?
+    var deletedStudentId: EntityID?
+    var upcomingLessons: [StudentUpcomingLesson] = []
     var closeoutCallCount = 0
     var closeoutDelayNanoseconds: UInt64 = 0
     var lessonNoteCallCount = 0
@@ -382,6 +399,10 @@ private final class StudentDetailEditingSpyRepository: StudentRepository, Studen
         )
     }
 
+    func loadUpcomingLessons(studentId: EntityID, after date: Date, limit: Int) async throws -> [StudentUpcomingLesson] {
+        Array(upcomingLessons.prefix(limit))
+    }
+
     func loadCalendarWorkbench(weekContaining date: Date) async throws -> CalendarWorkbench {
         CalendarWorkbench(weekTitle: "", todayDateKey: "", days: [], todayEvents: [], roster: [], selectedEvent: nil)
     }
@@ -390,6 +411,10 @@ private final class StudentDetailEditingSpyRepository: StudentRepository, Studen
 
     func updateStudentProfile(_ input: StudentProfileInput) async throws {
         updatedProfile = input
+    }
+
+    func deleteStudent(studentId: EntityID) async throws {
+        deletedStudentId = studentId
     }
 
     func upsertTrait(_ input: StudentTraitInput) async throws -> EntityID {

@@ -2,7 +2,7 @@ import Foundation
 import SQLite3
 
 @MainActor
-final class LocalSQLiteRepository: StudentRepository, StudentWriteRepository, ScheduleRepository, TuitionRepository, LocalDataBackupRepository {
+final class LocalSQLiteRepository: StudentRepository, StudentWriteRepository, ScheduleRepository, TuitionRepository, LocalDataBackupRepository, LocalDataResetStore {
     private let store: LocalSQLiteStore
     private let databaseURL: URL
     private let currentDate: () -> Date
@@ -81,6 +81,20 @@ final class LocalSQLiteRepository: StudentRepository, StudentWriteRepository, Sc
         )
     }
 
+    func loadUpcomingLessons(studentId: EntityID, after date: Date, limit: Int) async throws -> [StudentUpcomingLesson] {
+        try expandRecurringSchedules(
+            from: date,
+            horizonWeeks: 25,
+            studentId: studentId
+        )
+        return StudentUpcomingLessonMapper.map(
+            occurrences: snapshot.occurrences,
+            studentId: studentId,
+            after: date,
+            limit: limit
+        )
+    }
+
     func loadCalendarWorkbench(weekContaining date: Date) async throws -> CalendarWorkbench {
         try expandRecurringSchedules(weekContaining: date)
         let roster = mapRoster(snapshot)
@@ -134,6 +148,32 @@ final class LocalSQLiteRepository: StudentRepository, StudentWriteRepository, Sc
             snapshot.students[index].primaryWeakPoint = input.primaryWeakPoint
             snapshot.students[index].active = input.active
             snapshot.students[index].updatedAt = nowString()
+        }
+    }
+
+    func deleteStudent(studentId: EntityID) async throws {
+        try mutateSnapshot { snapshot in
+            try requireStudent(studentId, in: snapshot)
+            let relatedOccurrences = snapshot.occurrences.filter { $0.studentId == studentId }
+            guard !relatedOccurrences.contains(where: { $0.status == .scheduled }) else {
+                throw RepositoryError(message: "예정된 레슨이 있습니다. 캘린더에서 먼저 모두 취소한 뒤 학생을 삭제하세요.")
+            }
+            guard !relatedOccurrences.contains(where: {
+                $0.nativeCalendarSyncStatus == .pending || $0.nativeCalendarSyncStatus == .failed
+            }) else {
+                throw RepositoryError(message: "Apple 캘린더 처리가 끝나지 않은 레슨이 있습니다. 동기화를 완료한 뒤 다시 시도하세요.")
+            }
+
+            snapshot.students.removeAll { $0.id == studentId }
+            snapshot.progressItems.removeAll { $0.studentId == studentId }
+            snapshot.progressCheckpoints.removeAll { $0.studentId == studentId }
+            snapshot.traits.removeAll { $0.studentId == studentId }
+            snapshot.assignments.removeAll { $0.studentId == studentId }
+            snapshot.notes.removeAll { $0.studentId == studentId }
+            snapshot.plans.removeAll { $0.studentId == studentId }
+            snapshot.templates.removeAll { $0.studentId == studentId }
+            snapshot.occurrences.removeAll { $0.studentId == studentId }
+            snapshot.tuitionCycles.removeAll { $0.studentId == studentId }
         }
     }
 
@@ -712,6 +752,30 @@ final class LocalSQLiteRepository: StudentRepository, StudentWriteRepository, Sc
         return safetyBackupURL
     }
 
+    func loadOccurrencesForDataReset() async throws -> [LessonOccurrence] {
+        try refreshSnapshot()
+        return snapshot.occurrences
+    }
+
+    func markCalendarEventDeletedForDataReset(occurrenceId: EntityID) async throws {
+        try await updateNativeCalendarSync(.deleted(occurrenceId: occurrenceId))
+    }
+
+    func resetLocalData() async throws {
+        try mutateSnapshot { snapshot in
+            snapshot.students = []
+            snapshot.progressItems = []
+            snapshot.progressCheckpoints = []
+            snapshot.traits = []
+            snapshot.assignments = []
+            snapshot.notes = []
+            snapshot.plans = []
+            snapshot.templates = []
+            snapshot.occurrences = []
+            snapshot.tuitionCycles = []
+        }
+    }
+
     private func mapRoster(_ snapshot: LocalAppSnapshot) -> [StudentRosterItem] {
         StudentRosterMapper.map(
             students: snapshot.students,
@@ -872,8 +936,16 @@ final class LocalSQLiteRepository: StudentRepository, StudentWriteRepository, Sc
     }
 
     private func expandRecurringSchedules(weekContaining date: Date) throws {
+        try expandRecurringSchedules(from: date, horizonWeeks: 1)
+    }
+
+    private func expandRecurringSchedules(
+        from date: Date,
+        horizonWeeks: Int,
+        studentId: EntityID? = nil
+    ) throws {
         try mutateSnapshot { snapshot in
-            for template in snapshot.templates where template.active {
+            for template in snapshot.templates where template.active && (studentId == nil || template.studentId == studentId) {
                 let timeZone = TimeZone(identifier: template.timezone) ?? .current
                 var calendar = Calendar.iso8601SeoulCompatible
                 calendar.timeZone = timeZone
@@ -882,7 +954,7 @@ final class LocalSQLiteRepository: StudentRepository, StudentWriteRepository, Sc
                 let expanded = WeeklyOccurrenceExpander.expand(
                     template: template,
                     horizonStartDate: horizonStartDate,
-                    horizonWeeks: 1,
+                    horizonWeeks: horizonWeeks,
                     existingOccurrenceKeys: occurrenceKeys(for: template, in: snapshot.occurrences)
                 )
                 snapshot.occurrences.append(contentsOf: expanded)

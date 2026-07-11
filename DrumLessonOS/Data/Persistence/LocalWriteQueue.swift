@@ -171,6 +171,13 @@ final class LocalWriteQueue {
         }
     }
 
+    func removeAll(for recordId: EntityID) throws {
+        guard writes.contains(where: { $0.recordId == recordId }) else { return }
+        try mutate {
+            writes.removeAll { $0.recordId == recordId }
+        }
+    }
+
     func writes(for recordId: EntityID) -> [QueuedWrite] {
         writes.filter { $0.recordId == recordId }
     }

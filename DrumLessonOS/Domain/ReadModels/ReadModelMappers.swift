@@ -229,6 +229,43 @@ enum StudentDetailMapper {
     }
 }
 
+enum StudentUpcomingLessonMapper {
+    static func map(
+        occurrences: [LessonOccurrence],
+        studentId: EntityID,
+        after date: Date,
+        limit: Int
+    ) -> [StudentUpcomingLesson] {
+        guard limit > 0 else { return [] }
+
+        return occurrences
+            .filter { occurrence in
+                guard occurrence.studentId == studentId,
+                      occurrence.status == .scheduled,
+                      let startsAt = ISO8601DateFormatter.withFractions.date(from: occurrence.startsAt)
+                        ?? ISO8601DateFormatter.plain.date(from: occurrence.startsAt) else {
+                    return false
+                }
+                return startsAt > date
+            }
+            .sorted { $0.startsAt < $1.startsAt }
+            .prefix(limit)
+            .map { occurrence in
+                StudentUpcomingLesson(
+                    id: occurrence.id,
+                    dateKey: DateOnly.string(
+                        fromISOInstant: occurrence.startsAt,
+                        timeZoneIdentifier: occurrence.timezone
+                    ),
+                    timeLabel: DateOnly.timeLabel(
+                        fromISOInstant: occurrence.startsAt,
+                        timeZoneIdentifier: occurrence.timezone
+                    )
+                )
+            }
+    }
+}
+
 enum LessonBriefBuilder {
     static func build(
         primaryWeakPoint: String,

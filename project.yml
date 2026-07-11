@@ -52,6 +52,7 @@ targets:
         ENABLE_HARDENED_RUNTIME: YES
         CODE_SIGN_STYLE: Automatic
         DEVELOPMENT_TEAM: 95P2P242SQ
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
   DrumLessonOSTests:
     type: bundle.unit-test
     platform: macOS
