@@ -13,6 +13,9 @@ struct RootView: View {
         }
         .tint(AppTheme.Accent.teaching)
         .preferredColorScheme(environment.preferences.appearance.colorScheme)
+        .task {
+            await environment.runLaunchMaintenance()
+        }
     }
 }
 

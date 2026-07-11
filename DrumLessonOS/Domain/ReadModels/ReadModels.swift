@@ -160,6 +160,48 @@ struct CalendarWorkbench: Hashable {
     var selectedEvent: CalendarLessonEvent?
 }
 
+struct ProposedLessonSlot: Equatable {
+    var startsAt: String
+    var endsAt: String
+}
+
+struct ScheduleConflictQuery: Equatable {
+    var slots: [ProposedLessonSlot]
+    var excludingOccurrenceId: EntityID?
+}
+
+struct ScheduleConflict: Identifiable, Equatable {
+    var occurrenceId: EntityID
+    var studentName: String
+    var startsAt: String
+    var endsAt: String
+    var timezone: String
+
+    var id: EntityID { occurrenceId }
+
+    var displayLabel: String {
+        guard let start = ISO8601DateFormatter.withFractions.date(from: startsAt)
+            ?? ISO8601DateFormatter.plain.date(from: startsAt),
+              let end = ISO8601DateFormatter.withFractions.date(from: endsAt)
+            ?? ISO8601DateFormatter.plain.date(from: endsAt) else {
+            return studentName
+        }
+        let timeZone = TimeZone(identifier: timezone) ?? .current
+        let dateFormatter = DateFormatter()
+        dateFormatter.locale = Locale(identifier: "ko_KR")
+        dateFormatter.timeZone = timeZone
+        dateFormatter.dateFormat = "M월 d일"
+        let timeFormatter = DateFormatter()
+        timeFormatter.locale = Locale(identifier: "ko_KR")
+        timeFormatter.timeZone = timeZone
+        timeFormatter.dateFormat = "HH:mm"
+        let date = dateFormatter.string(from: start)
+        let startTime = timeFormatter.string(from: start)
+        let endTime = timeFormatter.string(from: end)
+        return "\(date) \(startTime)~\(endTime) · \(studentName)"
+    }
+}
+
 struct LessonCloseoutDraft: Equatable {
     var coveredMaterial: String
     var observations: String

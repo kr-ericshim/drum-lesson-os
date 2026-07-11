@@ -2,7 +2,7 @@
 
 ## Status
 
-All 13 instructor-side implementation phases are complete. Remaining work is release-confidence UAT, listed in [STATE.md](STATE.md).
+Phases 1 through 13 are complete. Phase 14 implementation is complete, while its device-only release UAT remains open in [STATE.md](STATE.md).
 
 The active product is native-first and local-first. SQLite is canonical, EventKit is the Apple Calendar boundary, and hosted authentication is not part of the running app.
 
@@ -24,6 +24,7 @@ The active product is native-first and local-first. SQLite is canonical, EventKi
 | 11 | Local backup and progress history | Complete; native file-panel UAT remains | [Phase 11](phases/11-local-backup-and-progress-history/) |
 | 12 | Prepaid four-lesson tuition management | Complete | [Phase 12](phases/12-prepaid-tuition-management/) |
 | 13 | In-lesson draft autosave and recovery | Complete | [Phase 13](phases/13-in-lesson-draft-recovery/) |
+| 14 | Daily-use safety and speed | In progress | [Phase 14](phases/14-daily-use-safety-and-speed/) |
 
 ## Architecture Transitions
 
@@ -51,4 +52,4 @@ Implementation completion does not establish production confidence on its own. B
 
 ## Future Scope
 
-Any new phase should start only after updating [PROJECT.md](PROJECT.md), [REQUIREMENTS.md](REQUIREMENTS.md), and [STATE.md](STATE.md). Current exclusions include student accounts, payment processing, hosted sync, non-Apple calendars, and audio/video analysis.
+Phase 14 covers release UAT, rolling local backup, overlap warnings, native roster search and filters, and post-closeout summary copy. Current exclusions include student accounts, payment processing, hosted sync, non-Apple calendars, and audio/video analysis.

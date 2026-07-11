@@ -77,6 +77,10 @@ final class PreviewRepository: StudentRepository, StudentWriteRepository, Schedu
         )
     }
 
+    func findScheduleConflicts(_ query: ScheduleConflictQuery) async throws -> [ScheduleConflict] {
+        ScheduleConflictDetector.detect(query: query, occurrences: occurrences, students: students)
+    }
+
     func createStudent(_ input: StudentProfileInput) async throws -> EntityID {
         let id = UUID()
         students.append(Student(

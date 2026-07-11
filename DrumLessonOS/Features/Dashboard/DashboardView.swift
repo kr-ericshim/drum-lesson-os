@@ -126,6 +126,22 @@ struct DashboardView: View {
                     await viewModel.load()
                 }
             }
+            .alert(
+                "일정이 겹칩니다",
+                isPresented: Binding(
+                    get: { !viewModel.pendingMoveConflicts.isEmpty },
+                    set: { if !$0 { viewModel.cancelPendingConflictMove() } }
+                )
+            ) {
+                Button("시간 다시 선택", role: .cancel) {
+                    viewModel.cancelPendingConflictMove()
+                }
+                Button("그래도 이동") {
+                    Task { await viewModel.confirmPendingConflictMove() }
+                }
+            } message: {
+                Text(viewModel.pendingMoveConflictMessage)
+            }
             .onChange(of: viewModel.errorMessage) { _, message in
                 guard let message else { return }
                 AccessibilityNotification.Announcement(message).post()

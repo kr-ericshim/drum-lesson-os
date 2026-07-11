@@ -3,7 +3,7 @@
 **Defined:** 2026-05-22
 **Last updated:** 2026-07-11
 **Core Value:** An instructor can quickly understand a student's current progress and personal characteristics before or during a lesson.
-**Implementation status:** 53 complete, 1 deferred, 1 pending direct release UAT
+**Implementation status:** 63 complete, 1 deferred, 1 pending direct release UAT
 
 ## v1 Requirements
 
@@ -13,6 +13,8 @@
 - [x] **FND-02**: App includes a durable data model for students, progress items, lesson notes, traits, assignments, and next lesson plans.
 - [x] **FND-03**: App includes realistic sample data that demonstrates multiple students with different progress states and learning traits.
 - [x] **FND-04**: Instructor can export and restore a validated versioned local backup with a pre-restore safety copy.
+- [x] **BACKUP-01**: The app creates at most one automatic local backup per day without requiring an export panel.
+- [x] **BACKUP-02**: Automatic backups retain seven daily snapshots plus four older weekly snapshots and expose last-success, stale, and failure status in Settings.
 
 ### Student Roster
 
@@ -21,6 +23,7 @@
 - [x] **ROST-03**: Instructor can add a new student with basic lesson-relevant profile information.
 - [x] **ROST-04**: Instructor can edit a student's basic profile information.
 - [x] **ROST-05**: Instructor can filter the roster by needs review, high-priority next lesson, no recent note, and missing current focus.
+- [x] **ROST-06**: The native roster exposes student search and the completed roster filters with visible result counts.
 
 ### Student Detail
 
@@ -55,6 +58,7 @@
 - [x] **CLOSE-01**: Instructor can use one compact closeout form to create a lesson note and update the next lesson plan.
 - [x] **CLOSE-02**: Instructor can create or update the assignment review cue from the closeout flow.
 - [x] **CLOSE-03**: Instructor can optionally update progress status or current focus from the closeout flow.
+- [x] **CLOSE-04**: After successful closeout, the instructor can copy a structured lesson summary to the macOS clipboard.
 
 ### Dashboard Quick Actions
 
@@ -85,6 +89,7 @@
 - [x] **CAL-08**: Instructor can manually retry Apple Calendar sync.
 - [x] **CAL-09**: Apple Calendar credential failures do not corrupt app-owned schedule data.
 - [ ] **CAL-10**: Optional reverse sync imports Apple-side changes only for events originally created by Drum Lesson OS.
+- [x] **CAL-11**: Creating, editing, or dragging a lesson warns about overlapping scheduled lessons and permits an explicit override.
 
 ### Native macOS Migration
 
@@ -131,11 +136,14 @@ Traceability maps every v1 requirement to exactly one phase.
 | FND-02 | Phase 1 | Complete |
 | FND-03 | Phase 1 | Complete |
 | FND-04 | Phase 11 | Complete |
+| BACKUP-01 | Phase 14 | Complete |
+| BACKUP-02 | Phase 14 | Complete |
 | ROST-01 | Phase 2 | Complete |
 | ROST-02 | Phase 3C | Complete |
 | ROST-03 | Phase 3D | Complete |
 | ROST-04 | Phase 3D | Complete |
 | ROST-05 | Phase 4A | Complete |
+| ROST-06 | Phase 14 | Complete |
 | STUD-01 | Phase 2 | Complete |
 | STUD-02 | Phase 2 | Complete |
 | STUD-03 | Phase 3D | Complete |
@@ -155,6 +163,7 @@ Traceability maps every v1 requirement to exactly one phase.
 | CLOSE-01 | Phase 3F | Complete |
 | CLOSE-02 | Phase 3F | Complete |
 | CLOSE-03 | Phase 3F | Complete |
+| CLOSE-04 | Phase 14 | Complete |
 | QUICK-01 | Phase 4B | Complete |
 | FLOW-01 | Phase 5 | Complete |
 | FLOW-02 | Phase 5 | Complete |
@@ -171,6 +180,7 @@ Traceability maps every v1 requirement to exactly one phase.
 | CAL-08 | Phase 6 | Complete |
 | CAL-09 | Phase 6 | Complete |
 | CAL-10 | Phase 6B | Deferred |
+| CAL-11 | Phase 14 | Complete |
 | NATIVE-01 | Phase 7 | Complete |
 | NATIVE-02 | Phase 7 | Complete |
 | NATIVE-03 | Phase 7 | Complete |
@@ -189,9 +199,9 @@ Traceability maps every v1 requirement to exactly one phase.
 | DRAFT-05 | Phase 13 | Complete |
 
 **Coverage:**
-- tracked requirements: 60 total
-- Mapped to phases: 60
+- tracked requirements: 65 total
+- Mapped to phases: 65
 - Unmapped: 0
-- Complete: 58
+- Complete: 63
 - Deferred: 1 (`CAL-10`)
 - Pending direct release UAT: 1 (`NATIVE-06`)

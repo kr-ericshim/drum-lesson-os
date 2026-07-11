@@ -106,6 +106,19 @@ final class LocalSQLiteRepository: StudentRepository, StudentWriteRepository, Sc
         )
     }
 
+    func findScheduleConflicts(_ query: ScheduleConflictQuery) async throws -> [ScheduleConflict] {
+        if let earliestStart = query.slots.compactMap({ ISO8601DateFormatter.plain.date(from: $0.startsAt) }).min() {
+            try expandRecurringSchedules(from: earliestStart, horizonWeeks: 8)
+        } else {
+            try refreshSnapshot()
+        }
+        return ScheduleConflictDetector.detect(
+            query: query,
+            occurrences: snapshot.occurrences,
+            students: snapshot.students
+        )
+    }
+
     func loadLessonDraft(occurrenceId: EntityID) async throws -> LessonDraft? {
         try refreshSnapshot()
         return snapshot.lessonDrafts.first { $0.occurrenceId == occurrenceId }

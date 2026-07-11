@@ -86,7 +86,7 @@ final class AppEnvironment {
     let schedules: ScheduleRepository
     let preferences: AppPreferences
     let localDataDirectoryURL: URL?
-    let localDataBackup: LocalDataBackupRepository?
+    let localDataBackup: LocalDataBackupController?
     let localDataReset: LocalDataResetRepository?
 
     init(
@@ -100,7 +100,7 @@ final class AppEnvironment {
         tuitionRepository: TuitionRepository,
         preferences: AppPreferences = AppPreferences(),
         localDataDirectoryURL: URL? = nil,
-        localDataBackup: LocalDataBackupRepository? = nil,
+        localDataBackup: LocalDataBackupController? = nil,
         localDataReset: LocalDataResetRepository? = nil
     ) {
         self.dashboard = dashboard
@@ -152,7 +152,13 @@ final class AppEnvironment {
         let retry = RetryScheduler(writeQueue: queue)
         let schedules = CalendarBackedScheduleRepository(schedules: store, calendar: calendar, queue: queue)
         let sync = SyncStatusViewModel(queue: queue, retry: retry, schedules: schedules)
-        let backup = LocalDataBackupController(repository: store, writeQueue: queue)
+        let backup = LocalDataBackupController(
+            repository: store,
+            writeQueue: queue,
+            automaticBackupDirectoryURL: resolvedDatabaseURL
+                .deletingLastPathComponent()
+                .appendingPathComponent("Backups/Automatic", isDirectory: true)
+        )
         let reset = LocalDataResetController(store: store, calendar: calendar, writeQueue: queue)
 
         return AppEnvironment(
@@ -199,6 +205,10 @@ final class AppEnvironment {
         await dashboard.load()
         await tuition.load()
         syncStatus.refresh()
+    }
+
+    func runLaunchMaintenance() async {
+        await localDataBackup?.runAutomaticBackupIfNeeded()
     }
 
     private static func writeQueueURL(for databaseURL: URL) -> URL {

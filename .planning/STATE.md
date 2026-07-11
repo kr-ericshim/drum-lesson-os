@@ -1,12 +1,12 @@
 ---
 milestone: v1.0
 milestone_name: instructor-side MVP
-status: implementation-complete-release-uat-pending
+status: phase-14-in-progress-release-uat-pending
 last_updated: "2026-07-11"
 progress:
-  implementation_phases: 13
+  implementation_phases: 14
   completed_phases: 13
-  implementation_plans: 24
+  implementation_plans: 25
   completed_plans: 24
   implementation_percent: 100
 ---
@@ -15,10 +15,10 @@ progress:
 
 ## Current Position
 
-The instructor-side implementation is complete through Phase 13. Release confidence remains pending until direct native and real-calendar UAT is complete.
+The instructor-side implementation is complete through Phase 13. Phase 14 is adding daily-use safety and speed features while closing the release UAT checklist.
 
 - **Active architecture:** macOS SwiftUI, local SQLite, EventKit, durable local calendar outbox
-- **Current checkpoint:** [Phase 13 checkpoint](phases/13-in-lesson-draft-recovery/13-CHECKPOINT.md)
+- **Current work:** [Phase 14 plan](phases/14-daily-use-safety-and-speed/14-PLAN.md)
 - **Product definition:** [PROJECT.md](PROJECT.md)
 - **Requirement status:** [REQUIREMENTS.md](REQUIREMENTS.md)
 - **Phase history:** [ROADMAP.md](ROADMAP.md)
@@ -33,18 +33,23 @@ The instructor-side implementation is complete through Phase 13. Release confide
 - Append-only progress checkpoints
 - Manual prepaid four-lesson tuition-cycle tracking
 - Occurrence-scoped in-lesson draft autosave, recovery, and backup support
+- Daily rolling backups with seven-daily and four-weekly retention plus Settings health status
+- Overlap warnings with explicit override across schedule creation, editing, and drag moves
+- Native roster search and attention filters
+- Post-closeout lesson-summary clipboard copy
 - Native source and test trees organized by app layer, with code removed from bundle resources
 
 ## Latest Recorded Verification
 
-After Phase 13 on 2026-07-11:
+After Phase 14 implementation on 2026-07-11:
 
-- `npm run verify`: 130 passed, 0 failed, 0 skipped
+- `npm run verify`: 141 passed, 0 failed, 0 skipped
 - `xcodebuild ... analyze`: passed
-- Release build and launch verification: passed
+- `./script/build_and_run.sh --verify`: passed
+- Disposable-path app launch and automatic-backup creation/relaunch check: passed
 - `git diff --check`: passed
 
-The [Phase 13 checkpoint](phases/13-in-lesson-draft-recovery/13-CHECKPOINT.md) records the draft-recovery implementation and verification evidence. Run the repository verification commands again after new implementation changes.
+The [Phase 14 UAT record](phases/14-daily-use-safety-and-speed/14-UAT.md) separates this automated evidence from the remaining device-only release checks.
 
 ## Release-Confidence Work Remaining
 
@@ -61,4 +66,4 @@ The [Phase 13 checkpoint](phases/13-in-lesson-draft-recovery/13-CHECKPOINT.md) r
 
 ## Resume Point
 
-Return to the release-confidence checklist above, beginning with disposable-data backup panel UAT.
+Complete the remaining device-only checks in the [Phase 14 UAT record](phases/14-daily-use-safety-and-speed/14-UAT.md).

@@ -94,6 +94,48 @@ struct CompactModalError: View {
     }
 }
 
+private struct ScheduleConflictWarningView: View {
+    var conflicts: [ScheduleConflict]
+    var overrideTitle: String
+    var onChooseAnotherTime: () -> Void
+    var onOverride: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: AppTheme.Spacing.md) {
+            Label("일정이 겹칩니다", systemImage: "calendar.badge.exclamationmark")
+                .font(.headline)
+                .foregroundStyle(AppTheme.Semantic.error)
+
+            VStack(alignment: .leading, spacing: AppTheme.Spacing.xs) {
+                ForEach(conflicts.prefix(3)) { conflict in
+                    Text(conflict.displayLabel)
+                        .font(.subheadline.monospacedDigit())
+                }
+                if conflicts.count > 3 {
+                    Text("외 \(conflicts.count - 3)개 일정")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            Text("그룹 레슨처럼 의도한 중복이면 그대로 저장할 수 있습니다.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            HStack {
+                Button("시간 다시 선택", role: .cancel, action: onChooseAnotherTime)
+                Spacer()
+                Button(overrideTitle, action: onOverride)
+                    .buttonStyle(.borderedProminent)
+            }
+        }
+        .padding(AppTheme.Spacing.md)
+        .background(AppTheme.Semantic.error.opacity(0.08), in: AppTheme.softPanel)
+        .overlay(AppTheme.softPanel.stroke(AppTheme.Semantic.error.opacity(0.24), lineWidth: 1))
+        .accessibilityElement(children: .contain)
+    }
+}
+
 struct CompactModalActions: View {
     var cancelTitle: String
     var confirmTitle: String
@@ -141,6 +183,8 @@ struct ScheduleLessonSheet: View {
     @State private var errorMessage: String?
     @State private var isSaving = false
     @State private var hasSavedLocally = false
+    @State private var conflicts: [ScheduleConflict] = []
+    @State private var allowsConflictOverride = false
     @FocusState private var focusedField: FocusedField?
 
     private enum FocusedField: Hashable {
@@ -318,6 +362,21 @@ struct ScheduleLessonSheet: View {
                     CompactModalError(message: errorMessage)
                 }
 
+                if !conflicts.isEmpty {
+                    ScheduleConflictWarningView(
+                        conflicts: conflicts,
+                        overrideTitle: "그래도 저장",
+                        onChooseAnotherTime: {
+                            conflicts = []
+                            allowsConflictOverride = false
+                        },
+                        onOverride: {
+                            allowsConflictOverride = true
+                            Task { await save() }
+                        }
+                    )
+                }
+
                 CompactModalActions(
                     cancelTitle: hasSavedLocally ? "닫기" : "취소",
                     confirmTitle: saveButtonTitle,
@@ -341,6 +400,11 @@ struct ScheduleLessonSheet: View {
             guard let message else { return }
             AccessibilityNotification.Announcement(message).post()
         }
+        .onChange(of: form) { _, _ in
+            guard !isSaving, !hasSavedLocally else { return }
+            conflicts = []
+            allowsConflictOverride = false
+        }
     }
 
     private func save() async {
@@ -349,6 +413,13 @@ struct ScheduleLessonSheet: View {
         isSaving = true
         defer { isSaving = false }
         do {
+            if !allowsConflictOverride {
+                let detected = try await repository.findScheduleConflicts(form.makeConflictQuery())
+                if !detected.isEmpty {
+                    conflicts = detected
+                    return
+                }
+            }
             let savedOccurrences: [LessonOccurrence]
             switch form.mode {
             case .oneOff:
@@ -357,6 +428,7 @@ struct ScheduleLessonSheet: View {
                 savedOccurrences = try await repository.createWeeklySchedule(form.makeWeeklyInput())
             }
             hasSavedLocally = true
+            conflicts = []
             await onSaved()
             if let syncFailure = calendarSyncFailureMessage(for: savedOccurrences) {
                 errorMessage = syncFailure
@@ -496,6 +568,30 @@ struct ScheduleLessonFormState: Equatable {
         )
     }
 
+    func makeConflictQuery() throws -> ScheduleConflictQuery {
+        switch mode {
+        case .oneOff:
+            let input = try makeOneOffInput()
+            try ScheduleValidation.validate(input)
+            return ScheduleConflictQuery(
+                slots: [ProposedLessonSlot(startsAt: input.startsAt, endsAt: input.endsAt)],
+                excludingOccurrenceId: nil
+            )
+        case .weekly:
+            let input = try makeWeeklyInput()
+            try ScheduleValidation.validate(input)
+            let occurrences = WeeklyOccurrenceExpander.expand(
+                template: input.template(instructorId: UUID()),
+                horizonStartDate: input.startsOn,
+                existingOccurrenceKeys: []
+            )
+            return ScheduleConflictQuery(
+                slots: occurrences.map { ProposedLessonSlot(startsAt: $0.startsAt, endsAt: $0.endsAt) },
+                excludingOccurrenceId: nil
+            )
+        }
+    }
+
     private var resolvedTimeZone: TimeZone {
         TimeZone(identifier: timezone) ?? .current
     }
@@ -542,6 +638,8 @@ struct EditOccurrenceSheet: View {
     @State private var errorMessage: String?
     @State private var isSaving = false
     @State private var hasSavedLocally = false
+    @State private var conflicts: [ScheduleConflict] = []
+    @State private var allowsConflictOverride = false
     @FocusState private var isStartDateFocused: Bool
 
     init(event: CalendarLessonEvent, repository: ScheduleRepository, onSaved: @escaping () async -> Void = {}) {
@@ -601,6 +699,22 @@ struct EditOccurrenceSheet: View {
                     CompactModalError(message: errorMessage)
                 }
 
+                if !conflicts.isEmpty {
+                    ScheduleConflictWarningView(
+                        conflicts: conflicts,
+                        overrideTitle: "그래도 변경",
+                        onChooseAnotherTime: {
+                            conflicts = []
+                            allowsConflictOverride = false
+                            isStartDateFocused = true
+                        },
+                        onOverride: {
+                            allowsConflictOverride = true
+                            Task { await save() }
+                        }
+                    )
+                }
+
                 CompactModalActions(
                     cancelTitle: hasSavedLocally ? "닫기" : "취소",
                     confirmTitle: editSaveButtonTitle,
@@ -620,6 +734,11 @@ struct EditOccurrenceSheet: View {
             guard let message else { return }
             AccessibilityNotification.Announcement(message).post()
         }
+        .onChange(of: form) { _, _ in
+            guard !isSaving, !hasSavedLocally else { return }
+            conflicts = []
+            allowsConflictOverride = false
+        }
     }
 
     private func save() async {
@@ -628,8 +747,22 @@ struct EditOccurrenceSheet: View {
         isSaving = true
         defer { isSaving = false }
         do {
-            let occurrence = try await repository.editOccurrence(form.makeInput(occurrenceId: event.id))
+            let input = form.makeInput(occurrenceId: event.id)
+            if !allowsConflictOverride {
+                let detected = try await repository.findScheduleConflicts(
+                    ScheduleConflictQuery(
+                        slots: [ProposedLessonSlot(startsAt: input.startsAt, endsAt: input.endsAt)],
+                        excludingOccurrenceId: event.id
+                    )
+                )
+                if !detected.isEmpty {
+                    conflicts = detected
+                    return
+                }
+            }
+            let occurrence = try await repository.editOccurrence(input)
             hasSavedLocally = true
+            conflicts = []
             await onSaved()
             if let syncFailure = calendarSyncFailureMessage(for: [occurrence]) {
                 errorMessage = syncFailure

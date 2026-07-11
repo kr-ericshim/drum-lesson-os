@@ -175,6 +175,8 @@ import Testing
     #expect(viewModel.runPractice.isEmpty)
     #expect(viewModel.runNextHint.isEmpty)
     #expect(repository.savedLessonDraft == nil)
+    #expect(viewModel.completedLessonSummary?.contains("[김민지 5월 28일 레슨]") == true)
+    #expect(viewModel.completedLessonSummary?.contains("연습 과제\n- 2마디 루프") == true)
 }
 
 @MainActor

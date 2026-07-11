@@ -44,6 +44,7 @@ protocol LocalDataResetRepository {
 
 @MainActor
 protocol ScheduleRepository {
+    func findScheduleConflicts(_ query: ScheduleConflictQuery) async throws -> [ScheduleConflict]
     func createOneOffOccurrence(_ input: ScheduleLessonInput) async throws -> LessonOccurrence
     func createWeeklySchedule(_ input: WeeklyScheduleInput) async throws -> [LessonOccurrence]
     func editOccurrence(_ input: EditOccurrenceInput) async throws -> LessonOccurrence
@@ -56,6 +57,7 @@ protocol ScheduleRepository {
 }
 
 extension ScheduleRepository {
+    func findScheduleConflicts(_ query: ScheduleConflictQuery) async throws -> [ScheduleConflict] { [] }
     func loadPendingNativeCalendarOccurrences() async throws -> [LessonOccurrence] { [] }
     func reconcilePendingNativeCalendarSync() async throws -> Int { 0 }
 }

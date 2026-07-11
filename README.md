@@ -64,11 +64,11 @@ Run the local app from the command line:
 
 The default SQLite file and EventKit retry outbox are created under the user's Application Support directory at launch. EventKit permissions and the selected Apple Calendar stay in the native macOS system flow.
 
-Settings can export a versioned `.drumlessonbackup` file and restore it after validation. Restore creates an automatic pre-restore safety backup. Portable backups contain the canonical teaching snapshot and exclude the EventKit execution queue; pending restored calendar work requires explicit manual retry.
+Settings can export a versioned `.drumlessonbackup` file and restore it after validation. Restore creates an automatic pre-restore safety backup. The app also creates at most one internal automatic backup per day and retains the most recent seven daily plus four older weekly snapshots. Settings shows the last automatic backup and any stale or failed state. Portable backups contain the canonical teaching snapshot and exclude the EventKit execution queue; pending restored calendar work requires explicit manual retry.
 
 The active lesson workspace can append dated BPM and observation checkpoints to the current progress item. Checkpoints remain separate from the editable progress summary so earlier observations are not overwritten.
 
-The `수강비` workspace tracks each active student's four-lesson cycle. Scheduled-lesson closeout advances the configured cycle, while payment confirmation and the confirmation date remain manual. Existing students require one initial current-cycle setup; newly added students start at `0/4` with payment unconfirmed. Tuition history is included in version-2 backups, and version-1 backups remain restorable.
+The `수강비` workspace tracks each active student's four-lesson cycle. Scheduled-lesson closeout advances the configured cycle, while payment confirmation and the confirmation date remain manual. Existing students require one initial current-cycle setup; newly added students start at `0/4` with payment unconfirmed. Current version-3 backups include tuition history and unfinished lesson drafts, while version-1 and version-2 backups remain restorable.
 
 Snapshots created by experimental local builds before recurring templates were persisted still open, but their lost repeat rule and end date cannot be reconstructed safely. If such a snapshot contains an old eight-week recurring series, recreate that recurring schedule once in the current build; current schedules persist the template and continue expanding on demand.
 

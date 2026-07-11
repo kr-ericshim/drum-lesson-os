@@ -164,6 +164,7 @@ import Testing
     #expect(input.startsOn == "2026-05-29")
     #expect(input.endsOn == "2026-07-31")
     #expect(input.startTime == "11:15:00")
+    #expect(try form.makeConflictQuery().slots.count > 1)
 }
 
 @MainActor

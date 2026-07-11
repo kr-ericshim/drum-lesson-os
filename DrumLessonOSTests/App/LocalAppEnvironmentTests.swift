@@ -36,6 +36,24 @@ import Testing
 }
 
 @MainActor
+@Test func appEnvironmentLaunchMaintenanceCreatesAutomaticBackup() async throws {
+    let databaseURL = temporarySQLiteURL()
+    let directory = databaseURL.deletingLastPathComponent()
+    defer { try? FileManager.default.removeItem(at: directory) }
+    let environment = try AppEnvironment.liveOrPreview(
+        environment: [:],
+        bundle: nil,
+        databaseURL: databaseURL,
+        calendar: PreviewCalendarRepository()
+    )
+
+    await environment.runLaunchMaintenance()
+
+    #expect(environment.localDataBackup?.automaticBackupStatus.backupCount == 1)
+    #expect(environment.localDataBackup?.automaticBackupStatus.lastError == nil)
+}
+
+@MainActor
 @Test func appEnvironmentReportsLocalStoreStartupFailure() throws {
     let directory = FileManager.default.temporaryDirectory
         .appendingPathComponent("DrumLessonOS-InvalidStore-\(UUID().uuidString)", isDirectory: true)

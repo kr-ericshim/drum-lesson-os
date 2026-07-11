@@ -59,6 +59,28 @@ import Testing
 }
 
 @MainActor
+@Test func localSQLiteRepositoryFindsScheduledOverlapAndExcludesEditedOccurrence() async throws {
+    let databaseURL = temporarySQLiteURL()
+    defer { removeSQLiteFiles(at: databaseURL) }
+    let repository = try LocalSQLiteRepository(databaseURL: databaseURL)
+    let occurrence = PreviewData.occurrences[0]
+    let slot = ProposedLessonSlot(
+        startsAt: "2026-05-28T10:20:00Z",
+        endsAt: "2026-05-28T11:10:00Z"
+    )
+
+    let conflicts = try await repository.findScheduleConflicts(
+        ScheduleConflictQuery(slots: [slot], excludingOccurrenceId: nil)
+    )
+    let excluded = try await repository.findScheduleConflicts(
+        ScheduleConflictQuery(slots: [slot], excludingOccurrenceId: occurrence.id)
+    )
+
+    #expect(conflicts.contains { $0.occurrenceId == occurrence.id && $0.studentName == "김민지" })
+    #expect(!excluded.contains { $0.occurrenceId == occurrence.id })
+}
+
+@MainActor
 @Test func localSQLiteRepositoryLoadsInactiveStudentDetailWithoutCrashing() async throws {
     let databaseURL = temporarySQLiteURL()
     defer { removeSQLiteFiles(at: databaseURL) }

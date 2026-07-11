@@ -19,6 +19,7 @@ final class StudentDetailViewModel {
     var recoveredLessonDraft: LessonDraft?
     var draftStatusMessage: String?
     var draftStatusIsError = false
+    var completedLessonSummary: String?
 
     let studentId: EntityID
     let lessonContext: CalendarLessonEvent?
@@ -337,6 +338,11 @@ final class StudentDetailViewModel {
             return
         }
         guard let detail, let draft = closeoutDraft else { return }
+        let lessonSummary = LessonSummaryFormatter.make(
+            studentName: detail.name,
+            lessonDate: lessonContext.dateKey,
+            draft: draft
+        )
         draftSaveTask?.cancel()
         draftSaveTask = nil
         isSaving = true
@@ -371,6 +377,7 @@ final class StudentDetailViewModel {
             runNextHint = ""
             closeoutDraft = nil
             closeoutStatusMessage = "마무리 기록을 저장했습니다."
+            completedLessonSummary = lessonSummary
             recoveredLessonDraft = nil
             draftStatusMessage = nil
             draftStatusIsError = false

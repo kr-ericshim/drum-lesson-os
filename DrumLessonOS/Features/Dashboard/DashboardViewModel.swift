@@ -9,6 +9,7 @@ final class DashboardViewModel {
     var isLoading = false
     var errorMessage: String?
     var showingScheduleSheet = false
+    private(set) var pendingMoveConflicts: [ScheduleConflict] = []
     private(set) var movingOccurrenceIDs: Set<EntityID> = []
     private(set) var weekAnchor: Date
 
@@ -16,6 +17,13 @@ final class DashboardViewModel {
     private let scheduleRepository: ScheduleRepository
     private var requestedWeekAnchor: Date?
     private var loadGeneration = 0
+    private var pendingConflictMove: PendingConflictMove?
+
+    var pendingMoveConflictMessage: String {
+        let labels = pendingMoveConflicts.prefix(3).map(\.displayLabel).joined(separator: "\n")
+        let remaining = pendingMoveConflicts.count > 3 ? "\n외 \(pendingMoveConflicts.count - 3)개 일정" : ""
+        return "\(labels)\(remaining)\n\n의도한 중복이면 그래도 이동할 수 있습니다."
+    }
 
     init(repository: StudentRepository, scheduleRepository: ScheduleRepository, weekAnchor: Date = Date()) {
         self.repository = repository
@@ -90,7 +98,7 @@ final class DashboardViewModel {
         toDateKey dateKey: String,
         minuteOfDay: Int? = nil
     ) async {
-        guard !movingOccurrenceIDs.contains(event.id) else { return }
+        guard !movingOccurrenceIDs.contains(event.id), pendingConflictMove == nil else { return }
 
         let input: EditOccurrenceInput
         do {
@@ -110,6 +118,48 @@ final class DashboardViewModel {
         guard currentStart != movedStart else { return }
 
         let reloadAnchor = weekAnchor
+        do {
+            let conflicts = try await scheduleRepository.findScheduleConflicts(
+                ScheduleConflictQuery(
+                    slots: [ProposedLessonSlot(startsAt: input.startsAt, endsAt: input.endsAt)],
+                    excludingOccurrenceId: event.id
+                )
+            )
+            if !conflicts.isEmpty {
+                pendingConflictMove = PendingConflictMove(event: event, input: input, reloadAnchor: reloadAnchor)
+                pendingMoveConflicts = conflicts
+                return
+            }
+        } catch {
+            errorMessage = error.localizedDescription
+            return
+        }
+
+        await performMove(event: event, input: input, reloadAnchor: reloadAnchor)
+    }
+
+    func confirmPendingConflictMove() async {
+        guard let pendingConflictMove else { return }
+        self.pendingConflictMove = nil
+        pendingMoveConflicts = []
+        await performMove(
+            event: pendingConflictMove.event,
+            input: pendingConflictMove.input,
+            reloadAnchor: pendingConflictMove.reloadAnchor
+        )
+    }
+
+    func cancelPendingConflictMove() {
+        pendingConflictMove = nil
+        pendingMoveConflicts = []
+    }
+
+    private func performMove(
+        event: CalendarLessonEvent,
+        input: EditOccurrenceInput,
+        reloadAnchor: Date
+    ) async {
+        guard !movingOccurrenceIDs.contains(event.id) else { return }
         movingOccurrenceIDs.insert(event.id)
         defer { movingOccurrenceIDs.remove(event.id) }
 
@@ -147,6 +197,12 @@ final class DashboardViewModel {
         self.errorMessage = errorMessage
     }
 
+}
+
+private struct PendingConflictMove {
+    var event: CalendarLessonEvent
+    var input: EditOccurrenceInput
+    var reloadAnchor: Date
 }
 
 enum ScheduleMoveInputFactory {

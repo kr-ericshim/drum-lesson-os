@@ -1,3 +1,5 @@
+import Accessibility
+import AppKit
 import SwiftUI
 
 struct LessonFlowWorkspace: View {
@@ -390,6 +392,7 @@ struct LessonBriefView: View {
 struct LessonRunPanelView: View {
     @Bindable var viewModel: StudentDetailViewModel
     @FocusState private var focusedField: Field?
+    @State private var summaryCopyMessage: String?
 
     private let fieldColumns = [
         GridItem(
@@ -533,6 +536,22 @@ struct LessonRunPanelView: View {
                     Text("학생 기록에서 방금 저장한 노트를 확인할 수 있습니다.")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
+
+                    if let summary = viewModel.completedLessonSummary {
+                        Button {
+                            copyLessonSummary(summary)
+                        } label: {
+                            Label("수업 요약 복사", systemImage: "doc.on.doc")
+                        }
+                        .buttonStyle(.bordered)
+                        .help("카카오톡이나 문자에 붙여넣을 수 있도록 클립보드에 복사합니다.")
+
+                        if let summaryCopyMessage {
+                            Text(summaryCopyMessage)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             } else {
@@ -590,6 +609,17 @@ struct LessonRunPanelView: View {
 
     private func hasText(_ value: String) -> Bool {
         value.contains { !$0.isWhitespace }
+    }
+
+    private func copyLessonSummary(_ summary: String) {
+        let pasteboard = NSPasteboard.general
+        pasteboard.clearContents()
+        if pasteboard.setString(summary, forType: .string) {
+            summaryCopyMessage = "클립보드에 복사했습니다."
+            AccessibilityNotification.Announcement("수업 요약을 클립보드에 복사했습니다.").post()
+        } else {
+            summaryCopyMessage = "클립보드에 복사하지 못했습니다."
+        }
     }
 
     private func runField(
