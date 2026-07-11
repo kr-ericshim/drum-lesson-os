@@ -3,7 +3,7 @@
 **Defined:** 2026-05-22
 **Last updated:** 2026-07-11
 **Core Value:** An instructor can quickly understand a student's current progress and personal characteristics before or during a lesson.
-**Implementation status:** 63 complete, 1 deferred, 1 pending direct release UAT
+**Implementation status:** 63 complete, 2 deferred
 
 ## v1 Requirements
 
@@ -98,7 +98,7 @@
 - [x] **NATIVE-03**: Native writes use transactional local SQLite persistence without requiring hosted authentication.
 - [x] **NATIVE-04**: Native Apple Calendar integration uses EventKit instead of prompting for Apple ID or app-specific password credentials.
 - [x] **NATIVE-05**: EventKit failures are visible and retryable through a durable local outbox without corrupting local lesson occurrence data.
-- [ ] **NATIVE-06**: Native production use is verified with real EventKit create/edit/cancel, iPhone iCloud propagation, and daily-use confidence.
+- [ ] **NATIVE-06**: Native production use is verified with real EventKit create/edit/cancel, iPhone iCloud propagation, and daily-use confidence. Deferred until Computer Use is working again.
 - [x] **NATIVE-07**: Repo structure is native-primary, with SwiftUI app source at root and the legacy web runtime removed from active development.
 
 ### Prepaid Tuition Management
@@ -124,7 +124,7 @@ The following are not part of the current product direction:
 
 ## Release Gate
 
-The active app keeps teaching records on this Mac and does not expose a hosted account boundary. Live EventKit/iPhone UAT, local backup confidence, and daily-use confidence remain required before relying on it for real teaching records.
+The active app keeps teaching records on this Mac and does not expose a hosted account boundary. The operator deferred live EventKit/iPhone, file-panel, and accessibility UAT until Computer Use is working again; these checks still precede treating the app as the only teaching record.
 
 ## Traceability
 
@@ -186,7 +186,7 @@ Traceability maps every v1 requirement to exactly one phase.
 | NATIVE-03 | Phase 7 | Complete |
 | NATIVE-04 | Phase 7 | Complete |
 | NATIVE-05 | Phase 7 | Complete |
-| NATIVE-06 | Phase 7 release gate | Pending live UAT |
+| NATIVE-06 | Phase 7 release gate | Deferred until Computer Use is available |
 | NATIVE-07 | Phase 7 native-primary reorg | Complete |
 | TUIT-01 | Phase 12 | Complete |
 | TUIT-02 | Phase 12 | Complete |
@@ -203,5 +203,4 @@ Traceability maps every v1 requirement to exactly one phase.
 - Mapped to phases: 65
 - Unmapped: 0
 - Complete: 63
-- Deferred: 1 (`CAL-10`)
-- Pending direct release UAT: 1 (`NATIVE-06`)
+- Deferred: 2 (`CAL-10`, `NATIVE-06`)

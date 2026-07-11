@@ -1,13 +1,13 @@
 ---
 milestone: v1.0
 milestone_name: instructor-side MVP
-status: phase-14-in-progress-release-uat-pending
+status: phase-14-complete-direct-uat-deferred
 last_updated: "2026-07-11"
 progress:
   implementation_phases: 14
-  completed_phases: 13
+  completed_phases: 14
   implementation_plans: 25
-  completed_plans: 24
+  completed_plans: 25
   implementation_percent: 100
 ---
 
@@ -15,10 +15,10 @@ progress:
 
 ## Current Position
 
-The instructor-side implementation is complete through Phase 13. Phase 14 is adding daily-use safety and speed features while closing the release UAT checklist.
+The instructor-side implementation is complete through Phase 14. Direct device UAT is deferred until the local Computer Use helper is compatible with this Mac.
 
 - **Active architecture:** macOS SwiftUI, local SQLite, EventKit, durable local calendar outbox
-- **Current work:** [Phase 14 plan](phases/14-daily-use-safety-and-speed/14-PLAN.md)
+- **Latest work:** [Phase 14 plan](phases/14-daily-use-safety-and-speed/14-PLAN.md)
 - **Product definition:** [PROJECT.md](PROJECT.md)
 - **Requirement status:** [REQUIREMENTS.md](REQUIREMENTS.md)
 - **Phase history:** [ROADMAP.md](ROADMAP.md)
@@ -49,9 +49,11 @@ After Phase 14 implementation on 2026-07-11:
 - Disposable-path app launch and automatic-backup creation/relaunch check: passed
 - `git diff --check`: passed
 
-The [Phase 14 UAT record](phases/14-daily-use-safety-and-speed/14-UAT.md) separates this automated evidence from the remaining device-only release checks.
+The [Phase 14 UAT record](phases/14-daily-use-safety-and-speed/14-UAT.md) separates this automated evidence from the deferred device-only checks.
 
-## Release-Confidence Work Remaining
+## Deferred Direct UAT
+
+On 2026-07-11, the operator chose to exclude direct UI validation until Computer Use is working again. When that tooling is available:
 
 - Exercise backup export and restore through native save/open panels using disposable data.
 - Check light mode, keyboard traversal, and VoiceOver on the main workflows.
@@ -62,8 +64,9 @@ The [Phase 14 UAT record](phases/14-daily-use-safety-and-speed/14-UAT.md) separa
 ## Deferred
 
 - `CAL-10` optional reverse sync from Apple Calendar remains intentionally deferred.
+- `NATIVE-06` direct EventKit, accessibility, file-panel, and iPhone propagation confidence is deferred until Computer Use is available.
 - Student accounts, hosted sync, payment processing, and non-Apple calendars remain outside v1.
 
 ## Resume Point
 
-Complete the remaining device-only checks in the [Phase 14 UAT record](phases/14-daily-use-safety-and-speed/14-UAT.md).
+When Computer Use is compatible with this Mac, resume the device-only checks in the [Phase 14 UAT record](phases/14-daily-use-safety-and-speed/14-UAT.md).

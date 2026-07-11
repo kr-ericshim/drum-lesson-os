@@ -33,6 +33,6 @@ Phase folders preserve planning, implementation notes, review evidence, and comp
 | 11 | [Local backup and progress history](11-local-backup-and-progress-history/) | Complete; file-panel UAT remains |
 | 12 | [Prepaid tuition management](12-prepaid-tuition-management/) | Complete |
 | 13 | [In-lesson draft recovery](13-in-lesson-draft-recovery/) | Complete |
-| 14 | [Daily-use safety and speed](14-daily-use-safety-and-speed/) | In progress |
+| 14 | [Daily-use safety and speed](14-daily-use-safety-and-speed/) | Complete; direct UAT deferred |
 
 Use [../STATE.md](../STATE.md) for the current resume point and [../ROADMAP.md](../ROADMAP.md) for phase-level status.
