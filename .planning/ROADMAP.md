@@ -2,7 +2,7 @@
 
 ## Status
 
-All 12 instructor-side v1 implementation phases are complete. Remaining work is release-confidence UAT, listed in [STATE.md](STATE.md).
+Phases 1 through 14 are complete. Device-only release UAT is explicitly deferred until Computer Use is working again, as recorded in [STATE.md](STATE.md).
 
 The active product is native-first and local-first. SQLite is canonical, EventKit is the Apple Calendar boundary, and hosted authentication is not part of the running app.
 
@@ -23,6 +23,8 @@ The active product is native-first and local-first. SQLite is canonical, EventKi
 | 10 | In-lesson workspace redesign | Complete; direct accessibility UAT remains | [Phase 10](phases/10-in-lesson-workspace-redesign/) |
 | 11 | Local backup and progress history | Complete; native file-panel UAT remains | [Phase 11](phases/11-local-backup-and-progress-history/) |
 | 12 | Prepaid four-lesson tuition management | Complete | [Phase 12](phases/12-prepaid-tuition-management/) |
+| 13 | In-lesson draft autosave and recovery | Complete | [Phase 13](phases/13-in-lesson-draft-recovery/) |
+| 14 | Daily-use safety and speed | Complete; direct UAT deferred | [Phase 14](phases/14-daily-use-safety-and-speed/) |
 
 ## Architecture Transitions
 
@@ -38,9 +40,9 @@ Phase 7 moved the product into macOS SwiftUI and EventKit. Some Phase 7 records 
 
 On 2026-07-10, local SQLite became canonical, hosted authentication was removed from the active app, and EventKit retry work moved to a durable local outbox. Phases 9 through 12 and the current research documents describe this active architecture.
 
-## Current Release Gate
+## Deferred Direct Validation
 
-Implementation completion does not establish production confidence on its own. Before relying on the app for live teaching records:
+The operator deferred the following checks on 2026-07-11 until Computer Use is working again. Before relying on the app as the only teaching record:
 
 1. Complete native backup save/open panel testing with disposable data.
 2. Complete light mode, keyboard, and VoiceOver checks.
@@ -50,4 +52,4 @@ Implementation completion does not establish production confidence on its own. B
 
 ## Future Scope
 
-Any new phase should start only after updating [PROJECT.md](PROJECT.md), [REQUIREMENTS.md](REQUIREMENTS.md), and [STATE.md](STATE.md). Current exclusions include student accounts, payment processing, hosted sync, non-Apple calendars, and audio/video analysis.
+Phase 14 covers release UAT, rolling local backup, overlap warnings, native roster search and filters, and post-closeout summary copy. Current exclusions include student accounts, payment processing, hosted sync, non-Apple calendars, and audio/video analysis.

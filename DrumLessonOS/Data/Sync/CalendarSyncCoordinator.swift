@@ -93,6 +93,10 @@ final class CalendarBackedScheduleRepository: ScheduleRepository {
         self.queue = queue
     }
 
+    func findScheduleConflicts(_ query: ScheduleConflictQuery) async throws -> [ScheduleConflict] {
+        try await schedules.findScheduleConflicts(query)
+    }
+
     func createOneOffOccurrence(_ input: ScheduleLessonInput) async throws -> LessonOccurrence {
         let occurrence = try await schedules.createOneOffOccurrence(input)
         return await beginCalendarWrite(for: occurrence, operation: .create)

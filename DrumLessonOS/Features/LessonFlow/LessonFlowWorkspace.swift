@@ -1,3 +1,5 @@
+import Accessibility
+import AppKit
 import SwiftUI
 
 struct LessonFlowWorkspace: View {
@@ -390,6 +392,7 @@ struct LessonBriefView: View {
 struct LessonRunPanelView: View {
     @Bindable var viewModel: StudentDetailViewModel
     @FocusState private var focusedField: Field?
+    @State private var summaryCopyMessage: String?
 
     private let fieldColumns = [
         GridItem(
@@ -411,6 +414,23 @@ struct LessonRunPanelView: View {
                         systemImage: canPrepareCloseout ? "checkmark.circle.fill" : "circle.dashed",
                         tint: canPrepareCloseout ? AppTheme.Semantic.success : .secondary
                     )
+                }
+
+                if let message = viewModel.draftStatusMessage {
+                    Label(
+                        message,
+                        systemImage: viewModel.draftStatusIsError
+                            ? "exclamationmark.triangle.fill"
+                            : "checkmark.arrow.trianglehead.counterclockwise"
+                    )
+                    .font(.caption.monospacedDigit())
+                    .foregroundStyle(viewModel.draftStatusIsError ? AppTheme.Semantic.error : .secondary)
+                    .accessibilityLabel("레슨 초안 상태")
+                    .accessibilityValue(message)
+                }
+
+                if let draft = viewModel.recoveredLessonDraft {
+                    recoveredDraftBanner(draft)
                 }
 
                 LazyVGrid(
@@ -447,10 +467,12 @@ struct LessonRunPanelView: View {
                         isRequired: false
                     )
                 }
+                .disabled(viewModel.recoveredLessonDraft != nil)
 
                 Divider()
 
                 closeoutArea
+                    .disabled(viewModel.recoveredLessonDraft != nil)
 
                 if let errorMessage = viewModel.errorMessage {
                     Label(errorMessage, systemImage: "exclamationmark.triangle")
@@ -462,6 +484,44 @@ struct LessonRunPanelView: View {
                 }
             }
         }
+        .onChange(of: runNotesSnapshot) { _, _ in
+            viewModel.scheduleLessonDraftAutosave()
+        }
+        .onDisappear {
+            Task { await viewModel.flushLessonDraftAutosave() }
+        }
+    }
+
+    private func recoveredDraftBanner(_ draft: LessonDraft) -> some View {
+        VStack(alignment: .leading, spacing: AppTheme.Spacing.md) {
+            Label("작성 중인 초안이 있습니다", systemImage: "doc.badge.clock")
+                .font(.headline)
+                .foregroundStyle(AppTheme.Accent.teachingForeground)
+
+            Text("이 레슨에서 저장되지 않은 기록을 이어서 작성하거나 삭제하세요.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+
+            HStack(spacing: AppTheme.Spacing.sm) {
+                Button("초안 삭제", role: .destructive) {
+                    Task { await viewModel.deleteRecoveredLessonDraft() }
+                }
+                .buttonStyle(.bordered)
+
+                Spacer()
+
+                Button("이어서 작성") {
+                    viewModel.continueRecoveredLessonDraft()
+                }
+                .buttonStyle(.borderedProminent)
+                .keyboardShortcut(.defaultAction)
+            }
+        }
+        .padding(AppTheme.Spacing.md)
+        .background(AppTheme.Accent.teaching.opacity(0.10), in: AppTheme.softPanel)
+        .overlay(AppTheme.softPanel.stroke(AppTheme.Accent.teaching.opacity(0.24), lineWidth: 1))
+        .accessibilityElement(children: .contain)
+        .accessibilityValue("마지막 저장 \(draft.updatedAt)")
     }
 
     private var closeoutArea: some View {
@@ -476,6 +536,22 @@ struct LessonRunPanelView: View {
                     Text("학생 기록에서 방금 저장한 노트를 확인할 수 있습니다.")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
+
+                    if let summary = viewModel.completedLessonSummary {
+                        Button {
+                            copyLessonSummary(summary)
+                        } label: {
+                            Label("수업 요약 복사", systemImage: "doc.on.doc")
+                        }
+                        .buttonStyle(.bordered)
+                        .help("카카오톡이나 문자에 붙여넣을 수 있도록 클립보드에 복사합니다.")
+
+                        if let summaryCopyMessage {
+                            Text(summaryCopyMessage)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             } else {
@@ -512,6 +588,15 @@ struct LessonRunPanelView: View {
             .count
     }
 
+    private var runNotesSnapshot: RunNotesSnapshot {
+        RunNotesSnapshot(
+            coveredMaterial: viewModel.runCovered,
+            observations: viewModel.runObservation,
+            practiceAssigned: viewModel.runPractice,
+            nextStepHint: viewModel.runNextHint
+        )
+    }
+
     private var canPrepareCloseout: Bool {
         filledRequiredCount == 3
     }
@@ -524,6 +609,17 @@ struct LessonRunPanelView: View {
 
     private func hasText(_ value: String) -> Bool {
         value.contains { !$0.isWhitespace }
+    }
+
+    private func copyLessonSummary(_ summary: String) {
+        let pasteboard = NSPasteboard.general
+        pasteboard.clearContents()
+        if pasteboard.setString(summary, forType: .string) {
+            summaryCopyMessage = "클립보드에 복사했습니다."
+            AccessibilityNotification.Announcement("수업 요약을 클립보드에 복사했습니다.").post()
+        } else {
+            summaryCopyMessage = "클립보드에 복사하지 못했습니다."
+        }
     }
 
     private func runField(
@@ -569,6 +665,13 @@ struct LessonRunPanelView: View {
         case observation
         case practice
         case nextHint
+    }
+
+    private struct RunNotesSnapshot: Equatable {
+        var coveredMaterial: String
+        var observations: String
+        var practiceAssigned: String
+        var nextStepHint: String
     }
 }
 

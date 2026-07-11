@@ -31,12 +31,20 @@ protocol LocalDataBackupRepository {
 }
 
 @MainActor
+protocol LessonDraftRepository {
+    func loadLessonDraft(occurrenceId: EntityID) async throws -> LessonDraft?
+    func upsertLessonDraft(_ input: LessonDraftInput) async throws -> LessonDraft
+    func deleteLessonDraft(occurrenceId: EntityID) async throws
+}
+
+@MainActor
 protocol LocalDataResetRepository {
     func resetAllData() async throws
 }
 
 @MainActor
 protocol ScheduleRepository {
+    func findScheduleConflicts(_ query: ScheduleConflictQuery) async throws -> [ScheduleConflict]
     func createOneOffOccurrence(_ input: ScheduleLessonInput) async throws -> LessonOccurrence
     func createWeeklySchedule(_ input: WeeklyScheduleInput) async throws -> [LessonOccurrence]
     func editOccurrence(_ input: EditOccurrenceInput) async throws -> LessonOccurrence
@@ -49,6 +57,7 @@ protocol ScheduleRepository {
 }
 
 extension ScheduleRepository {
+    func findScheduleConflicts(_ query: ScheduleConflictQuery) async throws -> [ScheduleConflict] { [] }
     func loadPendingNativeCalendarOccurrences() async throws -> [LessonOccurrence] { [] }
     func reconcilePendingNativeCalendarSync() async throws -> Int { 0 }
 }

@@ -13,6 +13,9 @@ struct RootView: View {
         }
         .tint(AppTheme.Accent.teaching)
         .preferredColorScheme(environment.preferences.appearance.colorScheme)
+        .task {
+            await environment.runLaunchMaintenance()
+        }
     }
 }
 
@@ -98,7 +101,8 @@ private struct StudentDetailRoute: View {
                 studentId: studentId,
                 lessonContext: lessonContext,
                 repository: environment.students,
-                writes: environment.writes
+                writes: environment.writes,
+                lessonDrafts: environment.lessonDrafts
             ),
             onStudentDeleted: {
                 await environment.refresh()

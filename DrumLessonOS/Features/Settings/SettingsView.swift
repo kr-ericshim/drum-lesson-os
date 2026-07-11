@@ -8,7 +8,7 @@ struct SettingsView: View {
     let calendar: CalendarRepository
     @Bindable var preferences: AppPreferences
     let localDataDirectoryURL: URL?
-    let localDataBackup: LocalDataBackupRepository?
+    let localDataBackup: LocalDataBackupController?
     let localDataReset: LocalDataResetRepository?
     let onDataChanged: @MainActor () async -> Void
 
@@ -103,6 +103,9 @@ struct SettingsView: View {
                     )
                 }
             }
+        }
+        .task {
+            localDataBackup?.refreshAutomaticBackupStatus()
         }
     }
 
@@ -221,6 +224,8 @@ struct SettingsView: View {
                             .foregroundStyle(.secondary)
                             .fixedSize(horizontal: false, vertical: true)
 
+                        automaticBackupStatus
+
                         if let backupFeedback {
                             Label(
                                 backupFeedback.message,
@@ -303,6 +308,53 @@ struct SettingsView: View {
         }
         .buttonStyle(.bordered)
         .disabled(isWorkingWithBackup)
+    }
+
+    @ViewBuilder
+    private var automaticBackupStatus: some View {
+        if let localDataBackup {
+            let status = localDataBackup.automaticBackupStatus
+            Divider()
+
+            VStack(alignment: .leading, spacing: AppTheme.Spacing.xs) {
+                Label(
+                    automaticBackupLabel(status),
+                    systemImage: status.lastError != nil || status.isStale
+                        ? "exclamationmark.triangle.fill"
+                        : "clock.arrow.circlepath"
+                )
+                .font(.footnote.weight(.medium))
+                .foregroundStyle(status.lastError != nil || status.isStale ? AppTheme.Semantic.error : .secondary)
+
+                Text("하루 한 번 자동 저장 · 최근 7일과 이전 4주 보관")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                if let error = status.lastError {
+                    Text("자동 백업 실패: \(error)")
+                        .font(.caption)
+                        .foregroundStyle(AppTheme.Semantic.error)
+                        .fixedSize(horizontal: false, vertical: true)
+                } else if status.isStale {
+                    Text("7일 이상 자동 백업이 없습니다. 데이터 폴더의 쓰기 상태를 확인하세요.")
+                        .font(.caption)
+                        .foregroundStyle(AppTheme.Semantic.error)
+                }
+            }
+        }
+    }
+
+    private func automaticBackupLabel(_ status: AutomaticBackupStatus) -> String {
+        guard let date = status.lastBackupAt else { return "자동 백업 기록 없음" }
+        let relative: String
+        if Calendar.current.isDateInToday(date) {
+            relative = "오늘"
+        } else if Calendar.current.isDateInYesterday(date) {
+            relative = "어제"
+        } else {
+            relative = date.formatted(.dateTime.month().day())
+        }
+        return "마지막 자동 백업: \(relative) \(date.formatted(date: .omitted, time: .shortened)) · \(status.backupCount)개 보관"
     }
 
     private var backupFilename: String {

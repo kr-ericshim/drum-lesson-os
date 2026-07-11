@@ -51,6 +51,13 @@ enum StudentEditingValidation {
         try require(input.nextStepHint, field: "nextStepHint", max: 1_000)
     }
 
+    static func validate(_ input: LessonDraftInput) throws {
+        try optional(input.coveredMaterial, field: "coveredMaterial", max: 2_000)
+        try optional(input.observations, field: "observations", max: 2_000)
+        try optional(input.practiceAssigned, field: "practiceAssigned", max: 2_000)
+        try optional(input.nextStepHint, field: "nextStepHint", max: 1_000)
+    }
+
     static func validate(_ input: NextPlanInput) throws {
         try optionalDate(input.plannedFor, field: "plannedFor")
         try require(input.nextAction, field: "nextAction", max: 240)
@@ -245,6 +252,20 @@ struct LessonNoteInput: Equatable {
     var observations: String
     var practiceAssigned: String
     var nextStepHint: String
+}
+
+struct LessonDraftInput: Equatable {
+    var occurrenceId: EntityID
+    var studentId: EntityID
+    var coveredMaterial: String
+    var observations: String
+    var practiceAssigned: String
+    var nextStepHint: String
+
+    var isEmpty: Bool {
+        [coveredMaterial, observations, practiceAssigned, nextStepHint]
+            .allSatisfy { $0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+    }
 }
 
 struct NextPlanInput: Equatable {

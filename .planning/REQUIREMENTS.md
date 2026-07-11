@@ -3,7 +3,7 @@
 **Defined:** 2026-05-22
 **Last updated:** 2026-07-11
 **Core Value:** An instructor can quickly understand a student's current progress and personal characteristics before or during a lesson.
-**Implementation status:** 53 complete, 1 deferred, 1 pending direct release UAT
+**Implementation status:** 63 complete, 2 deferred
 
 ## v1 Requirements
 
@@ -13,6 +13,8 @@
 - [x] **FND-02**: App includes a durable data model for students, progress items, lesson notes, traits, assignments, and next lesson plans.
 - [x] **FND-03**: App includes realistic sample data that demonstrates multiple students with different progress states and learning traits.
 - [x] **FND-04**: Instructor can export and restore a validated versioned local backup with a pre-restore safety copy.
+- [x] **BACKUP-01**: The app creates at most one automatic local backup per day without requiring an export panel.
+- [x] **BACKUP-02**: Automatic backups retain seven daily snapshots plus four older weekly snapshots and expose last-success, stale, and failure status in Settings.
 
 ### Student Roster
 
@@ -21,6 +23,7 @@
 - [x] **ROST-03**: Instructor can add a new student with basic lesson-relevant profile information.
 - [x] **ROST-04**: Instructor can edit a student's basic profile information.
 - [x] **ROST-05**: Instructor can filter the roster by needs review, high-priority next lesson, no recent note, and missing current focus.
+- [x] **ROST-06**: The native roster exposes student search and the completed roster filters with visible result counts.
 
 ### Student Detail
 
@@ -55,6 +58,7 @@
 - [x] **CLOSE-01**: Instructor can use one compact closeout form to create a lesson note and update the next lesson plan.
 - [x] **CLOSE-02**: Instructor can create or update the assignment review cue from the closeout flow.
 - [x] **CLOSE-03**: Instructor can optionally update progress status or current focus from the closeout flow.
+- [x] **CLOSE-04**: After successful closeout, the instructor can copy a structured lesson summary to the macOS clipboard.
 
 ### Dashboard Quick Actions
 
@@ -67,6 +71,11 @@
 - [x] **FLOW-03**: Instructor can record short in-lesson working notes before committing the final closeout.
 - [x] **FLOW-04**: Instructor can turn in-lesson working notes into a closeout draft without retyping.
 - [x] **FLOW-05**: Existing closeout remains the durable save path and keeps dashboard/detail state aligned after refresh.
+- [x] **DRAFT-01**: In-lesson working notes are saved automatically for the current lesson occurrence after a short typing delay.
+- [x] **DRAFT-02**: Reopening a lesson with an unfinished draft offers explicit continue and delete actions before editing resumes.
+- [x] **DRAFT-03**: The lesson workspace shows saving, saved-time, and save-failure feedback without interrupting the lesson.
+- [x] **DRAFT-04**: Successful lesson closeout removes its persisted draft in the same local transaction.
+- [x] **DRAFT-05**: Portable backups include unfinished drafts and older supported backups restore with an empty draft collection.
 
 ### Calendar Scheduling And Apple Sync
 
@@ -80,6 +89,7 @@
 - [x] **CAL-08**: Instructor can manually retry Apple Calendar sync.
 - [x] **CAL-09**: Apple Calendar credential failures do not corrupt app-owned schedule data.
 - [ ] **CAL-10**: Optional reverse sync imports Apple-side changes only for events originally created by Drum Lesson OS.
+- [x] **CAL-11**: Creating, editing, or dragging a lesson warns about overlapping scheduled lessons and permits an explicit override.
 
 ### Native macOS Migration
 
@@ -88,7 +98,7 @@
 - [x] **NATIVE-03**: Native writes use transactional local SQLite persistence without requiring hosted authentication.
 - [x] **NATIVE-04**: Native Apple Calendar integration uses EventKit instead of prompting for Apple ID or app-specific password credentials.
 - [x] **NATIVE-05**: EventKit failures are visible and retryable through a durable local outbox without corrupting local lesson occurrence data.
-- [ ] **NATIVE-06**: Native production use is verified with real EventKit create/edit/cancel, iPhone iCloud propagation, and daily-use confidence.
+- [ ] **NATIVE-06**: Native production use is verified with real EventKit create/edit/cancel, iPhone iCloud propagation, and daily-use confidence. Deferred until Computer Use is working again.
 - [x] **NATIVE-07**: Repo structure is native-primary, with SwiftUI app source at root and the legacy web runtime removed from active development.
 
 ### Prepaid Tuition Management
@@ -114,7 +124,7 @@ The following are not part of the current product direction:
 
 ## Release Gate
 
-The active app keeps teaching records on this Mac and does not expose a hosted account boundary. Live EventKit/iPhone UAT, local backup confidence, and daily-use confidence remain required before relying on it for real teaching records.
+The active app keeps teaching records on this Mac and does not expose a hosted account boundary. The operator deferred live EventKit/iPhone, file-panel, and accessibility UAT until Computer Use is working again; these checks still precede treating the app as the only teaching record.
 
 ## Traceability
 
@@ -126,11 +136,14 @@ Traceability maps every v1 requirement to exactly one phase.
 | FND-02 | Phase 1 | Complete |
 | FND-03 | Phase 1 | Complete |
 | FND-04 | Phase 11 | Complete |
+| BACKUP-01 | Phase 14 | Complete |
+| BACKUP-02 | Phase 14 | Complete |
 | ROST-01 | Phase 2 | Complete |
 | ROST-02 | Phase 3C | Complete |
 | ROST-03 | Phase 3D | Complete |
 | ROST-04 | Phase 3D | Complete |
 | ROST-05 | Phase 4A | Complete |
+| ROST-06 | Phase 14 | Complete |
 | STUD-01 | Phase 2 | Complete |
 | STUD-02 | Phase 2 | Complete |
 | STUD-03 | Phase 3D | Complete |
@@ -150,6 +163,7 @@ Traceability maps every v1 requirement to exactly one phase.
 | CLOSE-01 | Phase 3F | Complete |
 | CLOSE-02 | Phase 3F | Complete |
 | CLOSE-03 | Phase 3F | Complete |
+| CLOSE-04 | Phase 14 | Complete |
 | QUICK-01 | Phase 4B | Complete |
 | FLOW-01 | Phase 5 | Complete |
 | FLOW-02 | Phase 5 | Complete |
@@ -166,22 +180,27 @@ Traceability maps every v1 requirement to exactly one phase.
 | CAL-08 | Phase 6 | Complete |
 | CAL-09 | Phase 6 | Complete |
 | CAL-10 | Phase 6B | Deferred |
+| CAL-11 | Phase 14 | Complete |
 | NATIVE-01 | Phase 7 | Complete |
 | NATIVE-02 | Phase 7 | Complete |
 | NATIVE-03 | Phase 7 | Complete |
 | NATIVE-04 | Phase 7 | Complete |
 | NATIVE-05 | Phase 7 | Complete |
-| NATIVE-06 | Phase 7 release gate | Pending live UAT |
+| NATIVE-06 | Phase 7 release gate | Deferred until Computer Use is available |
 | NATIVE-07 | Phase 7 native-primary reorg | Complete |
 | TUIT-01 | Phase 12 | Complete |
 | TUIT-02 | Phase 12 | Complete |
 | TUIT-03 | Phase 12 | Complete |
 | TUIT-04 | Phase 12 | Complete |
+| DRAFT-01 | Phase 13 | Complete |
+| DRAFT-02 | Phase 13 | Complete |
+| DRAFT-03 | Phase 13 | Complete |
+| DRAFT-04 | Phase 13 | Complete |
+| DRAFT-05 | Phase 13 | Complete |
 
 **Coverage:**
-- tracked requirements: 55 total
-- Mapped to phases: 55
+- tracked requirements: 65 total
+- Mapped to phases: 65
 - Unmapped: 0
-- Complete: 53
-- Deferred: 1 (`CAL-10`)
-- Pending direct release UAT: 1 (`NATIVE-06`)
+- Complete: 63
+- Deferred: 2 (`CAL-10`, `NATIVE-06`)

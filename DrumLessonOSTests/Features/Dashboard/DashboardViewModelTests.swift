@@ -128,6 +128,38 @@ import Testing
 }
 
 @MainActor
+@Test func dashboardDragMoveRequiresExplicitConflictOverride() async throws {
+    let initial = makeDashboardWorkbench(title: "이동 전")
+    let moved = makeDashboardWorkbench(title: "이동 후")
+    let repository = DashboardStudentRepositoryFake(results: [
+        .success(initial),
+        .success(moved)
+    ])
+    let event = try #require(initial.selectedEvent)
+    let conflict = ScheduleConflict(
+        occurrenceId: UUID(),
+        studentName: "박준",
+        startsAt: "2026-05-29T10:10:00Z",
+        endsAt: "2026-05-29T11:00:00Z",
+        timezone: "Asia/Seoul"
+    )
+    let schedules = DashboardScheduleRepositoryFake(conflicts: [conflict])
+    let viewModel = DashboardViewModel(repository: repository, scheduleRepository: schedules)
+    await viewModel.load()
+
+    await viewModel.moveOccurrence(event, toDateKey: "2026-05-29")
+
+    #expect(schedules.editedInputs.isEmpty)
+    #expect(viewModel.pendingMoveConflicts == [conflict])
+
+    await viewModel.confirmPendingConflictMove()
+
+    #expect(schedules.editedInputs.count == 1)
+    #expect(viewModel.pendingMoveConflicts.isEmpty)
+    #expect(viewModel.model == moved)
+}
+
+@MainActor
 @Test func dashboardDragMoveKeepsRenderedEventStableUntilEditCompletes() async throws {
     let initial = makeDashboardWorkbench(title: "이동 전")
     let moved = makeDashboardWorkbench(title: "이동 후")
@@ -317,10 +349,20 @@ private final class DashboardScheduleRepositoryFake: ScheduleRepository {
     private var pendingEditOccurrences: [LessonOccurrence] = []
     private let reconciledCount: Int
     private let suspendEdits: Bool
+    private let conflicts: [ScheduleConflict]
 
-    init(reconciledCount: Int = 0, suspendEdits: Bool = false) {
+    init(
+        reconciledCount: Int = 0,
+        suspendEdits: Bool = false,
+        conflicts: [ScheduleConflict] = []
+    ) {
         self.reconciledCount = reconciledCount
         self.suspendEdits = suspendEdits
+        self.conflicts = conflicts
+    }
+
+    func findScheduleConflicts(_ query: ScheduleConflictQuery) async throws -> [ScheduleConflict] {
+        conflicts
     }
 
     func createOneOffOccurrence(_ input: ScheduleLessonInput) async throws -> LessonOccurrence {

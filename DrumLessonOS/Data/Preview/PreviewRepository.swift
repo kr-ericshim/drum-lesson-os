@@ -1,6 +1,6 @@
 import Foundation
 
-final class PreviewRepository: StudentRepository, StudentWriteRepository, ScheduleRepository, TuitionRepository {
+final class PreviewRepository: StudentRepository, StudentWriteRepository, ScheduleRepository, TuitionRepository, LessonDraftRepository {
     private var instructor = PreviewData.instructor
     private var students = PreviewData.students
     private var progressItems = PreviewData.progressItems
@@ -11,6 +11,7 @@ final class PreviewRepository: StudentRepository, StudentWriteRepository, Schedu
     private var plans = PreviewData.nextPlans
     private var occurrences = PreviewData.occurrences
     private var tuitionCycles = PreviewData.tuitionCycles
+    private var lessonDrafts: [LessonDraft] = []
 
     func loadCurrentInstructor() async throws -> Instructor {
         instructor
@@ -76,6 +77,10 @@ final class PreviewRepository: StudentRepository, StudentWriteRepository, Schedu
         )
     }
 
+    func findScheduleConflicts(_ query: ScheduleConflictQuery) async throws -> [ScheduleConflict] {
+        ScheduleConflictDetector.detect(query: query, occurrences: occurrences, students: students)
+    }
+
     func createStudent(_ input: StudentProfileInput) async throws -> EntityID {
         let id = UUID()
         students.append(Student(
@@ -135,6 +140,7 @@ final class PreviewRepository: StudentRepository, StudentWriteRepository, Schedu
         plans.removeAll { $0.studentId == studentId }
         occurrences.removeAll { $0.studentId == studentId }
         tuitionCycles.removeAll { $0.studentId == studentId }
+        lessonDrafts.removeAll { $0.studentId == studentId }
     }
 
     func upsertTrait(_ input: StudentTraitInput) async throws -> EntityID {
@@ -273,6 +279,36 @@ final class PreviewRepository: StudentRepository, StudentWriteRepository, Schedu
         ))
         occurrences[occurrenceIndex].status = .completed
         advanceTuitionCycle(for: input.studentId)
+        lessonDrafts.removeAll { $0.occurrenceId == occurrenceId }
+    }
+
+    func loadLessonDraft(occurrenceId: EntityID) async throws -> LessonDraft? {
+        lessonDrafts.first { $0.occurrenceId == occurrenceId }
+    }
+
+    func upsertLessonDraft(_ input: LessonDraftInput) async throws -> LessonDraft {
+        try StudentEditingValidation.validate(input)
+        guard let occurrence = occurrences.first(where: { $0.id == input.occurrenceId }),
+              occurrence.studentId == input.studentId,
+              occurrence.status == .scheduled else {
+            throw ValidationError(field: "occurrenceId", message: "예정 상태인 레슨에만 초안을 저장할 수 있습니다.")
+        }
+        let draft = LessonDraft(
+            occurrenceId: input.occurrenceId,
+            studentId: input.studentId,
+            coveredMaterial: input.coveredMaterial,
+            observations: input.observations,
+            practiceAssigned: input.practiceAssigned,
+            nextStepHint: input.nextStepHint,
+            updatedAt: ISO8601DateFormatter.plain.string(from: Date())
+        )
+        lessonDrafts.removeAll { $0.occurrenceId == input.occurrenceId }
+        lessonDrafts.append(draft)
+        return draft
+    }
+
+    func deleteLessonDraft(occurrenceId: EntityID) async throws {
+        lessonDrafts.removeAll { $0.occurrenceId == occurrenceId }
     }
 
     func createOneOffOccurrence(_ input: ScheduleLessonInput) async throws -> LessonOccurrence {
@@ -307,6 +343,7 @@ final class PreviewRepository: StudentRepository, StudentWriteRepository, Schedu
         }
         occurrences[index].status = .canceled
         occurrences[index].nativeCalendarSyncStatus = .pending
+        lessonDrafts.removeAll { $0.occurrenceId == id }
         return occurrences[index]
     }
 

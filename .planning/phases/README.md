@@ -7,7 +7,7 @@ Phase folders preserve planning, implementation notes, review evidence, and comp
 - **Phases 1–6:** Product workflow originated in a web and Supabase-oriented implementation. Product decisions may remain useful; framework and persistence instructions are historical.
 - **Phase 7:** Native SwiftUI migration. Some documents describe an intermediate Supabase-backed native client that is no longer active.
 - **Phase 8:** Native workbench redesign during the transition period.
-- **Phases 9–12:** Current native and local-first implementation era.
+- **Phases 9–14:** Current native and local-first implementation era.
 
 ## Index
 
@@ -32,5 +32,7 @@ Phase folders preserve planning, implementation notes, review evidence, and comp
 | 10 | [In-lesson workspace redesign](10-in-lesson-workspace-redesign/) | Complete; direct UAT remains |
 | 11 | [Local backup and progress history](11-local-backup-and-progress-history/) | Complete; file-panel UAT remains |
 | 12 | [Prepaid tuition management](12-prepaid-tuition-management/) | Complete |
+| 13 | [In-lesson draft recovery](13-in-lesson-draft-recovery/) | Complete |
+| 14 | [Daily-use safety and speed](14-daily-use-safety-and-speed/) | Complete; direct UAT deferred |
 
 Use [../STATE.md](../STATE.md) for the current resume point and [../ROADMAP.md](../ROADMAP.md) for phase-level status.

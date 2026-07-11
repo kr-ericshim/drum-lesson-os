@@ -82,10 +82,11 @@ final class AppEnvironment {
     let students: StudentRepository
     let calendar: CalendarRepository
     let writes: StudentWriteRepository
+    let lessonDrafts: LessonDraftRepository
     let schedules: ScheduleRepository
     let preferences: AppPreferences
     let localDataDirectoryURL: URL?
-    let localDataBackup: LocalDataBackupRepository?
+    let localDataBackup: LocalDataBackupController?
     let localDataReset: LocalDataResetRepository?
 
     init(
@@ -94,11 +95,12 @@ final class AppEnvironment {
         students: StudentRepository,
         calendar: CalendarRepository,
         writes: StudentWriteRepository,
+        lessonDrafts: LessonDraftRepository,
         schedules: ScheduleRepository,
         tuitionRepository: TuitionRepository,
         preferences: AppPreferences = AppPreferences(),
         localDataDirectoryURL: URL? = nil,
-        localDataBackup: LocalDataBackupRepository? = nil,
+        localDataBackup: LocalDataBackupController? = nil,
         localDataReset: LocalDataResetRepository? = nil
     ) {
         self.dashboard = dashboard
@@ -106,6 +108,7 @@ final class AppEnvironment {
         self.students = students
         self.calendar = calendar
         self.writes = writes
+        self.lessonDrafts = lessonDrafts
         self.schedules = schedules
         tuition = TuitionViewModel(repository: tuitionRepository)
         self.preferences = preferences
@@ -128,6 +131,7 @@ final class AppEnvironment {
             students: store,
             calendar: calendar,
             writes: store,
+            lessonDrafts: store,
             schedules: schedules,
             tuitionRepository: store
         )
@@ -148,7 +152,13 @@ final class AppEnvironment {
         let retry = RetryScheduler(writeQueue: queue)
         let schedules = CalendarBackedScheduleRepository(schedules: store, calendar: calendar, queue: queue)
         let sync = SyncStatusViewModel(queue: queue, retry: retry, schedules: schedules)
-        let backup = LocalDataBackupController(repository: store, writeQueue: queue)
+        let backup = LocalDataBackupController(
+            repository: store,
+            writeQueue: queue,
+            automaticBackupDirectoryURL: resolvedDatabaseURL
+                .deletingLastPathComponent()
+                .appendingPathComponent("Backups/Automatic", isDirectory: true)
+        )
         let reset = LocalDataResetController(store: store, calendar: calendar, writeQueue: queue)
 
         return AppEnvironment(
@@ -157,6 +167,7 @@ final class AppEnvironment {
             students: store,
             calendar: calendar,
             writes: store,
+            lessonDrafts: store,
             schedules: schedules,
             tuitionRepository: store,
             preferences: preferences,
@@ -194,6 +205,10 @@ final class AppEnvironment {
         await dashboard.load()
         await tuition.load()
         syncStatus.refresh()
+    }
+
+    func runLaunchMaintenance() async {
+        await localDataBackup?.runAutomaticBackupIfNeeded()
     }
 
     private static func writeQueueURL(for databaseURL: URL) -> URL {

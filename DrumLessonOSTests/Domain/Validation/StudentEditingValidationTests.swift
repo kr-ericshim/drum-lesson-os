@@ -59,7 +59,7 @@ import Testing
 @MainActor
 @Test func detailViewModelSavesProfileAndReloadsDetail() async throws {
     let repository = StudentDetailEditingSpyRepository()
-    let viewModel = StudentDetailViewModel(studentId: repository.studentId, repository: repository, writes: repository)
+    let viewModel = StudentDetailViewModel(studentId: repository.studentId, repository: repository, writes: repository, lessonDrafts: repository)
     await viewModel.load()
 
     await viewModel.saveProfile(name: "김민지", profileCue: "새 큐", primaryWeakPoint: "새 약점", active: true)
@@ -72,7 +72,7 @@ import Testing
 @MainActor
 @Test func detailViewModelDeletesStudentWithoutReloadingDeletedDetail() async throws {
     let repository = StudentDetailEditingSpyRepository()
-    let viewModel = StudentDetailViewModel(studentId: repository.studentId, repository: repository, writes: repository)
+    let viewModel = StudentDetailViewModel(studentId: repository.studentId, repository: repository, writes: repository, lessonDrafts: repository)
     await viewModel.load()
 
     let didDelete = await viewModel.deleteStudent()
@@ -87,7 +87,7 @@ import Testing
 @MainActor
 @Test func detailViewModelSavesWorkbenchItemsAndReloadsDetail() async throws {
     let repository = StudentDetailEditingSpyRepository()
-    let viewModel = StudentDetailViewModel(studentId: repository.studentId, repository: repository, writes: repository)
+    let viewModel = StudentDetailViewModel(studentId: repository.studentId, repository: repository, writes: repository, lessonDrafts: repository)
     await viewModel.load()
 
     await viewModel.saveTrait(traitId: nil, type: .practiceHabit, label: "짧게 자주", detail: "10분 루틴")
@@ -124,7 +124,7 @@ import Testing
 @MainActor
 @Test func detailViewModelSavesProgressCheckpointAndReloadsDetail() async throws {
     let repository = StudentDetailEditingSpyRepository()
-    let viewModel = StudentDetailViewModel(studentId: repository.studentId, repository: repository, writes: repository)
+    let viewModel = StudentDetailViewModel(studentId: repository.studentId, repository: repository, writes: repository, lessonDrafts: repository)
     await viewModel.load()
 
     let didSave = await viewModel.saveProgressCheckpoint(
@@ -149,7 +149,8 @@ import Testing
         studentId: repository.studentId,
         lessonContext: makeLessonContext(studentId: repository.studentId),
         repository: repository,
-        writes: repository
+        writes: repository,
+        lessonDrafts: repository
     )
     await viewModel.load()
 
@@ -157,6 +158,8 @@ import Testing
     viewModel.runObservation = "착지가 흔들림"
     viewModel.runPractice = "2마디 루프"
     viewModel.runNextHint = "1박 착지"
+    await viewModel.persistLessonDraft()
+    #expect(repository.savedLessonDraft != nil)
     viewModel.useRunNotesInCloseout()
 
     await viewModel.saveCloseout()
@@ -171,12 +174,103 @@ import Testing
     #expect(viewModel.runObservation.isEmpty)
     #expect(viewModel.runPractice.isEmpty)
     #expect(viewModel.runNextHint.isEmpty)
+    #expect(repository.savedLessonDraft == nil)
+    #expect(viewModel.completedLessonSummary?.contains("[김민지 5월 28일 레슨]") == true)
+    #expect(viewModel.completedLessonSummary?.contains("연습 과제\n- 2마디 루프") == true)
+}
+
+@MainActor
+@Test func detailViewModelAutosavesLessonDraftAfterDebounce() async throws {
+    let repository = StudentDetailEditingSpyRepository()
+    let lessonContext = makeLessonContext(studentId: repository.studentId)
+    let viewModel = StudentDetailViewModel(
+        studentId: repository.studentId,
+        lessonContext: lessonContext,
+        repository: repository,
+        writes: repository,
+        lessonDrafts: repository,
+        draftAutosaveDelayNanoseconds: 1_000_000
+    )
+    await viewModel.load()
+
+    viewModel.runCovered = "코러스 전 필인"
+    viewModel.scheduleLessonDraftAutosave()
+    try await Task<Never, Never>.sleep(nanoseconds: 500_000_000)
+
+    #expect(repository.savedLessonDraft?.occurrenceId == lessonContext.id)
+    #expect(repository.savedLessonDraft?.coveredMaterial == "코러스 전 필인")
+    #expect(viewModel.draftStatusMessage?.contains("자동 저장됨") == true)
+    #expect(viewModel.draftStatusIsError == false)
+}
+
+@MainActor
+@Test func detailViewModelRequiresChoiceBeforeRecoveringLessonDraft() async throws {
+    let repository = StudentDetailEditingSpyRepository()
+    let lessonContext = makeLessonContext(studentId: repository.studentId)
+    repository.savedLessonDraft = LessonDraft(
+        occurrenceId: lessonContext.id,
+        studentId: repository.studentId,
+        coveredMaterial: "저장된 진행",
+        observations: "저장된 관찰",
+        practiceAssigned: "저장된 과제",
+        nextStepHint: "저장된 다음 확인",
+        updatedAt: "2026-07-11T05:32:00Z"
+    )
+    let viewModel = StudentDetailViewModel(
+        studentId: repository.studentId,
+        lessonContext: lessonContext,
+        repository: repository,
+        writes: repository,
+        lessonDrafts: repository
+    )
+
+    await viewModel.load()
+
+    #expect(viewModel.recoveredLessonDraft != nil)
+    #expect(viewModel.runCovered.isEmpty)
+
+    viewModel.continueRecoveredLessonDraft()
+
+    #expect(viewModel.recoveredLessonDraft == nil)
+    #expect(viewModel.runCovered == "저장된 진행")
+    #expect(viewModel.runObservation == "저장된 관찰")
+    #expect(viewModel.runPractice == "저장된 과제")
+    #expect(viewModel.runNextHint == "저장된 다음 확인")
+}
+
+@MainActor
+@Test func detailViewModelDeletesRecoveredLessonDraft() async throws {
+    let repository = StudentDetailEditingSpyRepository()
+    let lessonContext = makeLessonContext(studentId: repository.studentId)
+    repository.savedLessonDraft = LessonDraft(
+        occurrenceId: lessonContext.id,
+        studentId: repository.studentId,
+        coveredMaterial: "삭제할 초안",
+        observations: "",
+        practiceAssigned: "",
+        nextStepHint: "",
+        updatedAt: "2026-07-11T05:32:00Z"
+    )
+    let viewModel = StudentDetailViewModel(
+        studentId: repository.studentId,
+        lessonContext: lessonContext,
+        repository: repository,
+        writes: repository,
+        lessonDrafts: repository
+    )
+    await viewModel.load()
+
+    await viewModel.deleteRecoveredLessonDraft()
+
+    #expect(repository.savedLessonDraft == nil)
+    #expect(viewModel.recoveredLessonDraft == nil)
+    #expect(viewModel.draftStatusMessage == "작성 중인 초안을 삭제했습니다.")
 }
 
 @MainActor
 @Test func detailViewModelRejectsCloseoutWithoutLessonContext() async throws {
     let repository = StudentDetailEditingSpyRepository()
-    let viewModel = StudentDetailViewModel(studentId: repository.studentId, repository: repository, writes: repository)
+    let viewModel = StudentDetailViewModel(studentId: repository.studentId, repository: repository, writes: repository, lessonDrafts: repository)
     await viewModel.load()
     viewModel.runCovered = "코러스 전 필인"
     viewModel.runObservation = "착지가 흔들림"
@@ -204,7 +298,8 @@ import Testing
         studentId: repository.studentId,
         lessonContext: futureLesson,
         repository: repository,
-        writes: repository
+        writes: repository,
+        lessonDrafts: repository
     )
     await viewModel.load()
     viewModel.runCovered = "코러스 전 필인"
@@ -239,7 +334,8 @@ import Testing
         studentId: repository.studentId,
         lessonContext: lessonContext,
         repository: repository,
-        writes: repository
+        writes: repository,
+        lessonDrafts: repository
     )
     await viewModel.load()
     viewModel.runCovered = "코러스 전 필인"
@@ -262,7 +358,8 @@ import Testing
         studentId: repository.studentId,
         lessonContext: makeLessonContext(studentId: repository.studentId),
         repository: repository,
-        writes: repository
+        writes: repository,
+        lessonDrafts: repository
     )
     await viewModel.load()
     viewModel.runCovered = "코러스 전 필인"
@@ -285,7 +382,7 @@ import Testing
 @Test func detailViewModelIgnoresDuplicateRegularSaveWhileSaving() async throws {
     let repository = StudentDetailEditingSpyRepository()
     repository.lessonNoteDelayNanoseconds = 50_000_000
-    let viewModel = StudentDetailViewModel(studentId: repository.studentId, repository: repository, writes: repository)
+    let viewModel = StudentDetailViewModel(studentId: repository.studentId, repository: repository, writes: repository, lessonDrafts: repository)
     await viewModel.load()
 
     let firstSave = Task {
@@ -335,7 +432,7 @@ private func makeLessonContext(studentId: EntityID) -> CalendarLessonEvent {
 }
 
 @MainActor
-private final class StudentDetailEditingSpyRepository: StudentRepository, StudentWriteRepository {
+private final class StudentDetailEditingSpyRepository: StudentRepository, StudentWriteRepository, LessonDraftRepository {
     let studentId = UUID(uuidString: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb")!
     let progressItemId = UUID(uuidString: "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee")!
     var loadDetailCount = 0
@@ -354,6 +451,7 @@ private final class StudentDetailEditingSpyRepository: StudentRepository, Studen
     var closeoutDelayNanoseconds: UInt64 = 0
     var lessonNoteCallCount = 0
     var lessonNoteDelayNanoseconds: UInt64 = 0
+    var savedLessonDraft: LessonDraft?
 
     func loadCurrentInstructor() async throws -> Instructor {
         Instructor(id: UUID(), displayName: "Eric", studioName: nil, authUserId: nil)
@@ -461,5 +559,32 @@ private final class StudentDetailEditingSpyRepository: StudentRepository, Studen
             try await Task<Never, Never>.sleep(nanoseconds: closeoutDelayNanoseconds)
         }
         savedCloseout = input
+        if savedLessonDraft?.occurrenceId == input.occurrenceId {
+            savedLessonDraft = nil
+        }
+    }
+
+    func loadLessonDraft(occurrenceId: EntityID) async throws -> LessonDraft? {
+        savedLessonDraft?.occurrenceId == occurrenceId ? savedLessonDraft : nil
+    }
+
+    func upsertLessonDraft(_ input: LessonDraftInput) async throws -> LessonDraft {
+        let draft = LessonDraft(
+            occurrenceId: input.occurrenceId,
+            studentId: input.studentId,
+            coveredMaterial: input.coveredMaterial,
+            observations: input.observations,
+            practiceAssigned: input.practiceAssigned,
+            nextStepHint: input.nextStepHint,
+            updatedAt: "2026-07-11T05:32:00Z"
+        )
+        savedLessonDraft = draft
+        return draft
+    }
+
+    func deleteLessonDraft(occurrenceId: EntityID) async throws {
+        if savedLessonDraft?.occurrenceId == occurrenceId {
+            savedLessonDraft = nil
+        }
     }
 }

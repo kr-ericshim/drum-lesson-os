@@ -2,7 +2,7 @@ import Foundation
 import SQLite3
 
 @MainActor
-final class LocalSQLiteRepository: StudentRepository, StudentWriteRepository, ScheduleRepository, TuitionRepository, LocalDataBackupRepository, LocalDataResetStore {
+final class LocalSQLiteRepository: StudentRepository, StudentWriteRepository, ScheduleRepository, TuitionRepository, LessonDraftRepository, LocalDataBackupRepository, LocalDataResetStore {
     private let store: LocalSQLiteStore
     private let databaseURL: URL
     private let currentDate: () -> Date
@@ -106,6 +106,53 @@ final class LocalSQLiteRepository: StudentRepository, StudentWriteRepository, Sc
         )
     }
 
+    func findScheduleConflicts(_ query: ScheduleConflictQuery) async throws -> [ScheduleConflict] {
+        if let earliestStart = query.slots.compactMap({ ISO8601DateFormatter.plain.date(from: $0.startsAt) }).min() {
+            try expandRecurringSchedules(from: earliestStart, horizonWeeks: 8)
+        } else {
+            try refreshSnapshot()
+        }
+        return ScheduleConflictDetector.detect(
+            query: query,
+            occurrences: snapshot.occurrences,
+            students: snapshot.students
+        )
+    }
+
+    func loadLessonDraft(occurrenceId: EntityID) async throws -> LessonDraft? {
+        try refreshSnapshot()
+        return snapshot.lessonDrafts.first { $0.occurrenceId == occurrenceId }
+    }
+
+    func upsertLessonDraft(_ input: LessonDraftInput) async throws -> LessonDraft {
+        try StudentEditingValidation.validate(input)
+        return try mutateSnapshot { snapshot in
+            guard let occurrence = snapshot.occurrences.first(where: { $0.id == input.occurrenceId }),
+                  occurrence.studentId == input.studentId,
+                  occurrence.status == .scheduled else {
+                throw ValidationError(field: "occurrenceId", message: "예정 상태인 레슨에만 초안을 저장할 수 있습니다.")
+            }
+            let draft = LessonDraft(
+                occurrenceId: input.occurrenceId,
+                studentId: input.studentId,
+                coveredMaterial: input.coveredMaterial,
+                observations: input.observations,
+                practiceAssigned: input.practiceAssigned,
+                nextStepHint: input.nextStepHint,
+                updatedAt: nowString()
+            )
+            snapshot.lessonDrafts.removeAll { $0.occurrenceId == input.occurrenceId }
+            snapshot.lessonDrafts.append(draft)
+            return draft
+        }
+    }
+
+    func deleteLessonDraft(occurrenceId: EntityID) async throws {
+        try mutateSnapshot { snapshot in
+            snapshot.lessonDrafts.removeAll { $0.occurrenceId == occurrenceId }
+        }
+    }
+
     func createStudent(_ input: StudentProfileInput) async throws -> EntityID {
         try StudentEditingValidation.validate(input)
         let id = UUID()
@@ -174,6 +221,7 @@ final class LocalSQLiteRepository: StudentRepository, StudentWriteRepository, Sc
             snapshot.templates.removeAll { $0.studentId == studentId }
             snapshot.occurrences.removeAll { $0.studentId == studentId }
             snapshot.tuitionCycles.removeAll { $0.studentId == studentId }
+            snapshot.lessonDrafts.removeAll { $0.studentId == studentId }
         }
     }
 
@@ -489,6 +537,7 @@ final class LocalSQLiteRepository: StudentRepository, StudentWriteRepository, Sc
                let index = snapshot.occurrences.firstIndex(where: { $0.id == occurrenceId }) {
                 snapshot.occurrences[index].status = .completed
                 try advanceTuitionCycle(for: input.studentId, in: &snapshot, timestamp: timestamp)
+                snapshot.lessonDrafts.removeAll { $0.occurrenceId == occurrenceId }
             }
         }
     }
@@ -551,6 +600,7 @@ final class LocalSQLiteRepository: StudentRepository, StudentWriteRepository, Sc
             snapshot.occurrences[index].status = .canceled
             snapshot.occurrences[index].nativeCalendarSyncStatus = .pending
             snapshot.occurrences[index].nativeCalendarSyncError = nil
+            snapshot.lessonDrafts.removeAll { $0.occurrenceId == id }
             return snapshot.occurrences[index]
         }
     }
@@ -773,6 +823,7 @@ final class LocalSQLiteRepository: StudentRepository, StudentWriteRepository, Sc
             snapshot.templates = []
             snapshot.occurrences = []
             snapshot.tuitionCycles = []
+            snapshot.lessonDrafts = []
         }
     }
 
@@ -851,6 +902,7 @@ final class LocalSQLiteRepository: StudentRepository, StudentWriteRepository, Sc
         let progressByID = Dictionary(candidate.progressItems.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         let tuitionSequenceKeys = Set(candidate.tuitionCycles.map { "\($0.studentId.uuidString):\($0.sequence)" })
         let templateByID = Dictionary(candidate.templates.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        let occurrenceByID = Dictionary(candidate.occurrences.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         guard hasUniqueIDs(candidate.students),
               hasUniqueIDs(candidate.progressItems),
               hasUniqueIDs(candidate.progressCheckpoints),
@@ -861,6 +913,7 @@ final class LocalSQLiteRepository: StudentRepository, StudentWriteRepository, Sc
               hasUniqueIDs(candidate.templates),
               hasUniqueIDs(candidate.occurrences),
               hasUniqueIDs(candidate.tuitionCycles),
+              hasUniqueIDs(candidate.lessonDrafts),
               tuitionSequenceKeys.count == candidate.tuitionCycles.count else {
             throw RepositoryError(message: "백업 파일에 중복된 기록 식별자가 있습니다.")
         }
@@ -888,6 +941,12 @@ final class LocalSQLiteRepository: StudentRepository, StudentWriteRepository, Sc
                       cycle.targetLessonCount == TuitionValidation.targetLessonCount &&
                       (0...cycle.targetLessonCount).contains(cycle.completedLessonCount) &&
                       isValidTuitionPaymentDate(cycle.paymentConfirmedOn)
+              }),
+              candidate.lessonDrafts.allSatisfy({ draft in
+                  guard let occurrence = occurrenceByID[draft.occurrenceId] else { return false }
+                  return occurrence.studentId == draft.studentId &&
+                      occurrence.status == .scheduled &&
+                      studentIDs.contains(draft.studentId)
               }),
               candidate.progressCheckpoints.allSatisfy({ checkpoint in
                   guard let item = progressByID[checkpoint.progressItemId] else { return false }
@@ -1018,6 +1077,7 @@ private struct LocalAppSnapshot: Codable, Equatable {
     var templates: [LessonScheduleTemplate]
     var occurrences: [LessonOccurrence]
     var tuitionCycles: [TuitionCycle]
+    var lessonDrafts: [LessonDraft]
 
     enum CodingKeys: String, CodingKey {
         case instructor
@@ -1031,6 +1091,7 @@ private struct LocalAppSnapshot: Codable, Equatable {
         case templates
         case occurrences
         case tuitionCycles
+        case lessonDrafts
     }
 
     init(
@@ -1044,7 +1105,8 @@ private struct LocalAppSnapshot: Codable, Equatable {
         plans: [NextLessonPlan],
         templates: [LessonScheduleTemplate],
         occurrences: [LessonOccurrence],
-        tuitionCycles: [TuitionCycle]
+        tuitionCycles: [TuitionCycle],
+        lessonDrafts: [LessonDraft]
     ) {
         self.instructor = instructor
         self.students = students
@@ -1057,6 +1119,7 @@ private struct LocalAppSnapshot: Codable, Equatable {
         self.templates = templates
         self.occurrences = occurrences
         self.tuitionCycles = tuitionCycles
+        self.lessonDrafts = lessonDrafts
     }
 
     init(from decoder: Decoder) throws {
@@ -1086,6 +1149,7 @@ private struct LocalAppSnapshot: Codable, Equatable {
         }
         occurrences = decodedOccurrences
         tuitionCycles = try container.decodeIfPresent([TuitionCycle].self, forKey: .tuitionCycles) ?? []
+        lessonDrafts = try container.decodeIfPresent([LessonDraft].self, forKey: .lessonDrafts) ?? []
     }
 
     static let seed = LocalAppSnapshot(
@@ -1099,12 +1163,13 @@ private struct LocalAppSnapshot: Codable, Equatable {
         plans: PreviewData.nextPlans,
         templates: [],
         occurrences: PreviewData.occurrences,
-        tuitionCycles: []
+        tuitionCycles: [],
+        lessonDrafts: []
     )
 }
 
 private struct LocalDataBackupPayload: Codable {
-    static let currentFormatVersion = 2
+    static let currentFormatVersion = 3
     static let supportedFormatVersions = 1...currentFormatVersion
 
     var formatVersion: Int
